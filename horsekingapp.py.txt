@@ -1,0 +1,31 @@
+import streamlit as st
+import pandas as pd
+
+# 1. 設定 App 的標題
+st.title("🐎 我的私人賽馬分析 App")
+
+# 2. 直接在程式碼中建立賽馬數據（繞過檔案上傳）
+data = {
+    "馬名": ["金鎗六十", "浪漫勇士", "加州星球", "綠色有運"],
+    "檔位": [2, 5, 1, 10],
+    "獨贏賠率": [1.8, 2.5, 4.0, 15.0],
+    "名次": [1, 2, 3, 4]
+}
+
+# 3. 將數據轉換成 Pandas DataFrame 格式
+df = pd.DataFrame(data)
+
+# 4. 在畫面上顯示資料表格
+st.subheader("📋 賽馬數據總覽")
+st.dataframe(df)
+
+# 5. 顯示簡單的統計數字
+st.subheader("📊 數據摘要")
+st.write(df.describe())
+
+# 6. 加入一個簡單的互動功能：篩選低於某個賠率的馬匹
+st.subheader("🔍 尋找熱門馬")
+max_odds = st.slider("設定最高賠率", min_value=1.0, max_value=20.0, value=5.0)
+filtered_df = df[df["獨贏賠率"] <= max_odds]
+st.write(f"賠率低於 {max_odds} 倍的馬匹：")
+st.dataframe(filtered_df)
