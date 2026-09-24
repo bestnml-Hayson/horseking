@@ -1,1 +1,6 @@
-﻿{"ok":true,"start_time":"2026-09-24 02:34:00","end_time":"2026-09-24 02:34:14","updated":0,"renamed":0,"bootstrapped":0,"next_date":"","next_venue":"","odds_updated":0,"cc_ok":true,"rebuild_ok":true,"copied_files":5,"skipped_files":149,"new_races":0,"total_races":134,"locked":false,"errors":[]}
+{
+  "last_success": "2026-09-25T03:42:50.728884+08:00",
+  "status": "ok",
+  "total_races": 145,
+  "next_raceday": "2026-09-27 / ST / 11"
+}
