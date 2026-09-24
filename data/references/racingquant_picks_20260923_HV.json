@@ -1,0 +1,70 @@
+{
+  "meta": {
+    "source": "racingquant.com/predictions?race_date=23-09-2026&lang=zh-Hant",
+    "note": "R1/R3/R6/R7 requires Patreon login，skipped"
+  },
+  "race_date": "2026-09-23",
+  "venue": "HV",
+  "picks": [
+    {
+      "race_number": 2,
+      "distance_m": 1200,
+      "pace_pressure": 0.64,
+      "pace_type": "快步速",
+      "top4": [
+        {"rank": 1, "horse_number": 10, "name": "比特星", "jockey": "潘頓", "trainer": "賀賢", "draw": 5, "running_style": "前領", "signal_level": "強"},
+        {"rank": 2, "horse_number": 4, "name": "馬馳登", "jockey": "艾兆禮", "trainer": "黎昭昇", "draw": 7, "running_style": "居中", "signal_level": "強"},
+        {"rank": 3, "horse_number": 7, "name": "銀刺勇士", "jockey": "黃智弘(-3)", "trainer": "方嘉柏", "draw": 1, "running_style": "前領", "signal_level": "強"},
+        {"rank": 4, "horse_number": 3, "name": "路路勁", "jockey": "田泰安", "trainer": "羅富全", "draw": 8, "running_style": "前領", "signal_level": "強"}
+      ]
+    },
+    {
+      "race_number": 4,
+      "distance_m": 1200,
+      "pace_pressure": 0.62,
+      "pace_type": "快步速",
+      "top4": [
+        {"rank": 1, "horse_number": 6, "name": "快樂神駒", "jockey": "潘頓", "trainer": "廖康銘", "draw": 2, "running_style": "前領", "signal_level": "強"},
+        {"rank": 2, "horse_number": 9, "name": "將傲", "jockey": "奧爾民", "trainer": "韋達", "draw": 4, "running_style": "前領", "signal_level": "強"},
+        {"rank": 3, "horse_number": 4, "name": "星辰千帥", "jockey": "艾道拿", "trainer": "賀賢", "draw": 7, "running_style": "居中", "signal_level": "強"},
+        {"rank": 4, "horse_number": 8, "name": "禪勝閃亮", "jockey": "希威森", "trainer": "呂健威", "draw": 5, "running_style": "居中", "signal_level": "強"}
+      ]
+    },
+    {
+      "race_number": 5,
+      "distance_m": 1650,
+      "pace_pressure": 0.51,
+      "pace_type": "正常",
+      "top4": [
+        {"rank": 1, "horse_number": 6, "name": "越駿聯歡", "jockey": "梁家俊", "trainer": "黎昭昇", "draw": 6, "running_style": "後上", "signal_level": "強"},
+        {"rank": 2, "horse_number": 9, "name": "爆竹", "jockey": "田泰安", "trainer": "告東尼", "draw": 11, "running_style": "前領", "signal_level": "強"},
+        {"rank": 3, "horse_number": 7, "name": "滿洛城", "jockey": "班德禮", "trainer": "大衛希斯", "draw": 7, "running_style": "居中", "signal_level": "強"},
+        {"rank": 4, "horse_number": 3, "name": "大學生", "jockey": "金誠剛", "trainer": "韋達", "draw": 1, "running_style": "前領", "signal_level": "強"}
+      ]
+    },
+    {
+      "race_number": 8,
+      "distance_m": 1200,
+      "pace_pressure": 0.71,
+      "pace_type": "快步速",
+      "top4": [
+        {"rank": 1, "horse_number": 3, "name": "富心星", "jockey": "何澤堯", "trainer": "方嘉柏", "draw": 4, "running_style": "前領", "signal_level": "強"},
+        {"rank": 2, "horse_number": 8, "name": "繼往開來", "jockey": "艾兆禮", "trainer": "文家良", "draw": 5, "running_style": "前領", "signal_level": "強"},
+        {"rank": 3, "horse_number": 1, "name": "人和家興", "jockey": "霍宏聲", "trainer": "大衛希斯", "draw": 2, "running_style": "前領", "signal_level": "強"},
+        {"rank": 4, "horse_number": 2, "name": "團結勇士", "jockey": "梁家俊", "trainer": "鄭俊偉", "draw": 8, "running_style": "居中", "signal_level": "強"}
+      ]
+    },
+    {
+      "race_number": 9,
+      "distance_m": 1800,
+      "pace_pressure": 0.62,
+      "pace_type": "快步速",
+      "top4": [
+        {"rank": 1, "horse_number": 2, "name": "紫荊傳令", "jockey": "潘頓", "trainer": "游達榮", "draw": 5, "running_style": "前領", "signal_level": "強"},
+        {"rank": 2, "horse_number": 3, "name": "凌登", "jockey": "奧爾民", "trainer": "沈集成", "draw": 7, "running_style": "前領", "signal_level": "強"},
+        {"rank": 3, "horse_number": 12, "name": "財富非凡", "jockey": "班德禮", "trainer": "巫偉傑", "draw": 6, "running_style": "前領", "signal_level": "強"},
+        {"rank": 4, "horse_number": 6, "name": "將義", "jockey": "何澤堯", "trainer": "巫偉傑", "draw": 8, "running_style": "居中", "signal_level": "強"}
+      ]
+    }
+  ]
+}

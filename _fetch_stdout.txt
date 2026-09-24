@@ -1,0 +1,54 @@
+Using browser: C:\Program Files\Google\Chrome\Application\chrome.exe
+Connected to CDP (browser): ws://127.0.0.1:9225/devtools/browser/b4c8b770-16a9-43fe-86de-654170b84032
+
+=== Fetching R4: https://bet.hkjc.com/ch/racing/wp/2026-09-23/HV/4 ===
+  Using page WS: ws://127.0.0.1:9225/devtools/page/777AAA6A3E960B1C08C5294E7513ACF5...
+  Navigated (frame=777AAA6A3E960B1C08C5294E7513ACF5). Waiting 7s for SPA render...
+  Body snippet len=500: '主頁\n馬場活動\n賽馬資訊\n足球資訊\n馬會會員\n慈善及社區貢獻\n馬會知多少\nENG\n賽馬\n足智彩\n六合彩\n網上渠道\n投注處及電話投注\n投注資料\n客戶支援\n主頁\n報名表\n排位表\n賽期表\n更易事項\n騎師王資料\n練馬師王資料\n賽果及派彩\n分析工具\n投注彩池/種類\n回扣\n賠率\n過關 / 混合過關\n獨贏 / 位置\n連贏 / 位置Q\n二重彩\n三重彩\n單T\n四連環\n四重彩\n孖寶\n三寶\n孖T\n三T\n六環彩\n騎師王 '
+  eval_resp keys: ['id', 'result']
+  OK raceNumber=4 horseCount=12 updateTime=23/09/2026 01:10
+
+=== Fetching R5: https://bet.hkjc.com/ch/racing/wp/2026-09-23/HV/5 ===
+  Using page WS: ws://127.0.0.1:9225/devtools/page/777AAA6A3E960B1C08C5294E7513ACF5...
+  Navigated (frame=777AAA6A3E960B1C08C5294E7513ACF5). Waiting 7s for SPA render...
+  Body snippet len=500: '主頁\n馬場活動\n賽馬資訊\n足球資訊\n馬會會員\n慈善及社區貢獻\n馬會知多少\nENG\n賽馬\n足智彩\n六合彩\n網上渠道\n投注處及電話投注\n投注資料\n客戶支援\n主頁\n報名表\n排位表\n賽期表\n更易事項\n騎師王資料\n練馬師王資料\n賽果及派彩\n分析工具\n投注彩池/種類\n回扣\n賠率\n過關 / 混合過關\n獨贏 / 位置\n連贏 / 位置Q\n二重彩\n三重彩\n單T\n四連環\n四重彩\n孖寶\n三寶\n孖T\n三T\n六環彩\n騎師王 '
+  eval_resp keys: ['id', 'result']
+  OK raceNumber=5 horseCount=12 updateTime=23/09/2026 01:10
+
+=== Fetching R6: https://bet.hkjc.com/ch/racing/wp/2026-09-23/HV/6 ===
+  Using page WS: ws://127.0.0.1:9225/devtools/page/777AAA6A3E960B1C08C5294E7513ACF5...
+  Navigated (frame=777AAA6A3E960B1C08C5294E7513ACF5). Waiting 7s for SPA render...
+  Body snippet len=500: '主頁\n馬場活動\n賽馬資訊\n足球資訊\n馬會會員\n慈善及社區貢獻\n馬會知多少\nENG\n賽馬\n足智彩\n六合彩\n網上渠道\n投注處及電話投注\n投注資料\n客戶支援\n主頁\n報名表\n排位表\n賽期表\n更易事項\n騎師王資料\n練馬師王資料\n賽果及派彩\n分析工具\n投注彩池/種類\n回扣\n賠率\n過關 / 混合過關\n獨贏 / 位置\n連贏 / 位置Q\n二重彩\n三重彩\n單T\n四連環\n四重彩\n孖寶\n三寶\n孖T\n三T\n六環彩\n騎師王 '
+  eval_resp keys: ['id', 'result']
+  OK raceNumber=6 horseCount=12 updateTime=23/09/2026 01:10
+
+=== Fetching R7: https://bet.hkjc.com/ch/racing/wp/2026-09-23/HV/7 ===
+  Using page WS: ws://127.0.0.1:9225/devtools/page/777AAA6A3E960B1C08C5294E7513ACF5...
+  Navigated (frame=777AAA6A3E960B1C08C5294E7513ACF5). Waiting 7s for SPA render...
+  Body snippet len=500: '主頁\n馬場活動\n賽馬資訊\n足球資訊\n馬會會員\n慈善及社區貢獻\n馬會知多少\nENG\n賽馬\n足智彩\n六合彩\n網上渠道\n投注處及電話投注\n投注資料\n客戶支援\n主頁\n報名表\n排位表\n賽期表\n更易事項\n騎師王資料\n練馬師王資料\n賽果及派彩\n分析工具\n投注彩池/種類\n回扣\n賠率\n過關 / 混合過關\n獨贏 / 位置\n連贏 / 位置Q\n二重彩\n三重彩\n單T\n四連環\n四重彩\n孖寶\n三寶\n孖T\n三T\n六環彩\n騎師王 '
+  eval_resp keys: ['id', 'result']
+  OK raceNumber=7 horseCount=12 updateTime=23/09/2026 01:10
+
+=== Fetching R8: https://bet.hkjc.com/ch/racing/wp/2026-09-23/HV/8 ===
+  Using page WS: ws://127.0.0.1:9225/devtools/page/777AAA6A3E960B1C08C5294E7513ACF5...
+  Navigated (frame=777AAA6A3E960B1C08C5294E7513ACF5). Waiting 7s for SPA render...
+  Body snippet len=500: '主頁\n馬場活動\n賽馬資訊\n足球資訊\n馬會會員\n慈善及社區貢獻\n馬會知多少\nENG\n賽馬\n足智彩\n六合彩\n網上渠道\n投注處及電話投注\n投注資料\n客戶支援\n主頁\n報名表\n排位表\n賽期表\n更易事項\n騎師王資料\n練馬師王資料\n賽果及派彩\n分析工具\n投注彩池/種類\n回扣\n賠率\n過關 / 混合過關\n獨贏 / 位置\n連贏 / 位置Q\n二重彩\n三重彩\n單T\n四連環\n四重彩\n孖寶\n三寶\n孖T\n三T\n六環彩\n騎師王 '
+  eval_resp keys: ['id', 'result']
+  OK raceNumber=8 horseCount=12 updateTime=23/09/2026 01:10
+
+=== Fetching R9: https://bet.hkjc.com/ch/racing/wp/2026-09-23/HV/9 ===
+  Using page WS: ws://127.0.0.1:9225/devtools/page/777AAA6A3E960B1C08C5294E7513ACF5...
+  Navigated (frame=777AAA6A3E960B1C08C5294E7513ACF5). Waiting 7s for SPA render...
+  Body snippet len=500: '主頁\n馬場活動\n賽馬資訊\n足球資訊\n馬會會員\n慈善及社區貢獻\n馬會知多少\nENG\n賽馬\n足智彩\n六合彩\n網上渠道\n投注處及電話投注\n投注資料\n客戶支援\n主頁\n報名表\n排位表\n賽期表\n更易事項\n騎師王資料\n練馬師王資料\n賽果及派彩\n分析工具\n投注彩池/種類\n回扣\n賠率\n過關 / 混合過關\n獨贏 / 位置\n連贏 / 位置Q\n二重彩\n三重彩\n單T\n四連環\n四重彩\n孖寶\n三寶\n孖T\n三T\n六環彩\n騎師王 '
+  eval_resp keys: ['id', 'result']
+  OK raceNumber=9 horseCount=12 updateTime=23/09/2026 01:10
+
+Saved to d:\Trae\horse\data\references\_odds_HV_20260923_R456789.json
+
+================= SUMMARY =================
+R4: horseCount=12, updateTime=23/09/2026 01:10
+R5: horseCount=12, updateTime=23/09/2026 01:10
+R6: horseCount=12, updateTime=23/09/2026 01:10
+R7: horseCount=12, updateTime=23/09/2026 01:10
+R8: horseCount=12, updateTime=23/09/2026 01:10
+R9: horseCount=12, updateTime=23/09/2026 01:10

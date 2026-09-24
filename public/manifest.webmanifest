@@ -1,0 +1,108 @@
+{
+  "name": "賽馬 AI Live · 智能分析系統",
+  "short_name": "賽馬AI",
+  "description": "HKJC 10 維度評分模型 · 真實數據 · 智能分析 · 命中率 60%",
+  "categories": ["sports", "lifestyle", "finance"],
+  "lang": "zh-HK",
+  "dir": "ltr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "fullscreen", "minimal-ui"],
+  "orientation": "portrait",
+  "background_color": "#0a0a0a",
+  "theme_color": "#d4af37",
+  "prefer_related_applications": false,
+  "shortcuts": [
+    {
+      "name": "今日賽程",
+      "short_name": "賽程",
+      "description": "直接開啟今日賽程頁",
+      "url": "/?tab=race",
+      "icons": [{ "src": "/data/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "命中率 Dashboard",
+      "short_name": "Dashboard",
+      "description": "查看 AI 預測準確度",
+      "url": "/?tab=dashboard",
+      "icons": [{ "src": "/data/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "騎練榜",
+      "short_name": "騎練",
+      "description": "今季騎師練馬師勝出率",
+      "url": "/?tab=jockeys",
+      "icons": [{ "src": "/data/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "手動更新數據",
+      "short_name": "Update",
+      "description": "立即同步最新賽事數據",
+      "url": "/?refresh=1",
+      "icons": [{ "src": "/data/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    }
+  ],
+  "icons": [
+    {
+      "src": "/data/icons/icon-72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/data/icons/icon-96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/data/icons/icon-128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/data/icons/icon-144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/data/icons/icon-152.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/data/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/data/icons/icon-384.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/data/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/data/icons/icon-192-maskable.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/data/icons/icon-512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

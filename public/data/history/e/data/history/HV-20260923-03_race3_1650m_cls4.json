@@ -1,0 +1,879 @@
+{
+  "meta": {
+    "import_from": "https://racing.hkjc.com/zh-hk/local/information/racecard?racedate=2026/09/23&Racecourse=HV&RaceNo=3",
+    "import_time": "2026-09-21 18:00:00",
+    "race_name_full": "黃竹坑讓賽",
+    "update_time": "2026-09-24 01:30:13",
+    "note": "CURRENT 未賽賽事，result_available=false；post_time corrected per racing.on.cc 23/09 賽期總表",
+    "odds_update_time": "23/09/2026 00:55",
+    "odds_source": "bet.hkjc.com WP live: https://bet.hkjc.com/ch/racing/wp/2026-09-23/HV/3",
+    "result_update_time": "2026-09-24 01:30:13"
+  },
+  "race_info": {
+    "race_id": "HV-20260923-03",
+    "race_date": "2026-09-23",
+    "race_number": 3,
+    "venue": "跑馬地",
+    "track": "C跑道",
+    "surface": "草地",
+    "distance_m": 1650,
+    "class": "第四班",
+    "rating_range": "60-40",
+    "prize": "HK$1,170,000",
+    "going": "好地",
+    "post_time": "19:40",
+    "result_available": true,
+    "num_horses": 12,
+    "official_result": [
+      {
+        "finish": 1,
+        "code": "L031",
+        "number": 8,
+        "name": "蹺妙",
+        "jockey": "周俊樂",
+        "trainer": "游達榮",
+        "margin": "---",
+        "run_time": "1:39.52"
+      },
+      {
+        "finish": 3,
+        "code": "G125",
+        "number": 12,
+        "name": "得意佳作",
+        "jockey": "田泰安",
+        "trainer": "姚本輝",
+        "margin": "1-1/4",
+        "run_time": "1:39.70"
+      },
+      {
+        "finish": 5,
+        "code": "K416",
+        "number": 7,
+        "name": "有情有義",
+        "jockey": "黃智弘",
+        "trainer": "方嘉柏",
+        "margin": "1-1/2",
+        "run_time": "1:39.76"
+      },
+      {
+        "finish": 6,
+        "code": "K444",
+        "number": 5,
+        "name": "凝妙星",
+        "jockey": "奧爾民",
+        "trainer": "大衛希斯",
+        "margin": "2-1/4",
+        "run_time": "1:39.89"
+      },
+      {
+        "finish": 7,
+        "code": "J494",
+        "number": 6,
+        "name": "領航天子",
+        "jockey": "霍宏聲",
+        "trainer": "廖康銘",
+        "margin": "3-1/4",
+        "run_time": "1:40.03"
+      },
+      {
+        "finish": 8,
+        "code": "L044",
+        "number": 4,
+        "name": "睿智多寶",
+        "jockey": "艾道拿",
+        "trainer": "黎昭昇",
+        "margin": "4-1/2",
+        "run_time": "1:40.23"
+      },
+      {
+        "finish": 9,
+        "code": "J131",
+        "number": 10,
+        "name": "加州活力",
+        "jockey": "艾兆禮",
+        "trainer": "告東尼",
+        "margin": "5-1/2",
+        "run_time": "1:40.41"
+      },
+      {
+        "finish": 10,
+        "code": "K145",
+        "number": 3,
+        "name": "彩虹七色",
+        "jockey": "何澤堯",
+        "trainer": "呂健威",
+        "margin": "5-1/2",
+        "run_time": "1:40.41"
+      },
+      {
+        "finish": 11,
+        "code": "L079",
+        "number": 9,
+        "name": "越駿齊歡",
+        "jockey": "梁家俊",
+        "trainer": "羅富全",
+        "margin": "8",
+        "run_time": "1:40.82"
+      },
+      {
+        "finish": 12,
+        "code": "J215",
+        "number": 11,
+        "name": "光明傳承",
+        "jockey": "班德禮",
+        "trainer": "葉楚航",
+        "margin": "10",
+        "run_time": "1:41.13"
+      }
+    ],
+    "split_times": [],
+    "payouts": {}
+  },
+  "horses": [
+    {
+      "number": 1,
+      "code": "L267",
+      "name": "星願無限",
+      "draw": 11,
+      "rating": 59,
+      "weight": 135,
+      "jockey": "希威森",
+      "trainer": "沈集成",
+      "best_time_sec": 100.14,
+      "odds_win": 20,
+      "odds_place": 5.8,
+      "last_3": [
+        {
+          "date": "2026-06-24",
+          "venue": "HV",
+          "race_no": 4,
+          "finish": 5,
+          "distance_m": 1650,
+          "class": "第四班"
+        }
+      ],
+      "flags": [],
+      "cc_expert_count": 0,
+      "cc_experts": [],
+      "cc_expert_tips": [],
+      "cc_gear_symbols": "＊",
+      "cc_equipment": "SWT",
+      "cc_draw_oncc": 11,
+      "cc_jockey_oncc": "希威森",
+      "cc_weight_lbs_oncc": 135,
+      "cc_weight_change": 0,
+      "cc_trainer_surname": "沈",
+      "cc_trainer_oncc": "沈集成",
+      "cc_rating_oncc": 59,
+      "cc_rating_change": -1,
+      "cc_age_oncc": 4,
+      "cc_body_weight_lbs": 1018,
+      "cc_body_weight_change": -20,
+      "cc_trackwork_summary": "助B（內快踱一圈） 8月1日從化開操，踱步41課，快跳11課，泥閘0課，草閘1課，彈閘0課，游水43次。（從化跳10課，從化踱36課）助40 沈1",
+      "cc_trackwork_daily": {
+        "7-9": "助B（內快踱兩圈）",
+        "10-13": "助51.9B 25.5 22.8（從化）",
+        "14-16": "助51.9B游3 25.5 22.4（從化）",
+        "17-20": "助25.2金色年華 25.2B游4",
+        "21-21": "助B（內倒快一圈）（從化）",
+        "22-22": "助B（飛機場踱步）"
+      }
+    },
+    {
+      "number": 2,
+      "code": "L039",
+      "name": "贏玥",
+      "draw": 5,
+      "rating": 56,
+      "weight": 132,
+      "jockey": "潘頓",
+      "trainer": "巫偉傑",
+      "best_time_sec": 99.9,
+      "odds_win": 5.9,
+      "odds_place": 2.6,
+      "last_3": [
+        {
+          "date": "2026-09-09",
+          "venue": "HV",
+          "race_no": 4,
+          "finish": 6,
+          "distance_m": 1650,
+          "class": "第四班"
+        },
+        {
+          "date": "2026-07-08",
+          "venue": "HV",
+          "race_no": 2,
+          "finish": 2,
+          "distance_m": 1650,
+          "class": "第四班"
+        },
+        {
+          "date": "2026-06-24",
+          "venue": "HV",
+          "race_no": 4,
+          "finish": 4,
+          "distance_m": 1650,
+          "class": "第四班"
+        }
+      ],
+      "flags": [],
+      "cc_expert_count": 2,
+      "cc_experts": [
+        "明治朗",
+        "網中神"
+      ],
+      "cc_expert_tips": [
+        {
+          "expert": "明治朗",
+          "rank": 2
+        },
+        {
+          "expert": "網中神",
+          "rank": 1
+        }
+      ],
+      "cc_gear_symbols": "",
+      "cc_equipment": "BT",
+      "cc_draw_oncc": 7,
+      "cc_jockey_oncc": "潘頓",
+      "cc_weight_lbs_oncc": 132,
+      "cc_weight_change": 0,
+      "cc_trainer_surname": "巫",
+      "cc_trainer_oncc": "巫偉傑",
+      "cc_rating_oncc": 56,
+      "cc_rating_change": 0,
+      "cc_age_oncc": 5,
+      "cc_body_weight_lbs": 1177,
+      "cc_body_weight_change": -2,
+      "cc_trackwork_summary": "助H（內倒快一圈） 助H（彭福公園踱） 8月1日開操，踱步39課，快跳10課，泥閘1課，草閘0課，彈閘0課，游水43次。助38 巫1",
+      "cc_trackwork_daily": {
+        "7-9": "助H（飛機場踱步）",
+        "10-13": "助1050泥閘1.01.53",
+        "14-16": "7駒4 3 2-1 SW游3",
+        "17-20": "助27.5H 24.7",
+        "21-21": "助27.7H 24.2游4",
+        "22-22": "助27.7H游1"
+      }
+    },
+    {
+      "number": 3,
+      "code": "K145",
+      "name": "彩虹七色",
+      "draw": 10,
+      "rating": 54,
+      "weight": 130,
+      "jockey": "何澤堯",
+      "trainer": "呂健威",
+      "best_time_sec": 0.0,
+      "odds_win": 18,
+      "odds_place": 5.7,
+      "last_3": [
+        {
+          "date": "2026-07-08",
+          "venue": "HV",
+          "race_no": 6,
+          "finish": 8,
+          "distance_m": 1200,
+          "class": "第四班"
+        }
+      ],
+      "flags": [],
+      "cc_expert_count": 0,
+      "cc_experts": [],
+      "cc_expert_tips": [],
+      "cc_gear_symbols": "＋",
+      "cc_equipment": "BT",
+      "cc_draw_oncc": 5,
+      "cc_jockey_oncc": "何澤堯",
+      "cc_weight_lbs_oncc": 130,
+      "cc_weight_change": 1,
+      "cc_trainer_surname": "呂",
+      "cc_trainer_oncc": "呂健威",
+      "cc_rating_oncc": 54,
+      "cc_rating_change": 0,
+      "cc_age_oncc": 5,
+      "cc_body_weight_lbs": 1071,
+      "cc_body_weight_change": 10,
+      "cc_trackwork_summary": "30.1 24.7 助H（內倒快兩圈） 助H（彭福公園踱） 8月8日從化開操，踱步34課，快跳9課，泥閘0課，草閘1課，彈閘0課，游水45次。（從化跳7課，從化踱28課）助30 呂3",
+      "cc_trackwork_daily": {
+        "7-9": "助H（內快踱一圈）",
+        "10-13": "助57.0H游4",
+        "14-16": "30.2 26.1（從化）",
+        "17-20": "助56.9H游3",
+        "21-21": "28.9 24.7（從化）",
+        "22-22": "助55.7H游4"
+      },
+      "finish": 10,
+      "margin": "---",
+      "run_time": "1:39.52"
+    },
+    {
+      "number": 4,
+      "code": "L044",
+      "name": "睿智多寶",
+      "draw": 9,
+      "rating": 53,
+      "weight": 129,
+      "jockey": "艾道拿",
+      "trainer": "黎昭昇",
+      "best_time_sec": 101.12,
+      "odds_win": 15,
+      "odds_place": 2.9,
+      "last_3": [
+        {
+          "date": "2026-09-13",
+          "venue": "ST",
+          "race_no": 7,
+          "finish": 8,
+          "distance_m": 1400,
+          "class": "第四班"
+        },
+        {
+          "date": "2026-07-01",
+          "venue": "ST",
+          "race_no": 9,
+          "finish": 9,
+          "distance_m": 1600,
+          "class": "第四班"
+        }
+      ],
+      "flags": [],
+      "cc_expert_count": 0,
+      "cc_experts": [],
+      "cc_expert_tips": [],
+      "cc_gear_symbols": "★＊2",
+      "cc_equipment": "VT",
+      "cc_draw_oncc": 6,
+      "cc_jockey_oncc": "艾道拿",
+      "cc_weight_lbs_oncc": 129,
+      "cc_weight_change": -3,
+      "cc_trainer_surname": "黎",
+      "cc_trainer_oncc": "黎昭昇",
+      "cc_rating_oncc": 53,
+      "cc_rating_change": -2,
+      "cc_age_oncc": 4,
+      "cc_body_weight_lbs": 1255,
+      "cc_body_weight_change": 12,
+      "cc_trackwork_summary": "30.6 26.1 助H（內倒快兩圈） 7月24日從化開操，踱步46課，快跳9課，泥閘0課，草閘0課，彈閘0課，游水46次。（從化跳4課，從化踱41課）助44 黎1",
+      "cc_trackwork_daily": {
+        "7-9": "助H（飛機場踱步）",
+        "10-13": "助55.2H游4",
+        "14-16": "30.7 26.3",
+        "17-20": "助53.7H游3",
+        "21-21": "30.7 26.4",
+        "22-22": "助53.8H游4"
+      },
+      "finish": 8,
+      "margin": "1-1/4",
+      "run_time": "1:39.70"
+    },
+    {
+      "number": 5,
+      "code": "K444",
+      "name": "凝妙星",
+      "draw": 12,
+      "rating": 52,
+      "weight": 128,
+      "jockey": "奧爾民",
+      "trainer": "大衛希斯",
+      "best_time_sec": 99.32,
+      "odds_win": 4.6,
+      "odds_place": 1.9,
+      "last_3": [
+        {
+          "date": "2026-09-09",
+          "venue": "HV",
+          "race_no": 4,
+          "finish": 1,
+          "distance_m": 1650,
+          "class": "第四班"
+        },
+        {
+          "date": "2026-06-13",
+          "venue": "ST",
+          "race_no": 4,
+          "finish": 6,
+          "distance_m": 1800,
+          "class": "第四班"
+        }
+      ],
+      "flags": [],
+      "cc_expert_count": 2,
+      "cc_experts": [
+        "明治朗",
+        "網中神"
+      ],
+      "cc_expert_tips": [
+        {
+          "expert": "明治朗",
+          "rank": 3
+        },
+        {
+          "expert": "網中神",
+          "rank": 2
+        }
+      ],
+      "cc_gear_symbols": "2",
+      "cc_equipment": "V",
+      "cc_draw_oncc": 3,
+      "cc_jockey_oncc": "奧爾民",
+      "cc_weight_lbs_oncc": 128,
+      "cc_weight_change": 8,
+      "cc_trainer_surname": "希",
+      "cc_trainer_oncc": "大衛希斯",
+      "cc_rating_oncc": 52,
+      "cc_rating_change": 8,
+      "cc_age_oncc": 5,
+      "cc_body_weight_lbs": 1111,
+      "cc_body_weight_change": 4,
+      "cc_trackwork_summary": "30.0 26.1 助H（內倒快一圈） 游1 助H（內快踱一圈） 7月27日從化開操，踱步40課，快跳10課，泥閘0課，草閘0課，彈閘0課，游水43次。（從化跳8課，從化踱33課）助33 副6",
+      "cc_trackwork_daily": {
+        "7-9": "助H（飛機場踱步）",
+        "10-13": "副54.8H游4",
+        "14-16": "30.7 26.7（從化）",
+        "17-20": "副56.5H游3",
+        "21-21": "30.6 26.3（從化）",
+        "22-22": "副56.3H游4"
+      },
+      "finish": 6,
+      "margin": "1-1/2",
+      "run_time": "1:39.76"
+    },
+    {
+      "number": 6,
+      "code": "J494",
+      "name": "領航天子",
+      "draw": 6,
+      "rating": 52,
+      "weight": 128,
+      "jockey": "霍宏聲",
+      "trainer": "廖康銘",
+      "best_time_sec": 98.76,
+      "odds_win": 12,
+      "odds_place": 4,
+      "last_3": [
+        {
+          "date": "2026-09-09",
+          "venue": "HV",
+          "race_no": 2,
+          "finish": 6,
+          "distance_m": 1650,
+          "class": "第四班"
+        },
+        {
+          "date": "2026-07-15",
+          "venue": "HV",
+          "race_no": 3,
+          "finish": 4,
+          "distance_m": 1800,
+          "class": "第四班"
+        },
+        {
+          "date": "2026-06-24",
+          "venue": "HV",
+          "race_no": 3,
+          "finish": 6,
+          "distance_m": 1650,
+          "class": "第四班"
+        }
+      ],
+      "flags": [],
+      "cc_expert_count": 1,
+      "cc_experts": [
+        "網中神"
+      ],
+      "cc_expert_tips": [
+        {
+          "expert": "網中神",
+          "rank": 3
+        }
+      ],
+      "cc_gear_symbols": "",
+      "cc_equipment": "—",
+      "cc_draw_oncc": 10,
+      "cc_jockey_oncc": "霍宏聲",
+      "cc_weight_lbs_oncc": 128,
+      "cc_weight_change": 1,
+      "cc_trainer_surname": "廖",
+      "cc_trainer_oncc": "廖康銘",
+      "cc_rating_oncc": 52,
+      "cc_rating_change": -2,
+      "cc_age_oncc": 6,
+      "cc_body_weight_lbs": 970,
+      "cc_body_weight_change": 13,
+      "cc_trackwork_summary": "26.7 23.2 助SWH（內倒快一圈） 助SWH（內快踱一圈） 7月23日從化開操，踱步52課，快跳9課，泥閘0課，草閘0課，彈閘0課，游水46次。（從化跳8課，從化踱43課）助49 廖1",
+      "cc_trackwork_daily": {
+        "7-9": "助SWH（內快踱一圈）",
+        "10-13": "助51.7游3",
+        "14-16": "27.0 23.3（從化）",
+        "17-20": "助51.3SWH游4",
+        "21-21": "26.8 22.9（從化）",
+        "22-22": "助50.5游1"
+      },
+      "finish": 7,
+      "margin": "2-1/4",
+      "run_time": "1:39.89"
+    },
+    {
+      "number": 7,
+      "code": "K416",
+      "name": "有情有義",
+      "draw": 8,
+      "rating": 51,
+      "weight": 127,
+      "jockey": "黃智弘",
+      "trainer": "方嘉柏",
+      "best_time_sec": 99.59,
+      "odds_win": 10,
+      "odds_place": 3.4,
+      "last_3": [
+        {
+          "date": "2026-09-09",
+          "venue": "HV",
+          "race_no": 2,
+          "finish": 5,
+          "distance_m": 1650,
+          "class": "第四班"
+        },
+        {
+          "date": "2026-06-10",
+          "venue": "HV",
+          "race_no": 5,
+          "finish": 4,
+          "distance_m": 1650,
+          "class": "第四班"
+        }
+      ],
+      "flags": [],
+      "cc_expert_count": 2,
+      "cc_experts": [
+        "明治朗",
+        "網中神"
+      ],
+      "cc_expert_tips": [
+        {
+          "expert": "明治朗",
+          "rank": 4
+        },
+        {
+          "expert": "網中神",
+          "rank": 4
+        }
+      ],
+      "cc_gear_symbols": "2",
+      "cc_equipment": "T",
+      "cc_draw_oncc": 4,
+      "cc_jockey_oncc": "黃智弘",
+      "cc_weight_lbs_oncc": 124,
+      "cc_weight_change": 0,
+      "cc_trainer_surname": "柏",
+      "cc_trainer_oncc": "方嘉柏",
+      "cc_rating_oncc": 51,
+      "cc_rating_change": -1,
+      "cc_age_oncc": 5,
+      "cc_body_weight_lbs": 1173,
+      "cc_body_weight_change": 1,
+      "cc_trackwork_summary": "27.0 23.4 助H（內倒快一圈） 助H（彭福公園踱） 7月23日從化開操，踱步50課，快跳11課，泥閘0課，草閘1課，彈閘0課，游水45次。（從化跳9課，從化踱41課）助50 森1",
+      "cc_trackwork_daily": {
+        "7-9": "助H（內快踱一圈）",
+        "10-13": "森1200從草1.10.03",
+        "14-16": "5駒2 1 1-0 B游3",
+        "17-20": "助27.8幸福駒 27.8H游4",
+        "21-21": "28.6 24.2",
+        "22-22": "助26.9H游1"
+      },
+      "finish": 5,
+      "margin": "3-1/4",
+      "run_time": "1:40.03"
+    },
+    {
+      "number": 8,
+      "code": "L031",
+      "name": "蹺妙",
+      "draw": 3,
+      "rating": 48,
+      "weight": 124,
+      "jockey": "周俊樂",
+      "trainer": "游達榮",
+      "best_time_sec": 100.13,
+      "odds_win": 5.3,
+      "odds_place": 1.5,
+      "last_3": [
+        {
+          "date": "2026-07-08",
+          "venue": "HV",
+          "race_no": 2,
+          "finish": 5,
+          "distance_m": 1650,
+          "class": "第四班"
+        },
+        {
+          "date": "2026-06-13",
+          "venue": "ST",
+          "race_no": 6,
+          "finish": 9,
+          "distance_m": 1400,
+          "class": "第四班"
+        }
+      ],
+      "flags": [],
+      "cc_expert_count": 0,
+      "cc_experts": [],
+      "cc_expert_tips": [],
+      "cc_gear_symbols": "",
+      "cc_equipment": "X1",
+      "cc_draw_oncc": 2,
+      "cc_jockey_oncc": "周俊樂",
+      "cc_weight_lbs_oncc": 122,
+      "cc_weight_change": -3,
+      "cc_trainer_surname": "游",
+      "cc_trainer_oncc": "游達榮",
+      "cc_rating_oncc": 48,
+      "cc_rating_change": -4,
+      "cc_age_oncc": 5,
+      "cc_body_weight_lbs": 1097,
+      "cc_body_weight_change": 3,
+      "cc_trackwork_summary": "31.8 27.1 23.9 助H（內倒快兩圈） 助H（彭福公園踱） 7月24日從化開操，踱步44課，快跳12課，泥閘1課，草閘0課，彈閘0課，游水44次。（從化跳5課，從化踱36課）助42 游2",
+      "cc_trackwork_daily": {
+        "7-9": "助H（飛機場踱步）",
+        "10-13": "助1200泥閘1.09.62",
+        "14-16": "8駒8 7 8-3 BT游4",
+        "17-20": "助56.4H",
+        "21-21": "31.5 27.1 23.7（從化）",
+        "22-22": "助57.2H游1"
+      },
+      "finish": 1,
+      "margin": "4-1/2",
+      "run_time": "1:40.23"
+    },
+    {
+      "number": 9,
+      "code": "L079",
+      "name": "越駿齊歡",
+      "draw": 2,
+      "rating": 48,
+      "weight": 124,
+      "jockey": "梁家俊",
+      "trainer": "羅富全",
+      "best_time_sec": 100.11,
+      "odds_win": 10,
+      "odds_place": 3.4,
+      "last_3": [
+        {
+          "date": "2026-07-15",
+          "venue": "HV",
+          "race_no": 4,
+          "finish": 5,
+          "distance_m": 1650,
+          "class": "第四班"
+        },
+        {
+          "date": "2026-06-24",
+          "venue": "HV",
+          "race_no": 3,
+          "finish": 12,
+          "distance_m": 1650,
+          "class": "第四班"
+        }
+      ],
+      "flags": [],
+      "cc_expert_count": 0,
+      "cc_experts": [],
+      "cc_expert_tips": [],
+      "cc_gear_symbols": "2",
+      "cc_equipment": "HT",
+      "cc_draw_oncc": 1,
+      "cc_jockey_oncc": "梁家俊",
+      "cc_weight_lbs_oncc": 124,
+      "cc_weight_change": -4,
+      "cc_trainer_surname": "羅",
+      "cc_trainer_oncc": "羅富全",
+      "cc_rating_oncc": 48,
+      "cc_rating_change": -3,
+      "cc_age_oncc": 5,
+      "cc_body_weight_lbs": 1093,
+      "cc_body_weight_change": -10,
+      "cc_trackwork_summary": "26.7 23.5 助H（內倒快兩圈） 助H（內快踱一圈） 7月24日從化開操，踱步46課，快跳10課，泥閘1課，草閘0課，彈閘0課，游水46次。（從化跳7課，從化踱39課）助42 羅1",
+      "cc_trackwork_daily": {
+        "7-9": "助H（飛機場踱步）",
+        "10-13": "助1050從泥1.01.80",
+        "14-16": "7駒2 1 1-4 EX游4",
+        "17-20": "助27.0鴻運 27.0H游3",
+        "21-21": "—",
+        "22-22": "—"
+      },
+      "finish": 11,
+      "margin": "5-1/2",
+      "run_time": "1:40.41"
+    },
+    {
+      "number": 10,
+      "code": "K490",
+      "name": "家傳之寶",
+      "draw": 1,
+      "rating": 44,
+      "weight": 120,
+      "jockey": "楊明綸",
+      "trainer": "韋達",
+      "best_time_sec": 101.54,
+      "odds_win": 11,
+      "odds_place": 5,
+      "last_3": [
+        {
+          "date": "2026-07-12",
+          "venue": "ST",
+          "race_no": 7,
+          "finish": 8,
+          "distance_m": 1600,
+          "class": "第四班"
+        },
+        {
+          "date": "2026-06-21",
+          "venue": "ST",
+          "race_no": 5,
+          "finish": 4,
+          "distance_m": 1600,
+          "class": "第四班"
+        }
+      ],
+      "flags": [],
+      "cc_expert_count": 0,
+      "cc_experts": [],
+      "cc_expert_tips": [],
+      "cc_gear_symbols": "2",
+      "cc_equipment": "BT",
+      "cc_draw_oncc": 8,
+      "cc_jockey_oncc": "艾兆禮",
+      "cc_weight_lbs_oncc": 131,
+      "cc_weight_change": -1,
+      "cc_trainer_surname": "東",
+      "cc_trainer_oncc": "東",
+      "cc_rating_oncc": 55,
+      "cc_rating_change": -2,
+      "cc_age_oncc": 5,
+      "cc_body_weight_lbs": 1188,
+      "cc_body_weight_change": 6,
+      "cc_trackwork_summary": "30.0 25.9 副H（內倒快一圈） 助H（內快踱一圈） 7月28日從化開操，踱步43課，快跳9課，泥閘1課，草閘0課，彈閘0課，游水44次。（從化跳7課，從化踱35課）副39 助3",
+      "cc_trackwork_daily": {
+        "7-9": "助H（飛機場踱步）",
+        "10-13": "副1200泥閘1.09.00",
+        "14-16": "7駒6 6 7-3 BT游4",
+        "17-20": "副H（內快踱一圈）",
+        "21-21": "30.0 26.0",
+        "22-22": "助55.6H游1"
+      }
+    },
+    {
+      "number": 11,
+      "code": "J215",
+      "name": "光明傳承",
+      "draw": 4,
+      "rating": 43,
+      "weight": 119,
+      "jockey": "班德禮",
+      "trainer": "葉楚航",
+      "best_time_sec": 0.0,
+      "odds_win": 22,
+      "odds_place": 5.5,
+      "last_3": [
+        {
+          "date": "2026-06-13",
+          "venue": "ST",
+          "race_no": 4,
+          "finish": 12,
+          "distance_m": 1800,
+          "class": "第四班"
+        }
+      ],
+      "flags": [],
+      "cc_expert_count": 0,
+      "cc_experts": [],
+      "cc_expert_tips": [],
+      "cc_gear_symbols": "★＊",
+      "cc_equipment": "N2B",
+      "cc_draw_oncc": 9,
+      "cc_jockey_oncc": "班德禮",
+      "cc_weight_lbs_oncc": 119,
+      "cc_weight_change": -5,
+      "cc_trainer_surname": "葉",
+      "cc_trainer_oncc": "葉楚航",
+      "cc_rating_oncc": 43,
+      "cc_rating_change": -5,
+      "cc_age_oncc": 7,
+      "cc_body_weight_lbs": 1104,
+      "cc_body_weight_change": -9,
+      "cc_trackwork_summary": "30.9 24.9 助H（內倒快兩圈） 助H（彭福公園踱） 7月24日從化開操，踱步45課，快跳9課，泥閘0課，草閘1課，彈閘0課，游水48次。（從化跳8課，從化踱36課）助40 葉3",
+      "cc_trackwork_daily": {
+        "7-9": "助H（飛機場踱步）",
+        "10-13": "助1200從草1.10.55",
+        "14-16": "10駒8 7 6-1游4",
+        "17-20": "助55.4H游3",
+        "21-21": "31.0 24.5（從化）",
+        "22-22": "助54.6H"
+      },
+      "finish": 12,
+      "margin": "8",
+      "run_time": "1:40.82"
+    },
+    {
+      "number": 12,
+      "code": "G125",
+      "name": "得意佳作",
+      "draw": 7,
+      "rating": 42,
+      "weight": 118,
+      "jockey": "田泰安",
+      "trainer": "姚本輝",
+      "best_time_sec": 99.29,
+      "odds_win": 17,
+      "odds_place": 5.1,
+      "last_3": [
+        {
+          "date": "2026-07-08",
+          "venue": "HV",
+          "race_no": 2,
+          "finish": 10,
+          "distance_m": 1650,
+          "class": "第四班"
+        }
+      ],
+      "flags": [],
+      "cc_expert_count": 1,
+      "cc_experts": [
+        "明治朗"
+      ],
+      "cc_expert_tips": [
+        {
+          "expert": "明治朗",
+          "rank": 1
+        }
+      ],
+      "cc_gear_symbols": "＋",
+      "cc_equipment": "T",
+      "cc_draw_oncc": 12,
+      "cc_jockey_oncc": "田泰安",
+      "cc_weight_lbs_oncc": 118,
+      "cc_weight_change": -3,
+      "cc_trainer_surname": "姚",
+      "cc_trainer_oncc": "姚本輝",
+      "cc_rating_oncc": 42,
+      "cc_rating_change": -4,
+      "cc_age_oncc": 8,
+      "cc_body_weight_lbs": 1066,
+      "cc_body_weight_change": -30,
+      "cc_trackwork_summary": "8月21日從化開操，踱步26課，快跳6課，泥閘0課，草閘0課，彈閘0課，游水40次。（從化跳6課，從化踱26課）助26",
+      "cc_trackwork_daily": {
+        "7-9": "助H（內快踱一圈）",
+        "10-13": "助H1.26.8游4 32.5 27.0 23.3（從化）",
+        "14-16": "助H（內倒快一圈）（從化）",
+        "17-20": "—",
+        "21-21": "—",
+        "22-22": "—"
+      },
+      "finish": 3,
+      "margin": "10",
+      "run_time": "1:41.13"
+    }
+  ]
+}

@@ -1,0 +1,5599 @@
+{
+  "meta": {
+    "import_from": "https://racing.hkjc.com/zh-hk/local/information/jkcstat",
+    "import_date": "2026-09-23",
+    "venue": "HV 跑馬地",
+    "race_date": "2026-09-23",
+    "note": "JKC stats (HV 2026-09-23) + racing.on.cc 3大核心：最後來料(11名家88 tips) + barrier(9場) + trackwork(9場)；merge cc_* 欄位入 CURRENT race JSON",
+    "cc_fetch_time": "2026-09-24 02:34:09"
+  },
+  "jockey_championship": [
+    {
+      "rank": 1,
+      "jockey": "潘頓",
+      "last_10_race_days_points": 33.8,
+      "season_avg": 36.5,
+      "quarter_25_26_avg": 35.2,
+      "win_rate": 0.205,
+      "total_wins": 123,
+      "total_rides": 599
+    },
+    {
+      "rank": 2,
+      "jockey": "布文",
+      "last_10_race_days_points": 30.2,
+      "season_avg": 33.1,
+      "quarter_25_26_avg": 32.8,
+      "win_rate": 0.201,
+      "total_wins": 96,
+      "total_rides": 478
+    },
+    {
+      "rank": 3,
+      "jockey": "艾兆禮",
+      "last_10_race_days_points": 22.7,
+      "season_avg": 24.5,
+      "quarter_25_26_avg": 23.9,
+      "win_rate": 0.147,
+      "total_wins": 67,
+      "total_rides": 456
+    },
+    {
+      "rank": 4,
+      "jockey": "希威森",
+      "last_10_race_days_points": 20.4,
+      "season_avg": 22.8,
+      "quarter_25_26_avg": 22.1,
+      "win_rate": 0.16,
+      "total_wins": 62,
+      "total_rides": 388
+    },
+    {
+      "rank": 5,
+      "jockey": "何澤堯",
+      "last_10_race_days_points": 19.8,
+      "season_avg": 21.3,
+      "quarter_25_26_avg": 20.7,
+      "win_rate": 0.152,
+      "total_wins": 78,
+      "total_rides": 512
+    },
+    {
+      "rank": 6,
+      "jockey": "田泰安",
+      "last_10_race_days_points": 16.1,
+      "season_avg": 18.7,
+      "quarter_25_26_avg": 18.2,
+      "win_rate": 0.138,
+      "total_wins": 58,
+      "total_rides": 421
+    },
+    {
+      "rank": 7,
+      "jockey": "楊明綸",
+      "last_10_race_days_points": 13.5,
+      "season_avg": 15.9,
+      "quarter_25_26_avg": 15.3,
+      "win_rate": 0.12,
+      "total_wins": 52,
+      "total_rides": 433
+    },
+    {
+      "rank": 8,
+      "jockey": "梁家俊",
+      "last_10_race_days_points": 12.8,
+      "season_avg": 14.6,
+      "quarter_25_26_avg": 14.1,
+      "win_rate": 0.118,
+      "total_wins": 48,
+      "total_rides": 408
+    },
+    {
+      "rank": 9,
+      "jockey": "班德禮",
+      "last_10_race_days_points": 11.9,
+      "season_avg": 13.8,
+      "quarter_25_26_avg": 13.4,
+      "win_rate": 0.129,
+      "total_wins": 44,
+      "total_rides": 342
+    },
+    {
+      "rank": 10,
+      "jockey": "蔡明紹",
+      "last_10_race_days_points": 10.6,
+      "season_avg": 12.7,
+      "quarter_25_26_avg": 12.2,
+      "win_rate": 0.107,
+      "total_wins": 39,
+      "total_rides": 364
+    },
+    {
+      "rank": 11,
+      "jockey": "周俊樂",
+      "last_10_race_days_points": 9.8,
+      "season_avg": 11.9,
+      "quarter_25_26_avg": 11.5,
+      "win_rate": 0.109,
+      "total_wins": 41,
+      "total_rides": 376
+    },
+    {
+      "rank": 12,
+      "jockey": "黃智弘",
+      "last_10_race_days_points": 9.1,
+      "season_avg": 11.2,
+      "quarter_25_26_avg": 10.8,
+      "win_rate": 0.109,
+      "total_wins": 36,
+      "total_rides": 330
+    },
+    {
+      "rank": 13,
+      "jockey": "潘明輝",
+      "last_10_race_days_points": 8.3,
+      "season_avg": 10.4,
+      "quarter_25_26_avg": 10.1,
+      "win_rate": 0.102,
+      "total_wins": 33,
+      "total_rides": 325
+    },
+    {
+      "rank": 14,
+      "jockey": "艾道拿",
+      "last_10_race_days_points": 7.9,
+      "season_avg": 9.7,
+      "quarter_25_26_avg": 9.4,
+      "win_rate": 0.108,
+      "total_wins": 29,
+      "total_rides": 268
+    },
+    {
+      "rank": 15,
+      "jockey": "奧爾民",
+      "last_10_race_days_points": 7.5,
+      "season_avg": 9.2,
+      "quarter_25_26_avg": 8.9,
+      "win_rate": 0.104,
+      "total_wins": 31,
+      "total_rides": 298
+    },
+    {
+      "rank": 16,
+      "jockey": "霍宏聲",
+      "last_10_race_days_points": 6.8,
+      "season_avg": 8.5,
+      "quarter_25_26_avg": 8.2,
+      "win_rate": 0.09,
+      "total_wins": 28,
+      "total_rides": 312
+    },
+    {
+      "rank": 17,
+      "jockey": "金誠剛",
+      "last_10_race_days_points": 6.1,
+      "season_avg": 7.8,
+      "quarter_25_26_avg": 7.5,
+      "win_rate": 0.094,
+      "total_wins": 24,
+      "total_rides": 254
+    },
+    {
+      "rank": 18,
+      "jockey": "袁幸堯",
+      "last_10_race_days_points": 5.7,
+      "season_avg": 7.2,
+      "quarter_25_26_avg": 6.9,
+      "win_rate": 0.091,
+      "total_wins": 26,
+      "total_rides": 286
+    },
+    {
+      "rank": 19,
+      "jockey": "鍾易禮",
+      "last_10_race_days_points": 4.9,
+      "season_avg": 6.3,
+      "quarter_25_26_avg": 6.0,
+      "win_rate": 0.089,
+      "total_wins": 21,
+      "total_rides": 236
+    },
+    {
+      "rank": 20,
+      "jockey": "巫顯東",
+      "last_10_race_days_points": 3.2,
+      "season_avg": 4.1,
+      "quarter_25_26_avg": 3.9,
+      "win_rate": 0.073,
+      "total_wins": 13,
+      "total_rides": 178
+    },
+    {
+      "rank": 21,
+      "jockey": "黃寶妮",
+      "last_10_race_days_points": 2.8,
+      "season_avg": 3.6,
+      "quarter_25_26_avg": 3.4,
+      "win_rate": 0.071,
+      "total_wins": 11,
+      "total_rides": 156
+    }
+  ],
+  "trainer_championship_top_10": [
+    {
+      "rank": 1,
+      "trainer": "方嘉柏",
+      "wins": 65,
+      "places": 149,
+      "entries": 539,
+      "win_rate": 0.121,
+      "jkc_points": 42.3
+    },
+    {
+      "rank": 2,
+      "trainer": "沈集成",
+      "wins": 58,
+      "places": 132,
+      "entries": 478,
+      "win_rate": 0.121,
+      "jkc_points": 38.9
+    },
+    {
+      "rank": 3,
+      "trainer": "蔡約翰",
+      "wins": 52,
+      "places": 122,
+      "entries": 406,
+      "win_rate": 0.128,
+      "jkc_points": 36.5
+    },
+    {
+      "rank": 4,
+      "trainer": "大衛希斯",
+      "wins": 41,
+      "places": 98,
+      "entries": 348,
+      "win_rate": 0.118,
+      "jkc_points": 30.2
+    },
+    {
+      "rank": 5,
+      "trainer": "告東尼",
+      "wins": 44,
+      "places": 101,
+      "entries": 332,
+      "win_rate": 0.133,
+      "jkc_points": 29.8
+    },
+    {
+      "rank": 6,
+      "trainer": "賀賢",
+      "wins": 43,
+      "places": 96,
+      "entries": 324,
+      "win_rate": 0.133,
+      "jkc_points": 28.7
+    },
+    {
+      "rank": 7,
+      "trainer": "羅富全",
+      "wins": 48,
+      "places": 115,
+      "entries": 392,
+      "win_rate": 0.122,
+      "jkc_points": 28.3
+    },
+    {
+      "rank": 8,
+      "trainer": "廖康銘",
+      "wins": 49,
+      "places": 118,
+      "entries": 448,
+      "win_rate": 0.109,
+      "jkc_points": 27.9
+    },
+    {
+      "rank": 9,
+      "trainer": "韋達",
+      "wins": 46,
+      "places": 108,
+      "entries": 412,
+      "win_rate": 0.112,
+      "jkc_points": 26.5
+    },
+    {
+      "rank": 10,
+      "trainer": "巫偉傑",
+      "wins": 42,
+      "places": 95,
+      "entries": 376,
+      "win_rate": 0.112,
+      "jkc_points": 25.1
+    }
+  ],
+  "cc_expert_tips": {
+    "race_1": [
+      {
+        "horse_no": 3,
+        "name": "神駒馬靈",
+        "count": 2,
+        "experts": [
+          "明治朗",
+          "內幕料"
+        ]
+      },
+      {
+        "horse_no": 6,
+        "name": "開心三多",
+        "count": 2,
+        "experts": [
+          "明治朗",
+          "內幕料"
+        ]
+      },
+      {
+        "horse_no": 8,
+        "name": "電訊驕陽",
+        "count": 2,
+        "experts": [
+          "明治朗",
+          "內幕料"
+        ]
+      },
+      {
+        "horse_no": 11,
+        "name": "東方魅影",
+        "count": 2,
+        "experts": [
+          "明治朗",
+          "內幕料"
+        ]
+      }
+    ],
+    "race_2": [
+      {
+        "horse_no": 1,
+        "name": "紅愛舍",
+        "count": 1,
+        "experts": [
+          "諸葛數"
+        ]
+      },
+      {
+        "horse_no": 3,
+        "name": "路路勁",
+        "count": 1,
+        "experts": [
+          "諸葛數"
+        ]
+      },
+      {
+        "horse_no": 4,
+        "name": "馬馳登",
+        "count": 1,
+        "experts": [
+          "諸葛數"
+        ]
+      },
+      {
+        "horse_no": 5,
+        "name": "飛輪霸",
+        "count": 1,
+        "experts": [
+          "諸葛數"
+        ]
+      }
+    ],
+    "race_3": [
+      {
+        "horse_no": 2,
+        "name": "贏玥",
+        "count": 2,
+        "experts": [
+          "明治朗",
+          "網中神"
+        ]
+      },
+      {
+        "horse_no": 5,
+        "name": "凝妙星",
+        "count": 2,
+        "experts": [
+          "明治朗",
+          "網中神"
+        ]
+      },
+      {
+        "horse_no": 6,
+        "name": "領航天子",
+        "count": 1,
+        "experts": [
+          "網中神"
+        ]
+      },
+      {
+        "horse_no": 7,
+        "name": "有情有義",
+        "count": 2,
+        "experts": [
+          "明治朗",
+          "網中神"
+        ]
+      },
+      {
+        "horse_no": 12,
+        "name": "得意佳作",
+        "count": 1,
+        "experts": [
+          "明治朗"
+        ]
+      }
+    ],
+    "race_4": [
+      {
+        "horse_no": 1,
+        "name": "沙井之友",
+        "count": 1,
+        "experts": [
+          "洛飛"
+        ]
+      },
+      {
+        "horse_no": 2,
+        "name": "智勝一籌",
+        "count": 1,
+        "experts": [
+          "陳志懷"
+        ]
+      },
+      {
+        "horse_no": 3,
+        "name": "應龍飛影",
+        "count": 3,
+        "experts": [
+          "長風",
+          "陳志懷",
+          "洛飛"
+        ]
+      },
+      {
+        "horse_no": 4,
+        "name": "星辰千帥",
+        "count": 3,
+        "experts": [
+          "金駒",
+          "長風",
+          "洛飛"
+        ]
+      },
+      {
+        "horse_no": 6,
+        "name": "快樂神駒",
+        "count": 4,
+        "experts": [
+          "金駒",
+          "長風",
+          "陳志懷",
+          "洛飛"
+        ]
+      },
+      {
+        "horse_no": 9,
+        "name": "將傲",
+        "count": 3,
+        "experts": [
+          "金駒",
+          "長風",
+          "陳志懷"
+        ]
+      },
+      {
+        "horse_no": 11,
+        "name": "焦點",
+        "count": 1,
+        "experts": [
+          "金駒"
+        ]
+      }
+    ],
+    "race_5": [
+      {
+        "horse_no": 1,
+        "name": "本領非凡",
+        "count": 1,
+        "experts": [
+          "西門獨"
+        ]
+      },
+      {
+        "horse_no": 3,
+        "name": "大學生",
+        "count": 1,
+        "experts": [
+          "西門獨"
+        ]
+      },
+      {
+        "horse_no": 5,
+        "name": "創科群英",
+        "count": 1,
+        "experts": [
+          "西門獨"
+        ]
+      },
+      {
+        "horse_no": 6,
+        "name": "越駿聯歡",
+        "count": 1,
+        "experts": [
+          "西門獨"
+        ]
+      }
+    ],
+    "race_6": [
+      {
+        "horse_no": 1,
+        "name": "福進",
+        "count": 1,
+        "experts": [
+          "諸葛數"
+        ]
+      },
+      {
+        "horse_no": 3,
+        "name": "藍地球",
+        "count": 1,
+        "experts": [
+          "諸葛數"
+        ]
+      },
+      {
+        "horse_no": 4,
+        "name": "巴閉王",
+        "count": 1,
+        "experts": [
+          "諸葛數"
+        ]
+      },
+      {
+        "horse_no": 5,
+        "name": "佐治傳奇",
+        "count": 1,
+        "experts": [
+          "諸葛數"
+        ]
+      }
+    ],
+    "race_7": [
+      {
+        "horse_no": 1,
+        "name": "東來欣賞",
+        "count": 5,
+        "experts": [
+          "卡洛斯",
+          "匡公",
+          "長風",
+          "陳志懷",
+          "網中神"
+        ]
+      },
+      {
+        "horse_no": 2,
+        "name": "乘數表",
+        "count": 1,
+        "experts": [
+          "陳志懷"
+        ]
+      },
+      {
+        "horse_no": 3,
+        "name": "天星",
+        "count": 4,
+        "experts": [
+          "金駒",
+          "長風",
+          "陳志懷",
+          "網中神"
+        ]
+      },
+      {
+        "horse_no": 4,
+        "name": "競駿皇者",
+        "count": 1,
+        "experts": [
+          "卡洛斯"
+        ]
+      },
+      {
+        "horse_no": 8,
+        "name": "首飾悟空",
+        "count": 6,
+        "experts": [
+          "卡洛斯",
+          "匡公",
+          "金駒",
+          "長風",
+          "陳志懷",
+          "網中神"
+        ]
+      },
+      {
+        "horse_no": 10,
+        "name": "正極",
+        "count": 1,
+        "experts": [
+          "金駒"
+        ]
+      },
+      {
+        "horse_no": 11,
+        "name": "盈妍威楓",
+        "count": 4,
+        "experts": [
+          "匡公",
+          "金駒",
+          "長風",
+          "網中神"
+        ]
+      },
+      {
+        "horse_no": 12,
+        "name": "丞匡掠影",
+        "count": 2,
+        "experts": [
+          "卡洛斯",
+          "匡公"
+        ]
+      }
+    ],
+    "race_8": [
+      {
+        "horse_no": 1,
+        "name": "人和家興",
+        "count": 1,
+        "experts": [
+          "卡洛斯"
+        ]
+      },
+      {
+        "horse_no": 2,
+        "name": "團結勇士",
+        "count": 2,
+        "experts": [
+          "西門獨",
+          "內幕料"
+        ]
+      },
+      {
+        "horse_no": 3,
+        "name": "富心星",
+        "count": 1,
+        "experts": [
+          "內幕料"
+        ]
+      },
+      {
+        "horse_no": 4,
+        "name": "久久為昇",
+        "count": 3,
+        "experts": [
+          "卡洛斯",
+          "匡公",
+          "西門獨"
+        ]
+      },
+      {
+        "horse_no": 6,
+        "name": "富國兄弟",
+        "count": 1,
+        "experts": [
+          "匡公"
+        ]
+      },
+      {
+        "horse_no": 8,
+        "name": "繼往開來",
+        "count": 4,
+        "experts": [
+          "卡洛斯",
+          "匡公",
+          "西門獨",
+          "內幕料"
+        ]
+      },
+      {
+        "horse_no": 9,
+        "name": "蓮冠皇",
+        "count": 2,
+        "experts": [
+          "西門獨",
+          "內幕料"
+        ]
+      },
+      {
+        "horse_no": 11,
+        "name": "驕陽雄心",
+        "count": 2,
+        "experts": [
+          "卡洛斯",
+          "匡公"
+        ]
+      }
+    ],
+    "race_9": [
+      {
+        "horse_no": 2,
+        "name": "紫荊傳令",
+        "count": 1,
+        "experts": [
+          "洛飛"
+        ]
+      },
+      {
+        "horse_no": 6,
+        "name": "將義",
+        "count": 1,
+        "experts": [
+          "洛飛"
+        ]
+      },
+      {
+        "horse_no": 8,
+        "name": "豐辰",
+        "count": 1,
+        "experts": [
+          "洛飛"
+        ]
+      },
+      {
+        "horse_no": 9,
+        "name": "中國心",
+        "count": 1,
+        "experts": [
+          "洛飛"
+        ]
+      }
+    ]
+  },
+  "cc_expert_tips_detail": {
+    "race_1": [
+      {
+        "expert": "明治朗",
+        "horse_no": 11,
+        "name": "東方魅影",
+        "rank": 1
+      },
+      {
+        "expert": "明治朗",
+        "horse_no": 8,
+        "name": "電訊驕陽",
+        "rank": 2
+      },
+      {
+        "expert": "明治朗",
+        "horse_no": 3,
+        "name": "神駒馬靈",
+        "rank": 3
+      },
+      {
+        "expert": "明治朗",
+        "horse_no": 6,
+        "name": "開心三多",
+        "rank": 4
+      },
+      {
+        "expert": "內幕料",
+        "horse_no": 3,
+        "name": "神駒馬靈",
+        "rank": 1
+      },
+      {
+        "expert": "內幕料",
+        "horse_no": 6,
+        "name": "開心三多",
+        "rank": 2
+      },
+      {
+        "expert": "內幕料",
+        "horse_no": 8,
+        "name": "電訊驕陽",
+        "rank": 3
+      },
+      {
+        "expert": "內幕料",
+        "horse_no": 11,
+        "name": "東方魅影",
+        "rank": 4
+      }
+    ],
+    "race_2": [
+      {
+        "expert": "諸葛數",
+        "horse_no": 4,
+        "name": "馬馳登",
+        "rank": 1
+      },
+      {
+        "expert": "諸葛數",
+        "horse_no": 1,
+        "name": "紅愛舍",
+        "rank": 2
+      },
+      {
+        "expert": "諸葛數",
+        "horse_no": 3,
+        "name": "路路勁",
+        "rank": 3
+      },
+      {
+        "expert": "諸葛數",
+        "horse_no": 5,
+        "name": "飛輪霸",
+        "rank": 4
+      }
+    ],
+    "race_3": [
+      {
+        "expert": "明治朗",
+        "horse_no": 12,
+        "name": "得意佳作",
+        "rank": 1
+      },
+      {
+        "expert": "明治朗",
+        "horse_no": 2,
+        "name": "贏玥",
+        "rank": 2
+      },
+      {
+        "expert": "明治朗",
+        "horse_no": 5,
+        "name": "凝妙星",
+        "rank": 3
+      },
+      {
+        "expert": "明治朗",
+        "horse_no": 7,
+        "name": "有情有義",
+        "rank": 4
+      },
+      {
+        "expert": "網中神",
+        "horse_no": 2,
+        "name": "贏玥",
+        "rank": 1
+      },
+      {
+        "expert": "網中神",
+        "horse_no": 5,
+        "name": "凝妙星",
+        "rank": 2
+      },
+      {
+        "expert": "網中神",
+        "horse_no": 6,
+        "name": "領航天子",
+        "rank": 3
+      },
+      {
+        "expert": "網中神",
+        "horse_no": 7,
+        "name": "有情有義",
+        "rank": 4
+      }
+    ],
+    "race_4": [
+      {
+        "expert": "金駒",
+        "horse_no": 9,
+        "name": "將傲",
+        "rank": 1
+      },
+      {
+        "expert": "金駒",
+        "horse_no": 6,
+        "name": "快樂神駒",
+        "rank": 2
+      },
+      {
+        "expert": "金駒",
+        "horse_no": 11,
+        "name": "焦點",
+        "rank": 3
+      },
+      {
+        "expert": "金駒",
+        "horse_no": 4,
+        "name": "星辰千帥",
+        "rank": 4
+      },
+      {
+        "expert": "長風",
+        "horse_no": 6,
+        "name": "快樂神駒",
+        "rank": 1
+      },
+      {
+        "expert": "長風",
+        "horse_no": 4,
+        "name": "星辰千帥",
+        "rank": 2
+      },
+      {
+        "expert": "長風",
+        "horse_no": 9,
+        "name": "將傲",
+        "rank": 3
+      },
+      {
+        "expert": "長風",
+        "horse_no": 3,
+        "name": "應龍飛影",
+        "rank": 4
+      },
+      {
+        "expert": "陳志懷",
+        "horse_no": 3,
+        "name": "應龍飛影",
+        "rank": 1
+      },
+      {
+        "expert": "陳志懷",
+        "horse_no": 6,
+        "name": "快樂神駒",
+        "rank": 2
+      },
+      {
+        "expert": "陳志懷",
+        "horse_no": 9,
+        "name": "將傲",
+        "rank": 3
+      },
+      {
+        "expert": "陳志懷",
+        "horse_no": 2,
+        "name": "智勝一籌",
+        "rank": 4
+      },
+      {
+        "expert": "洛飛",
+        "horse_no": 1,
+        "name": "沙井之友",
+        "rank": 1
+      },
+      {
+        "expert": "洛飛",
+        "horse_no": 3,
+        "name": "應龍飛影",
+        "rank": 2
+      },
+      {
+        "expert": "洛飛",
+        "horse_no": 4,
+        "name": "星辰千帥",
+        "rank": 3
+      },
+      {
+        "expert": "洛飛",
+        "horse_no": 6,
+        "name": "快樂神駒",
+        "rank": 4
+      }
+    ],
+    "race_5": [
+      {
+        "expert": "西門獨",
+        "horse_no": 6,
+        "name": "越駿聯歡",
+        "rank": 1
+      },
+      {
+        "expert": "西門獨",
+        "horse_no": 5,
+        "name": "創科群英",
+        "rank": 2
+      },
+      {
+        "expert": "西門獨",
+        "horse_no": 3,
+        "name": "大學生",
+        "rank": 3
+      },
+      {
+        "expert": "西門獨",
+        "horse_no": 1,
+        "name": "本領非凡",
+        "rank": 4
+      }
+    ],
+    "race_6": [
+      {
+        "expert": "諸葛數",
+        "horse_no": 1,
+        "name": "福進",
+        "rank": 1
+      },
+      {
+        "expert": "諸葛數",
+        "horse_no": 4,
+        "name": "巴閉王",
+        "rank": 2
+      },
+      {
+        "expert": "諸葛數",
+        "horse_no": 3,
+        "name": "藍地球",
+        "rank": 3
+      },
+      {
+        "expert": "諸葛數",
+        "horse_no": 5,
+        "name": "佐治傳奇",
+        "rank": 4
+      }
+    ],
+    "race_7": [
+      {
+        "expert": "卡洛斯",
+        "horse_no": 1,
+        "name": "東來欣賞",
+        "rank": 1
+      },
+      {
+        "expert": "卡洛斯",
+        "horse_no": 8,
+        "name": "首飾悟空",
+        "rank": 2
+      },
+      {
+        "expert": "卡洛斯",
+        "horse_no": 12,
+        "name": "丞匡掠影",
+        "rank": 3
+      },
+      {
+        "expert": "卡洛斯",
+        "horse_no": 4,
+        "name": "競駿皇者",
+        "rank": 4
+      },
+      {
+        "expert": "匡公",
+        "horse_no": 12,
+        "name": "丞匡掠影",
+        "rank": 1
+      },
+      {
+        "expert": "匡公",
+        "horse_no": 1,
+        "name": "東來欣賞",
+        "rank": 2
+      },
+      {
+        "expert": "匡公",
+        "horse_no": 8,
+        "name": "首飾悟空",
+        "rank": 3
+      },
+      {
+        "expert": "匡公",
+        "horse_no": 11,
+        "name": "盈妍威楓",
+        "rank": 4
+      },
+      {
+        "expert": "金駒",
+        "horse_no": 3,
+        "name": "天星",
+        "rank": 1
+      },
+      {
+        "expert": "金駒",
+        "horse_no": 11,
+        "name": "盈妍威楓",
+        "rank": 2
+      },
+      {
+        "expert": "金駒",
+        "horse_no": 10,
+        "name": "正極",
+        "rank": 3
+      },
+      {
+        "expert": "金駒",
+        "horse_no": 8,
+        "name": "首飾悟空",
+        "rank": 4
+      },
+      {
+        "expert": "長風",
+        "horse_no": 1,
+        "name": "東來欣賞",
+        "rank": 1
+      },
+      {
+        "expert": "長風",
+        "horse_no": 8,
+        "name": "首飾悟空",
+        "rank": 2
+      },
+      {
+        "expert": "長風",
+        "horse_no": 3,
+        "name": "天星",
+        "rank": 3
+      },
+      {
+        "expert": "長風",
+        "horse_no": 11,
+        "name": "盈妍威楓",
+        "rank": 4
+      },
+      {
+        "expert": "陳志懷",
+        "horse_no": 3,
+        "name": "天星",
+        "rank": 1
+      },
+      {
+        "expert": "陳志懷",
+        "horse_no": 2,
+        "name": "乘數表",
+        "rank": 2
+      },
+      {
+        "expert": "陳志懷",
+        "horse_no": 1,
+        "name": "東來欣賞",
+        "rank": 3
+      },
+      {
+        "expert": "陳志懷",
+        "horse_no": 8,
+        "name": "首飾悟空",
+        "rank": 4
+      },
+      {
+        "expert": "網中神",
+        "horse_no": 1,
+        "name": "東來欣賞",
+        "rank": 1
+      },
+      {
+        "expert": "網中神",
+        "horse_no": 3,
+        "name": "天星",
+        "rank": 2
+      },
+      {
+        "expert": "網中神",
+        "horse_no": 8,
+        "name": "首飾悟空",
+        "rank": 3
+      },
+      {
+        "expert": "網中神",
+        "horse_no": 11,
+        "name": "盈妍威楓",
+        "rank": 4
+      }
+    ],
+    "race_8": [
+      {
+        "expert": "卡洛斯",
+        "horse_no": 8,
+        "name": "繼往開來",
+        "rank": 1
+      },
+      {
+        "expert": "卡洛斯",
+        "horse_no": 1,
+        "name": "人和家興",
+        "rank": 2
+      },
+      {
+        "expert": "卡洛斯",
+        "horse_no": 4,
+        "name": "久久為昇",
+        "rank": 3
+      },
+      {
+        "expert": "卡洛斯",
+        "horse_no": 11,
+        "name": "驕陽雄心",
+        "rank": 4
+      },
+      {
+        "expert": "匡公",
+        "horse_no": 8,
+        "name": "繼往開來",
+        "rank": 1
+      },
+      {
+        "expert": "匡公",
+        "horse_no": 11,
+        "name": "驕陽雄心",
+        "rank": 2
+      },
+      {
+        "expert": "匡公",
+        "horse_no": 6,
+        "name": "富國兄弟",
+        "rank": 3
+      },
+      {
+        "expert": "匡公",
+        "horse_no": 4,
+        "name": "久久為昇",
+        "rank": 4
+      },
+      {
+        "expert": "西門獨",
+        "horse_no": 9,
+        "name": "蓮冠皇",
+        "rank": 1
+      },
+      {
+        "expert": "西門獨",
+        "horse_no": 4,
+        "name": "久久為昇",
+        "rank": 2
+      },
+      {
+        "expert": "西門獨",
+        "horse_no": 8,
+        "name": "繼往開來",
+        "rank": 3
+      },
+      {
+        "expert": "西門獨",
+        "horse_no": 2,
+        "name": "團結勇士",
+        "rank": 4
+      },
+      {
+        "expert": "內幕料",
+        "horse_no": 2,
+        "name": "團結勇士",
+        "rank": 1
+      },
+      {
+        "expert": "內幕料",
+        "horse_no": 3,
+        "name": "富心星",
+        "rank": 2
+      },
+      {
+        "expert": "內幕料",
+        "horse_no": 8,
+        "name": "繼往開來",
+        "rank": 3
+      },
+      {
+        "expert": "內幕料",
+        "horse_no": 9,
+        "name": "蓮冠皇",
+        "rank": 4
+      }
+    ],
+    "race_9": [
+      {
+        "expert": "洛飛",
+        "horse_no": 2,
+        "name": "紫荊傳令",
+        "rank": 1
+      },
+      {
+        "expert": "洛飛",
+        "horse_no": 6,
+        "name": "將義",
+        "rank": 2
+      },
+      {
+        "expert": "洛飛",
+        "horse_no": 8,
+        "name": "豐辰",
+        "rank": 3
+      },
+      {
+        "expert": "洛飛",
+        "horse_no": 9,
+        "name": "中國心",
+        "rank": 4
+      }
+    ]
+  },
+  "cc_hot_horses": {
+    "race_1": [
+      {
+        "horse_no": 3,
+        "name": "神駒馬靈",
+        "count": 2,
+        "experts": [
+          "明治朗",
+          "內幕料"
+        ]
+      },
+      {
+        "horse_no": 6,
+        "name": "開心三多",
+        "count": 2,
+        "experts": [
+          "明治朗",
+          "內幕料"
+        ]
+      },
+      {
+        "horse_no": 8,
+        "name": "電訊驕陽",
+        "count": 2,
+        "experts": [
+          "明治朗",
+          "內幕料"
+        ]
+      },
+      {
+        "horse_no": 11,
+        "name": "東方魅影",
+        "count": 2,
+        "experts": [
+          "明治朗",
+          "內幕料"
+        ]
+      }
+    ],
+    "race_2": [
+      {
+        "horse_no": 1,
+        "name": "紅愛舍",
+        "count": 1,
+        "experts": [
+          "諸葛數"
+        ]
+      },
+      {
+        "horse_no": 3,
+        "name": "路路勁",
+        "count": 1,
+        "experts": [
+          "諸葛數"
+        ]
+      },
+      {
+        "horse_no": 4,
+        "name": "馬馳登",
+        "count": 1,
+        "experts": [
+          "諸葛數"
+        ]
+      },
+      {
+        "horse_no": 5,
+        "name": "飛輪霸",
+        "count": 1,
+        "experts": [
+          "諸葛數"
+        ]
+      }
+    ],
+    "race_3": [
+      {
+        "horse_no": 2,
+        "name": "贏玥",
+        "count": 2,
+        "experts": [
+          "明治朗",
+          "網中神"
+        ]
+      },
+      {
+        "horse_no": 5,
+        "name": "凝妙星",
+        "count": 2,
+        "experts": [
+          "明治朗",
+          "網中神"
+        ]
+      },
+      {
+        "horse_no": 7,
+        "name": "有情有義",
+        "count": 2,
+        "experts": [
+          "明治朗",
+          "網中神"
+        ]
+      },
+      {
+        "horse_no": 6,
+        "name": "領航天子",
+        "count": 1,
+        "experts": [
+          "網中神"
+        ]
+      },
+      {
+        "horse_no": 12,
+        "name": "得意佳作",
+        "count": 1,
+        "experts": [
+          "明治朗"
+        ]
+      }
+    ],
+    "race_4": [
+      {
+        "horse_no": 6,
+        "name": "快樂神駒",
+        "count": 4,
+        "experts": [
+          "金駒",
+          "長風",
+          "陳志懷",
+          "洛飛"
+        ]
+      },
+      {
+        "horse_no": 3,
+        "name": "應龍飛影",
+        "count": 3,
+        "experts": [
+          "長風",
+          "陳志懷",
+          "洛飛"
+        ]
+      },
+      {
+        "horse_no": 4,
+        "name": "星辰千帥",
+        "count": 3,
+        "experts": [
+          "金駒",
+          "長風",
+          "洛飛"
+        ]
+      },
+      {
+        "horse_no": 9,
+        "name": "將傲",
+        "count": 3,
+        "experts": [
+          "金駒",
+          "長風",
+          "陳志懷"
+        ]
+      },
+      {
+        "horse_no": 1,
+        "name": "沙井之友",
+        "count": 1,
+        "experts": [
+          "洛飛"
+        ]
+      },
+      {
+        "horse_no": 2,
+        "name": "智勝一籌",
+        "count": 1,
+        "experts": [
+          "陳志懷"
+        ]
+      },
+      {
+        "horse_no": 11,
+        "name": "焦點",
+        "count": 1,
+        "experts": [
+          "金駒"
+        ]
+      }
+    ],
+    "race_5": [
+      {
+        "horse_no": 1,
+        "name": "本領非凡",
+        "count": 1,
+        "experts": [
+          "西門獨"
+        ]
+      },
+      {
+        "horse_no": 3,
+        "name": "大學生",
+        "count": 1,
+        "experts": [
+          "西門獨"
+        ]
+      },
+      {
+        "horse_no": 5,
+        "name": "創科群英",
+        "count": 1,
+        "experts": [
+          "西門獨"
+        ]
+      },
+      {
+        "horse_no": 6,
+        "name": "越駿聯歡",
+        "count": 1,
+        "experts": [
+          "西門獨"
+        ]
+      }
+    ],
+    "race_6": [
+      {
+        "horse_no": 1,
+        "name": "福進",
+        "count": 1,
+        "experts": [
+          "諸葛數"
+        ]
+      },
+      {
+        "horse_no": 3,
+        "name": "藍地球",
+        "count": 1,
+        "experts": [
+          "諸葛數"
+        ]
+      },
+      {
+        "horse_no": 4,
+        "name": "巴閉王",
+        "count": 1,
+        "experts": [
+          "諸葛數"
+        ]
+      },
+      {
+        "horse_no": 5,
+        "name": "佐治傳奇",
+        "count": 1,
+        "experts": [
+          "諸葛數"
+        ]
+      }
+    ],
+    "race_7": [
+      {
+        "horse_no": 8,
+        "name": "首飾悟空",
+        "count": 6,
+        "experts": [
+          "卡洛斯",
+          "匡公",
+          "金駒",
+          "長風",
+          "陳志懷",
+          "網中神"
+        ]
+      },
+      {
+        "horse_no": 1,
+        "name": "東來欣賞",
+        "count": 5,
+        "experts": [
+          "卡洛斯",
+          "匡公",
+          "長風",
+          "陳志懷",
+          "網中神"
+        ]
+      },
+      {
+        "horse_no": 3,
+        "name": "天星",
+        "count": 4,
+        "experts": [
+          "金駒",
+          "長風",
+          "陳志懷",
+          "網中神"
+        ]
+      },
+      {
+        "horse_no": 11,
+        "name": "盈妍威楓",
+        "count": 4,
+        "experts": [
+          "匡公",
+          "金駒",
+          "長風",
+          "網中神"
+        ]
+      },
+      {
+        "horse_no": 12,
+        "name": "丞匡掠影",
+        "count": 2,
+        "experts": [
+          "卡洛斯",
+          "匡公"
+        ]
+      },
+      {
+        "horse_no": 2,
+        "name": "乘數表",
+        "count": 1,
+        "experts": [
+          "陳志懷"
+        ]
+      },
+      {
+        "horse_no": 4,
+        "name": "競駿皇者",
+        "count": 1,
+        "experts": [
+          "卡洛斯"
+        ]
+      },
+      {
+        "horse_no": 10,
+        "name": "正極",
+        "count": 1,
+        "experts": [
+          "金駒"
+        ]
+      }
+    ],
+    "race_8": [
+      {
+        "horse_no": 8,
+        "name": "繼往開來",
+        "count": 4,
+        "experts": [
+          "卡洛斯",
+          "匡公",
+          "西門獨",
+          "內幕料"
+        ]
+      },
+      {
+        "horse_no": 4,
+        "name": "久久為昇",
+        "count": 3,
+        "experts": [
+          "卡洛斯",
+          "匡公",
+          "西門獨"
+        ]
+      },
+      {
+        "horse_no": 2,
+        "name": "團結勇士",
+        "count": 2,
+        "experts": [
+          "西門獨",
+          "內幕料"
+        ]
+      },
+      {
+        "horse_no": 9,
+        "name": "蓮冠皇",
+        "count": 2,
+        "experts": [
+          "西門獨",
+          "內幕料"
+        ]
+      },
+      {
+        "horse_no": 11,
+        "name": "驕陽雄心",
+        "count": 2,
+        "experts": [
+          "卡洛斯",
+          "匡公"
+        ]
+      },
+      {
+        "horse_no": 1,
+        "name": "人和家興",
+        "count": 1,
+        "experts": [
+          "卡洛斯"
+        ]
+      },
+      {
+        "horse_no": 3,
+        "name": "富心星",
+        "count": 1,
+        "experts": [
+          "內幕料"
+        ]
+      },
+      {
+        "horse_no": 6,
+        "name": "富國兄弟",
+        "count": 1,
+        "experts": [
+          "匡公"
+        ]
+      }
+    ],
+    "race_9": [
+      {
+        "horse_no": 2,
+        "name": "紫荊傳令",
+        "count": 1,
+        "experts": [
+          "洛飛"
+        ]
+      },
+      {
+        "horse_no": 6,
+        "name": "將義",
+        "count": 1,
+        "experts": [
+          "洛飛"
+        ]
+      },
+      {
+        "horse_no": 8,
+        "name": "豐辰",
+        "count": 1,
+        "experts": [
+          "洛飛"
+        ]
+      },
+      {
+        "horse_no": 9,
+        "name": "中國心",
+        "count": 1,
+        "experts": [
+          "洛飛"
+        ]
+      }
+    ],
+    "top_global": [
+      {
+        "race_no": 7,
+        "horse_no": 8,
+        "name": "首飾悟空",
+        "count": 6,
+        "experts": [
+          "卡洛斯",
+          "匡公",
+          "金駒",
+          "長風",
+          "陳志懷",
+          "網中神"
+        ]
+      },
+      {
+        "race_no": 7,
+        "horse_no": 1,
+        "name": "東來欣賞",
+        "count": 5,
+        "experts": [
+          "卡洛斯",
+          "匡公",
+          "長風",
+          "陳志懷",
+          "網中神"
+        ]
+      },
+      {
+        "race_no": 8,
+        "horse_no": 8,
+        "name": "繼往開來",
+        "count": 4,
+        "experts": [
+          "卡洛斯",
+          "匡公",
+          "西門獨",
+          "內幕料"
+        ]
+      },
+      {
+        "race_no": 7,
+        "horse_no": 3,
+        "name": "天星",
+        "count": 4,
+        "experts": [
+          "金駒",
+          "長風",
+          "陳志懷",
+          "網中神"
+        ]
+      },
+      {
+        "race_no": 7,
+        "horse_no": 11,
+        "name": "盈妍威楓",
+        "count": 4,
+        "experts": [
+          "匡公",
+          "金駒",
+          "長風",
+          "網中神"
+        ]
+      },
+      {
+        "race_no": 4,
+        "horse_no": 6,
+        "name": "快樂神駒",
+        "count": 4,
+        "experts": [
+          "金駒",
+          "長風",
+          "陳志懷",
+          "洛飛"
+        ]
+      },
+      {
+        "race_no": 8,
+        "horse_no": 4,
+        "name": "久久為昇",
+        "count": 3,
+        "experts": [
+          "卡洛斯",
+          "匡公",
+          "西門獨"
+        ]
+      },
+      {
+        "race_no": 4,
+        "horse_no": 3,
+        "name": "應龍飛影",
+        "count": 3,
+        "experts": [
+          "長風",
+          "陳志懷",
+          "洛飛"
+        ]
+      },
+      {
+        "race_no": 4,
+        "horse_no": 4,
+        "name": "星辰千帥",
+        "count": 3,
+        "experts": [
+          "金駒",
+          "長風",
+          "洛飛"
+        ]
+      },
+      {
+        "race_no": 4,
+        "horse_no": 9,
+        "name": "將傲",
+        "count": 3,
+        "experts": [
+          "金駒",
+          "長風",
+          "陳志懷"
+        ]
+      },
+      {
+        "race_no": 8,
+        "horse_no": 2,
+        "name": "團結勇士",
+        "count": 2,
+        "experts": [
+          "西門獨",
+          "內幕料"
+        ]
+      },
+      {
+        "race_no": 8,
+        "horse_no": 9,
+        "name": "蓮冠皇",
+        "count": 2,
+        "experts": [
+          "西門獨",
+          "內幕料"
+        ]
+      },
+      {
+        "race_no": 8,
+        "horse_no": 11,
+        "name": "驕陽雄心",
+        "count": 2,
+        "experts": [
+          "卡洛斯",
+          "匡公"
+        ]
+      },
+      {
+        "race_no": 7,
+        "horse_no": 12,
+        "name": "丞匡掠影",
+        "count": 2,
+        "experts": [
+          "卡洛斯",
+          "匡公"
+        ]
+      },
+      {
+        "race_no": 3,
+        "horse_no": 2,
+        "name": "贏玥",
+        "count": 2,
+        "experts": [
+          "明治朗",
+          "網中神"
+        ]
+      },
+      {
+        "race_no": 3,
+        "horse_no": 5,
+        "name": "凝妙星",
+        "count": 2,
+        "experts": [
+          "明治朗",
+          "網中神"
+        ]
+      },
+      {
+        "race_no": 3,
+        "horse_no": 7,
+        "name": "有情有義",
+        "count": 2,
+        "experts": [
+          "明治朗",
+          "網中神"
+        ]
+      },
+      {
+        "race_no": 1,
+        "horse_no": 3,
+        "name": "神駒馬靈",
+        "count": 2,
+        "experts": [
+          "明治朗",
+          "內幕料"
+        ]
+      },
+      {
+        "race_no": 1,
+        "horse_no": 6,
+        "name": "開心三多",
+        "count": 2,
+        "experts": [
+          "明治朗",
+          "內幕料"
+        ]
+      },
+      {
+        "race_no": 1,
+        "horse_no": 8,
+        "name": "電訊驕陽",
+        "count": 2,
+        "experts": [
+          "明治朗",
+          "內幕料"
+        ]
+      },
+      {
+        "race_no": 1,
+        "horse_no": 11,
+        "name": "東方魅影",
+        "count": 2,
+        "experts": [
+          "明治朗",
+          "內幕料"
+        ]
+      },
+      {
+        "race_no": 9,
+        "horse_no": 2,
+        "name": "紫荊傳令",
+        "count": 1,
+        "experts": [
+          "洛飛"
+        ]
+      },
+      {
+        "race_no": 9,
+        "horse_no": 6,
+        "name": "將義",
+        "count": 1,
+        "experts": [
+          "洛飛"
+        ]
+      },
+      {
+        "race_no": 9,
+        "horse_no": 8,
+        "name": "豐辰",
+        "count": 1,
+        "experts": [
+          "洛飛"
+        ]
+      },
+      {
+        "race_no": 9,
+        "horse_no": 9,
+        "name": "中國心",
+        "count": 1,
+        "experts": [
+          "洛飛"
+        ]
+      },
+      {
+        "race_no": 8,
+        "horse_no": 1,
+        "name": "人和家興",
+        "count": 1,
+        "experts": [
+          "卡洛斯"
+        ]
+      },
+      {
+        "race_no": 8,
+        "horse_no": 3,
+        "name": "富心星",
+        "count": 1,
+        "experts": [
+          "內幕料"
+        ]
+      },
+      {
+        "race_no": 8,
+        "horse_no": 6,
+        "name": "富國兄弟",
+        "count": 1,
+        "experts": [
+          "匡公"
+        ]
+      },
+      {
+        "race_no": 7,
+        "horse_no": 2,
+        "name": "乘數表",
+        "count": 1,
+        "experts": [
+          "陳志懷"
+        ]
+      },
+      {
+        "race_no": 7,
+        "horse_no": 4,
+        "name": "競駿皇者",
+        "count": 1,
+        "experts": [
+          "卡洛斯"
+        ]
+      }
+    ]
+  },
+  "cc_barrier": {
+    "race_1": [
+      {
+        "horse_no": 1,
+        "name": "堅多福",
+        "name_oncc": "堅多福",
+        "gear_symbols": "▼＋",
+        "equipment": "—",
+        "draw": 12,
+        "jockey": "何澤堯",
+        "weight_lbs": 135,
+        "weight_change": 19,
+        "trainer_surname": "柏",
+        "rating_cc": 40,
+        "rating_change": -1,
+        "age": 5,
+        "body_weight_lbs": 1225,
+        "body_weight_change": 16
+      },
+      {
+        "horse_no": 2,
+        "name": "一風雲",
+        "name_oncc": "一風雲",
+        "gear_symbols": "▼＋",
+        "equipment": "BT",
+        "draw": 5,
+        "jockey": "金誠剛",
+        "weight_lbs": 134,
+        "weight_change": 15,
+        "trainer_surname": "丁",
+        "rating_cc": 39,
+        "rating_change": -2,
+        "age": 5,
+        "body_weight_lbs": 1264,
+        "body_weight_change": -1
+      },
+      {
+        "horse_no": 3,
+        "name": "神駒馬靈",
+        "name_oncc": "神駒馬靈",
+        "gear_symbols": "＊",
+        "equipment": "SW-B1",
+        "draw": 4,
+        "jockey": "霍宏聲",
+        "weight_lbs": 132,
+        "weight_change": -1,
+        "trainer_surname": "廖",
+        "rating_cc": 37,
+        "rating_change": -1,
+        "age": 6,
+        "body_weight_lbs": 1121,
+        "body_weight_change": 6
+      },
+      {
+        "horse_no": 4,
+        "name": "紅磚戰士",
+        "name_oncc": "紅磚戰士",
+        "gear_symbols": "＋",
+        "equipment": "N1",
+        "draw": 1,
+        "jockey": "周俊樂",
+        "weight_lbs": 129,
+        "weight_change": -6,
+        "trainer_surname": "游",
+        "rating_cc": 36,
+        "rating_change": -4,
+        "age": 5,
+        "body_weight_lbs": 1110,
+        "body_weight_change": -7
+      },
+      {
+        "horse_no": 5,
+        "name": "極速滿貫",
+        "name_oncc": "極速滿貫",
+        "gear_symbols": "＋",
+        "equipment": "—",
+        "draw": 10,
+        "jockey": "奧爾民",
+        "weight_lbs": 130,
+        "weight_change": -3,
+        "trainer_surname": "黎",
+        "rating_cc": 35,
+        "rating_change": -3,
+        "age": 8,
+        "body_weight_lbs": 1039,
+        "body_weight_change": -10
+      },
+      {
+        "horse_no": 6,
+        "name": "開心三多",
+        "name_oncc": "開心三多",
+        "gear_symbols": "＋",
+        "equipment": "HX",
+        "draw": 11,
+        "jockey": "希威森",
+        "weight_lbs": 128,
+        "weight_change": 0,
+        "trainer_surname": "桂",
+        "rating_cc": 33,
+        "rating_change": 0,
+        "age": 7,
+        "body_weight_lbs": 1029,
+        "body_weight_change": -5
+      },
+      {
+        "horse_no": 7,
+        "name": "綫路達飛",
+        "name_oncc": "綫路達飛",
+        "gear_symbols": "#＋",
+        "equipment": "V-C1",
+        "draw": 6,
+        "jockey": "楊明綸",
+        "weight_lbs": 127,
+        "weight_change": -6,
+        "trainer_surname": "賢",
+        "rating_cc": 32,
+        "rating_change": -6,
+        "age": 6,
+        "body_weight_lbs": 1105,
+        "body_weight_change": -11
+      },
+      {
+        "horse_no": 8,
+        "name": "電訊驕陽",
+        "name_oncc": "電訊驕陽",
+        "gear_symbols": "＊",
+        "equipment": "V",
+        "draw": 8,
+        "jockey": "袁幸堯",
+        "weight_lbs": 115,
+        "weight_change": -10,
+        "trainer_surname": "徐",
+        "rating_cc": 30,
+        "rating_change": 0,
+        "age": 6,
+        "body_weight_lbs": 1063,
+        "body_weight_change": 15
+      },
+      {
+        "horse_no": 9,
+        "name": "至高心得",
+        "name_oncc": "至高心得",
+        "gear_symbols": "＋",
+        "equipment": "NT",
+        "draw": 2,
+        "jockey": "梁家俊",
+        "weight_lbs": 123,
+        "weight_change": -8,
+        "trainer_surname": "韋",
+        "rating_cc": 28,
+        "rating_change": -7,
+        "age": 5,
+        "body_weight_lbs": 1019,
+        "body_weight_change": -4
+      },
+      {
+        "horse_no": 10,
+        "name": "威威父子",
+        "name_oncc": "威威父子",
+        "gear_symbols": "＋",
+        "equipment": "V-",
+        "draw": 7,
+        "jockey": "田泰安",
+        "weight_lbs": 120,
+        "weight_change": -6,
+        "trainer_surname": "巫",
+        "rating_cc": 25,
+        "rating_change": -4,
+        "age": 7,
+        "body_weight_lbs": 1012,
+        "body_weight_change": 23
+      },
+      {
+        "horse_no": 11,
+        "name": "東方魅影",
+        "name_oncc": "東方魅影",
+        "gear_symbols": "＋",
+        "equipment": "BT",
+        "draw": 3,
+        "jockey": "潘頓",
+        "weight_lbs": 119,
+        "weight_change": 0,
+        "trainer_surname": "希",
+        "rating_cc": 24,
+        "rating_change": 0,
+        "age": 6,
+        "body_weight_lbs": 1064,
+        "body_weight_change": -12
+      },
+      {
+        "horse_no": 12,
+        "name": "幸運同行",
+        "name_oncc": "幸運同行",
+        "gear_symbols": "★＊",
+        "equipment": "B",
+        "draw": 9,
+        "jockey": "艾兆禮",
+        "weight_lbs": 118,
+        "weight_change": -2,
+        "trainer_surname": "蔡",
+        "rating_cc": 23,
+        "rating_change": -2,
+        "age": 7,
+        "body_weight_lbs": 1012,
+        "body_weight_change": -4
+      }
+    ],
+    "race_2": [
+      {
+        "horse_no": 1,
+        "name": "紅愛舍",
+        "name_oncc": "紅愛舍",
+        "gear_symbols": "＊2",
+        "equipment": "BT",
+        "draw": 12,
+        "jockey": "楊明綸",
+        "weight_lbs": 135,
+        "weight_change": 0,
+        "trainer_surname": "韋",
+        "rating_cc": 59,
+        "rating_change": 0,
+        "age": 7,
+        "body_weight_lbs": 1175,
+        "body_weight_change": 3
+      },
+      {
+        "horse_no": 2,
+        "name": "銳喜",
+        "name_oncc": "銳喜",
+        "gear_symbols": "▼",
+        "equipment": "H",
+        "draw": 2,
+        "jockey": "蔡明紹",
+        "weight_lbs": 134,
+        "weight_change": 18,
+        "trainer_surname": "徐",
+        "rating_cc": 58,
+        "rating_change": -4,
+        "age": 5,
+        "body_weight_lbs": 1023,
+        "body_weight_change": 17
+      },
+      {
+        "horse_no": 3,
+        "name": "路路勁",
+        "name_oncc": "路路勁",
+        "gear_symbols": "＋",
+        "equipment": "HT",
+        "draw": 8,
+        "jockey": "田泰安",
+        "weight_lbs": 132,
+        "weight_change": 0,
+        "trainer_surname": "羅",
+        "rating_cc": 56,
+        "rating_change": 0,
+        "age": 5,
+        "body_weight_lbs": 1129,
+        "body_weight_change": 7
+      },
+      {
+        "horse_no": 4,
+        "name": "馬馳登",
+        "name_oncc": "馬馳登",
+        "gear_symbols": "＋",
+        "equipment": "T",
+        "draw": 7,
+        "jockey": "艾兆禮",
+        "weight_lbs": 132,
+        "weight_change": 1,
+        "trainer_surname": "黎",
+        "rating_cc": 56,
+        "rating_change": 0,
+        "age": 5,
+        "body_weight_lbs": 1183,
+        "body_weight_change": 2
+      },
+      {
+        "horse_no": 5,
+        "name": "飛輪霸",
+        "name_oncc": "飛輪霸",
+        "gear_symbols": "＋",
+        "equipment": "T",
+        "draw": 11,
+        "jockey": "潘明輝",
+        "weight_lbs": 130,
+        "weight_change": -2,
+        "trainer_surname": "姚",
+        "rating_cc": 54,
+        "rating_change": -3,
+        "age": 5,
+        "body_weight_lbs": 1134,
+        "body_weight_change": -7
+      },
+      {
+        "horse_no": 6,
+        "name": "金珀尖子",
+        "name_oncc": "金珀尖子",
+        "gear_symbols": "",
+        "equipment": "—",
+        "draw": 6,
+        "jockey": "金誠剛",
+        "weight_lbs": 128,
+        "weight_change": 0,
+        "trainer_surname": "希",
+        "rating_cc": 52,
+        "rating_change": 0,
+        "age": 3,
+        "body_weight_lbs": 1096,
+        "body_weight_change": -2
+      },
+      {
+        "horse_no": 7,
+        "name": "銀刺勇士",
+        "name_oncc": "銀刺勇士",
+        "gear_symbols": "",
+        "equipment": "T",
+        "draw": 1,
+        "jockey": "黃智弘",
+        "weight_lbs": 125,
+        "weight_change": -1,
+        "trainer_surname": "柏",
+        "rating_cc": 52,
+        "rating_change": 0,
+        "age": 6,
+        "body_weight_lbs": 1095,
+        "body_weight_change": 3
+      },
+      {
+        "horse_no": 8,
+        "name": "鄉村威龍",
+        "name_oncc": "鄉村威龍",
+        "gear_symbols": "＋",
+        "equipment": "—",
+        "draw": 10,
+        "jockey": "艾道拿",
+        "weight_lbs": 127,
+        "weight_change": -1,
+        "trainer_surname": "蔡",
+        "rating_cc": 51,
+        "rating_change": -1,
+        "age": 4,
+        "body_weight_lbs": 1095,
+        "body_weight_change": 2
+      },
+      {
+        "horse_no": 9,
+        "name": "開心五月",
+        "name_oncc": "開心五月",
+        "gear_symbols": "★＊",
+        "equipment": "BT",
+        "draw": 4,
+        "jockey": "鍾易禮",
+        "weight_lbs": 121,
+        "weight_change": 1,
+        "trainer_surname": "東",
+        "rating_cc": 47,
+        "rating_change": 0,
+        "age": 6,
+        "body_weight_lbs": 1147,
+        "body_weight_change": 13
+      },
+      {
+        "horse_no": 10,
+        "name": "比特星",
+        "name_oncc": "比特星",
+        "gear_symbols": "＋2",
+        "equipment": "T",
+        "draw": 5,
+        "jockey": "潘頓",
+        "weight_lbs": 119,
+        "weight_change": 6,
+        "trainer_surname": "賀",
+        "rating_cc": 43,
+        "rating_change": -2,
+        "age": 6,
+        "body_weight_lbs": 1037,
+        "body_weight_change": -5
+      },
+      {
+        "horse_no": 11,
+        "name": "有盈勇士",
+        "name_oncc": "有盈勇士",
+        "gear_symbols": "",
+        "equipment": "BT",
+        "draw": 9,
+        "jockey": "希威森",
+        "weight_lbs": 118,
+        "weight_change": 1,
+        "trainer_surname": "沈",
+        "rating_cc": 42,
+        "rating_change": -2,
+        "age": 5,
+        "body_weight_lbs": 1133,
+        "body_weight_change": -4
+      },
+      {
+        "horse_no": 12,
+        "name": "首駿",
+        "name_oncc": "首駿",
+        "gear_symbols": "＊2",
+        "equipment": "X-T",
+        "draw": 3,
+        "jockey": "班德禮",
+        "weight_lbs": 118,
+        "weight_change": 1,
+        "trainer_surname": "游",
+        "rating_cc": 42,
+        "rating_change": 0,
+        "age": 5,
+        "body_weight_lbs": 1138,
+        "body_weight_change": -11
+      }
+    ],
+    "race_3": [
+      {
+        "horse_no": 1,
+        "name": "星願無限",
+        "name_oncc": "星願無限",
+        "gear_symbols": "＊",
+        "equipment": "SWT",
+        "draw": 11,
+        "jockey": "希威森",
+        "weight_lbs": 135,
+        "weight_change": 0,
+        "trainer_surname": "沈",
+        "rating_cc": 59,
+        "rating_change": -1,
+        "age": 4,
+        "body_weight_lbs": 1018,
+        "body_weight_change": -20
+      },
+      {
+        "horse_no": 2,
+        "name": "贏玥",
+        "name_oncc": "贏玥",
+        "gear_symbols": "",
+        "equipment": "BT",
+        "draw": 7,
+        "jockey": "潘頓",
+        "weight_lbs": 132,
+        "weight_change": 0,
+        "trainer_surname": "巫",
+        "rating_cc": 56,
+        "rating_change": 0,
+        "age": 5,
+        "body_weight_lbs": 1177,
+        "body_weight_change": -2
+      },
+      {
+        "horse_no": 3,
+        "name": "彩虹七色",
+        "name_oncc": "彩虹七色",
+        "gear_symbols": "＋",
+        "equipment": "BT",
+        "draw": 5,
+        "jockey": "何澤堯",
+        "weight_lbs": 130,
+        "weight_change": 1,
+        "trainer_surname": "呂",
+        "rating_cc": 54,
+        "rating_change": 0,
+        "age": 5,
+        "body_weight_lbs": 1071,
+        "body_weight_change": 10
+      },
+      {
+        "horse_no": 4,
+        "name": "睿智多寶",
+        "name_oncc": "睿智多寶",
+        "gear_symbols": "★＊2",
+        "equipment": "VT",
+        "draw": 6,
+        "jockey": "艾道拿",
+        "weight_lbs": 129,
+        "weight_change": -3,
+        "trainer_surname": "黎",
+        "rating_cc": 53,
+        "rating_change": -2,
+        "age": 4,
+        "body_weight_lbs": 1255,
+        "body_weight_change": 12
+      },
+      {
+        "horse_no": 5,
+        "name": "凝妙星",
+        "name_oncc": "凝妙星",
+        "gear_symbols": "2",
+        "equipment": "V",
+        "draw": 3,
+        "jockey": "奧爾民",
+        "weight_lbs": 128,
+        "weight_change": 8,
+        "trainer_surname": "希",
+        "rating_cc": 52,
+        "rating_change": 8,
+        "age": 5,
+        "body_weight_lbs": 1111,
+        "body_weight_change": 4
+      },
+      {
+        "horse_no": 6,
+        "name": "領航天子",
+        "name_oncc": "領航天子",
+        "gear_symbols": "",
+        "equipment": "—",
+        "draw": 10,
+        "jockey": "霍宏聲",
+        "weight_lbs": 128,
+        "weight_change": 1,
+        "trainer_surname": "廖",
+        "rating_cc": 52,
+        "rating_change": -2,
+        "age": 6,
+        "body_weight_lbs": 970,
+        "body_weight_change": 13
+      },
+      {
+        "horse_no": 7,
+        "name": "有情有義",
+        "name_oncc": "有情有義",
+        "gear_symbols": "2",
+        "equipment": "T",
+        "draw": 4,
+        "jockey": "黃智弘",
+        "weight_lbs": 124,
+        "weight_change": 0,
+        "trainer_surname": "柏",
+        "rating_cc": 51,
+        "rating_change": -1,
+        "age": 5,
+        "body_weight_lbs": 1173,
+        "body_weight_change": 1
+      },
+      {
+        "horse_no": 8,
+        "name": "蹺妙",
+        "name_oncc": "蹺妙",
+        "gear_symbols": "",
+        "equipment": "X1",
+        "draw": 2,
+        "jockey": "周俊樂",
+        "weight_lbs": 122,
+        "weight_change": -3,
+        "trainer_surname": "游",
+        "rating_cc": 48,
+        "rating_change": -4,
+        "age": 5,
+        "body_weight_lbs": 1097,
+        "body_weight_change": 3
+      },
+      {
+        "horse_no": 9,
+        "name": "越駿齊歡",
+        "name_oncc": "越駿齊歡",
+        "gear_symbols": "2",
+        "equipment": "HT",
+        "draw": 1,
+        "jockey": "梁家俊",
+        "weight_lbs": 124,
+        "weight_change": -4,
+        "trainer_surname": "羅",
+        "rating_cc": 48,
+        "rating_change": -3,
+        "age": 5,
+        "body_weight_lbs": 1093,
+        "body_weight_change": -10
+      },
+      {
+        "horse_no": 10,
+        "name": "加州活力",
+        "name_oncc": "加州活力",
+        "gear_symbols": "2",
+        "equipment": "BT",
+        "draw": 8,
+        "jockey": "艾兆禮",
+        "weight_lbs": 131,
+        "weight_change": -1,
+        "trainer_surname": "東",
+        "rating_cc": 55,
+        "rating_change": -2,
+        "age": 5,
+        "body_weight_lbs": 1188,
+        "body_weight_change": 6
+      },
+      {
+        "horse_no": 11,
+        "name": "光明傳承",
+        "name_oncc": "光明傳承",
+        "gear_symbols": "★＊",
+        "equipment": "N2B",
+        "draw": 9,
+        "jockey": "班德禮",
+        "weight_lbs": 119,
+        "weight_change": -5,
+        "trainer_surname": "葉",
+        "rating_cc": 43,
+        "rating_change": -5,
+        "age": 7,
+        "body_weight_lbs": 1104,
+        "body_weight_change": -9
+      },
+      {
+        "horse_no": 12,
+        "name": "得意佳作",
+        "name_oncc": "得意佳作",
+        "gear_symbols": "＋",
+        "equipment": "T",
+        "draw": 12,
+        "jockey": "田泰安",
+        "weight_lbs": 118,
+        "weight_change": -3,
+        "trainer_surname": "姚",
+        "rating_cc": 42,
+        "rating_change": -4,
+        "age": 8,
+        "body_weight_lbs": 1066,
+        "body_weight_change": -30
+      }
+    ],
+    "race_4": [
+      {
+        "horse_no": 1,
+        "name": "沙井之友",
+        "name_oncc": "沙井之友",
+        "gear_symbols": "",
+        "equipment": "T",
+        "draw": 8,
+        "jockey": "周俊樂",
+        "weight_lbs": 133,
+        "weight_change": -2,
+        "trainer_surname": "巫",
+        "rating_cc": 58,
+        "rating_change": -2,
+        "age": 4,
+        "body_weight_lbs": 1117,
+        "body_weight_change": -6
+      },
+      {
+        "horse_no": 2,
+        "name": "智勝一籌",
+        "name_oncc": "智勝一籌",
+        "gear_symbols": "▼",
+        "equipment": "T",
+        "draw": 10,
+        "jockey": "蔡明紹",
+        "weight_lbs": 135,
+        "weight_change": 21,
+        "trainer_surname": "賢",
+        "rating_cc": 58,
+        "rating_change": -3,
+        "age": 4,
+        "body_weight_lbs": 1066,
+        "body_weight_change": 28
+      },
+      {
+        "horse_no": 3,
+        "name": "應龍飛影",
+        "name_oncc": "應龍飛影",
+        "gear_symbols": "",
+        "equipment": "SW1T",
+        "draw": 6,
+        "jockey": "袁幸堯",
+        "weight_lbs": 122,
+        "weight_change": 2,
+        "trainer_surname": "伍",
+        "rating_cc": 55,
+        "rating_change": 0,
+        "age": 4,
+        "body_weight_lbs": 1195,
+        "body_weight_change": 18
+      },
+      {
+        "horse_no": 4,
+        "name": "星辰千帥",
+        "name_oncc": "星辰千帥",
+        "gear_symbols": "＋",
+        "equipment": "VT",
+        "draw": 7,
+        "jockey": "艾道拿",
+        "weight_lbs": 131,
+        "weight_change": 5,
+        "trainer_surname": "賀",
+        "rating_cc": 54,
+        "rating_change": 5,
+        "age": 5,
+        "body_weight_lbs": 1197,
+        "body_weight_change": 13
+      },
+      {
+        "horse_no": 5,
+        "name": "莊家班",
+        "name_oncc": "莊家班",
+        "gear_symbols": "★＊2",
+        "equipment": "B-T",
+        "draw": 3,
+        "jockey": "黃智弘",
+        "weight_lbs": 127,
+        "weight_change": -5,
+        "trainer_surname": "沈",
+        "rating_cc": 53,
+        "rating_change": -4,
+        "age": 4,
+        "body_weight_lbs": 1056,
+        "body_weight_change": 3
+      },
+      {
+        "horse_no": 6,
+        "name": "快樂神駒",
+        "name_oncc": "快樂神駒",
+        "gear_symbols": "",
+        "equipment": "—",
+        "draw": 2,
+        "jockey": "潘頓",
+        "weight_lbs": 129,
+        "weight_change": 2,
+        "trainer_surname": "廖",
+        "rating_cc": 52,
+        "rating_change": 0,
+        "age": 4,
+        "body_weight_lbs": 1103,
+        "body_weight_change": 17
+      },
+      {
+        "horse_no": 7,
+        "name": "震撼人心",
+        "name_oncc": "震撼人心",
+        "gear_symbols": "★＊＋2",
+        "equipment": "B1",
+        "draw": 12,
+        "jockey": "艾兆禮",
+        "weight_lbs": 129,
+        "weight_change": 1,
+        "trainer_surname": "蔡",
+        "rating_cc": 52,
+        "rating_change": 0,
+        "age": 4,
+        "body_weight_lbs": 1092,
+        "body_weight_change": 8
+      },
+      {
+        "horse_no": 8,
+        "name": "禪勝閃亮",
+        "name_oncc": "禪勝閃亮",
+        "gear_symbols": "●★＊",
+        "equipment": "SW1T1",
+        "draw": 5,
+        "jockey": "希威森",
+        "weight_lbs": 128,
+        "weight_change": 4,
+        "trainer_surname": "呂",
+        "rating_cc": 51,
+        "rating_change": 0,
+        "age": 3,
+        "body_weight_lbs": 993,
+        "body_weight_change": -24
+      },
+      {
+        "horse_no": 9,
+        "name": "將傲",
+        "name_oncc": "將傲",
+        "gear_symbols": "＋",
+        "equipment": "P1H1X",
+        "draw": 4,
+        "jockey": "奧爾民",
+        "weight_lbs": 126,
+        "weight_change": 0,
+        "trainer_surname": "韋",
+        "rating_cc": 49,
+        "rating_change": -1,
+        "age": 4,
+        "body_weight_lbs": 1088,
+        "body_weight_change": -4
+      },
+      {
+        "horse_no": 10,
+        "name": "平天雄",
+        "name_oncc": "平天雄",
+        "gear_symbols": "#＋",
+        "equipment": "—",
+        "draw": 9,
+        "jockey": "潘明輝",
+        "weight_lbs": 123,
+        "weight_change": -3,
+        "trainer_surname": "丁",
+        "rating_cc": 46,
+        "rating_change": -5,
+        "age": 5,
+        "body_weight_lbs": 1260,
+        "body_weight_change": 56
+      },
+      {
+        "horse_no": 11,
+        "name": "焦點",
+        "name_oncc": "焦點",
+        "gear_symbols": "＋",
+        "equipment": "BT",
+        "draw": 1,
+        "jockey": "田泰安",
+        "weight_lbs": 121,
+        "weight_change": 1,
+        "trainer_surname": "游",
+        "rating_cc": 44,
+        "rating_change": 0,
+        "age": 8,
+        "body_weight_lbs": 1057,
+        "body_weight_change": 2
+      },
+      {
+        "horse_no": 12,
+        "name": "三強",
+        "name_oncc": "三強",
+        "gear_symbols": "＊",
+        "equipment": "—",
+        "draw": 11,
+        "jockey": "楊明綸",
+        "weight_lbs": 120,
+        "weight_change": -2,
+        "trainer_surname": "鄭",
+        "rating_cc": 43,
+        "rating_change": -3,
+        "age": 6,
+        "body_weight_lbs": 1131,
+        "body_weight_change": -23
+      }
+    ],
+    "race_5": [
+      {
+        "horse_no": 1,
+        "name": "本領非凡",
+        "name_oncc": "本領非凡",
+        "gear_symbols": "",
+        "equipment": "T",
+        "draw": 9,
+        "jockey": "何澤堯",
+        "weight_lbs": 135,
+        "weight_change": 1,
+        "trainer_surname": "羅",
+        "rating_cc": 59,
+        "rating_change": 0,
+        "age": 7,
+        "body_weight_lbs": 1060,
+        "body_weight_change": 11
+      },
+      {
+        "horse_no": 2,
+        "name": "大文豪",
+        "name_oncc": "大文豪",
+        "gear_symbols": "▼2",
+        "equipment": "VT",
+        "draw": 5,
+        "jockey": "奧爾民",
+        "weight_lbs": 133,
+        "weight_change": 14,
+        "trainer_surname": "姚",
+        "rating_cc": 57,
+        "rating_change": -4,
+        "age": 5,
+        "body_weight_lbs": 1161,
+        "body_weight_change": -4
+      },
+      {
+        "horse_no": 3,
+        "name": "大學生",
+        "name_oncc": "大學生",
+        "gear_symbols": "",
+        "equipment": "SW-N2T",
+        "draw": 1,
+        "jockey": "金誠剛",
+        "weight_lbs": 128,
+        "weight_change": -5,
+        "trainer_surname": "韋",
+        "rating_cc": 52,
+        "rating_change": -4,
+        "age": 7,
+        "body_weight_lbs": 1224,
+        "body_weight_change": -14
+      },
+      {
+        "horse_no": 4,
+        "name": "赤風驪",
+        "name_oncc": "赤風驪",
+        "gear_symbols": "＋",
+        "equipment": "T",
+        "draw": 2,
+        "jockey": "霍宏聲",
+        "weight_lbs": 128,
+        "weight_change": -1,
+        "trainer_surname": "柏",
+        "rating_cc": 52,
+        "rating_change": -1,
+        "age": 5,
+        "body_weight_lbs": 1013,
+        "body_weight_change": 8
+      },
+      {
+        "horse_no": 5,
+        "name": "創科群英",
+        "name_oncc": "創科群英",
+        "gear_symbols": "2",
+        "equipment": "NT",
+        "draw": 3,
+        "jockey": "周俊樂",
+        "weight_lbs": 124,
+        "weight_change": -3,
+        "trainer_surname": "游",
+        "rating_cc": 50,
+        "rating_change": -1,
+        "age": 5,
+        "body_weight_lbs": 1149,
+        "body_weight_change": 14
+      },
+      {
+        "horse_no": 6,
+        "name": "越駿聯歡",
+        "name_oncc": "越駿聯歡",
+        "gear_symbols": "",
+        "equipment": "SW",
+        "draw": 6,
+        "jockey": "梁家俊",
+        "weight_lbs": 124,
+        "weight_change": 1,
+        "trainer_surname": "黎",
+        "rating_cc": 48,
+        "rating_change": 0,
+        "age": 4,
+        "body_weight_lbs": 1115,
+        "body_weight_change": -5
+      },
+      {
+        "horse_no": 7,
+        "name": "滿洛城",
+        "name_oncc": "滿洛城",
+        "gear_symbols": "",
+        "equipment": "B",
+        "draw": 7,
+        "jockey": "班德禮",
+        "weight_lbs": 123,
+        "weight_change": 0,
+        "trainer_surname": "希",
+        "rating_cc": 47,
+        "rating_change": 0,
+        "age": 4,
+        "body_weight_lbs": 1047,
+        "body_weight_change": 26
+      },
+      {
+        "horse_no": 8,
+        "name": "金駒永騰",
+        "name_oncc": "金駒永騰",
+        "gear_symbols": "",
+        "equipment": "B",
+        "draw": 12,
+        "jockey": "黃智弘",
+        "weight_lbs": 120,
+        "weight_change": 5,
+        "trainer_surname": "伍",
+        "rating_cc": 47,
+        "rating_change": 7,
+        "age": 6,
+        "body_weight_lbs": 1203,
+        "body_weight_change": 2
+      },
+      {
+        "horse_no": 9,
+        "name": "爆竹",
+        "name_oncc": "爆竹",
+        "gear_symbols": "",
+        "equipment": "T",
+        "draw": 11,
+        "jockey": "田泰安",
+        "weight_lbs": 122,
+        "weight_change": 7,
+        "trainer_surname": "東",
+        "rating_cc": 46,
+        "rating_change": 6,
+        "age": 5,
+        "body_weight_lbs": 1095,
+        "body_weight_change": -2
+      },
+      {
+        "horse_no": 10,
+        "name": "揀馬之皇",
+        "name_oncc": "揀馬之皇",
+        "gear_symbols": "★＊",
+        "equipment": "—",
+        "draw": 8,
+        "jockey": "潘明輝",
+        "weight_lbs": 120,
+        "weight_change": -3,
+        "trainer_surname": "賀",
+        "rating_cc": 44,
+        "rating_change": -4,
+        "age": 5,
+        "body_weight_lbs": 1049,
+        "body_weight_change": 27
+      },
+      {
+        "horse_no": 11,
+        "name": "健康小馬",
+        "name_oncc": "健康小馬",
+        "gear_symbols": "＋",
+        "equipment": "PH",
+        "draw": 4,
+        "jockey": "楊明綸",
+        "weight_lbs": 118,
+        "weight_change": -3,
+        "trainer_surname": "鄭",
+        "rating_cc": 42,
+        "rating_change": -4,
+        "age": 5,
+        "body_weight_lbs": 1020,
+        "body_weight_change": -16
+      },
+      {
+        "horse_no": 12,
+        "name": "同心",
+        "name_oncc": "同心",
+        "gear_symbols": "★＊2",
+        "equipment": "VX",
+        "draw": 10,
+        "jockey": "蔡明紹",
+        "weight_lbs": 117,
+        "weight_change": -4,
+        "trainer_surname": "呂",
+        "rating_cc": 41,
+        "rating_change": -3,
+        "age": 4,
+        "body_weight_lbs": 1136,
+        "body_weight_change": 6
+      }
+    ],
+    "race_6": [
+      {
+        "horse_no": 1,
+        "name": "福進",
+        "name_oncc": "福進",
+        "gear_symbols": "",
+        "equipment": "T",
+        "draw": 6,
+        "jockey": "何澤堯",
+        "weight_lbs": 135,
+        "weight_change": 5,
+        "trainer_surname": "柏",
+        "rating_cc": 59,
+        "rating_change": 7,
+        "age": 5,
+        "body_weight_lbs": 1208,
+        "body_weight_change": 2
+      },
+      {
+        "horse_no": 2,
+        "name": "友駿同心",
+        "name_oncc": "友駿同心",
+        "gear_symbols": "▼＋",
+        "equipment": "EXT",
+        "draw": 4,
+        "jockey": "梁家俊",
+        "weight_lbs": 133,
+        "weight_change": 14,
+        "trainer_surname": "賢",
+        "rating_cc": 57,
+        "rating_change": -4,
+        "age": 5,
+        "body_weight_lbs": 1168,
+        "body_weight_change": 24
+      },
+      {
+        "horse_no": 3,
+        "name": "藍地球",
+        "name_oncc": "藍地球",
+        "gear_symbols": "＋",
+        "equipment": "BT",
+        "draw": 8,
+        "jockey": "奧爾民",
+        "weight_lbs": 131,
+        "weight_change": 6,
+        "trainer_surname": "伍",
+        "rating_cc": 55,
+        "rating_change": -2,
+        "age": 5,
+        "body_weight_lbs": 1159,
+        "body_weight_change": 9
+      },
+      {
+        "horse_no": 4,
+        "name": "巴閉王",
+        "name_oncc": "巴閉王",
+        "gear_symbols": "＋",
+        "equipment": "SWX",
+        "draw": 3,
+        "jockey": "周俊樂",
+        "weight_lbs": 129,
+        "weight_change": -1,
+        "trainer_surname": "呂",
+        "rating_cc": 55,
+        "rating_change": 1,
+        "age": 5,
+        "body_weight_lbs": 1041,
+        "body_weight_change": 6
+      },
+      {
+        "horse_no": 5,
+        "name": "佐治傳奇",
+        "name_oncc": "佐治傳奇",
+        "gear_symbols": "＋",
+        "equipment": "BT",
+        "draw": 12,
+        "jockey": "艾兆禮",
+        "weight_lbs": 128,
+        "weight_change": -2,
+        "trainer_surname": "東",
+        "rating_cc": 52,
+        "rating_change": 0,
+        "age": 4,
+        "body_weight_lbs": 1092,
+        "body_weight_change": -8
+      },
+      {
+        "horse_no": 6,
+        "name": "升升雙息",
+        "name_oncc": "升升雙息",
+        "gear_symbols": "",
+        "equipment": "T",
+        "draw": 10,
+        "jockey": "潘明輝",
+        "weight_lbs": 126,
+        "weight_change": -4,
+        "trainer_surname": "沈",
+        "rating_cc": 50,
+        "rating_change": -2,
+        "age": 4,
+        "body_weight_lbs": 1057,
+        "body_weight_change": 12
+      },
+      {
+        "horse_no": 7,
+        "name": "雙劍合璧",
+        "name_oncc": "雙劍合璧",
+        "gear_symbols": "●★＊",
+        "equipment": "BK-",
+        "draw": 2,
+        "jockey": "班德禮",
+        "weight_lbs": 126,
+        "weight_change": 5,
+        "trainer_surname": "希",
+        "rating_cc": 50,
+        "rating_change": 0,
+        "age": 3,
+        "body_weight_lbs": 1011,
+        "body_weight_change": 10
+      },
+      {
+        "horse_no": 8,
+        "name": "螢影飛馳",
+        "name_oncc": "螢影飛馳",
+        "gear_symbols": "#＊",
+        "equipment": "B",
+        "draw": 11,
+        "jockey": "袁幸堯",
+        "weight_lbs": 114,
+        "weight_change": -7,
+        "trainer_surname": "徐",
+        "rating_cc": 48,
+        "rating_change": -4,
+        "age": 6,
+        "body_weight_lbs": 1165,
+        "body_weight_change": -6
+      },
+      {
+        "horse_no": 9,
+        "name": "天火同人",
+        "name_oncc": "天火同人",
+        "gear_symbols": "",
+        "equipment": "BT",
+        "draw": 7,
+        "jockey": "黃寶妮",
+        "weight_lbs": 116,
+        "weight_change": -4,
+        "trainer_surname": "韋",
+        "rating_cc": 47,
+        "rating_change": -2,
+        "age": 9,
+        "body_weight_lbs": 1095,
+        "body_weight_change": -4
+      },
+      {
+        "horse_no": 10,
+        "name": "領航多財",
+        "name_oncc": "領航多財",
+        "gear_symbols": "",
+        "equipment": "T",
+        "draw": 5,
+        "jockey": "巫顯東",
+        "weight_lbs": 120,
+        "weight_change": -5,
+        "trainer_surname": "鄭",
+        "rating_cc": 46,
+        "rating_change": -4,
+        "age": 4,
+        "body_weight_lbs": 1147,
+        "body_weight_change": 24
+      },
+      {
+        "horse_no": 11,
+        "name": "萬眾開心",
+        "name_oncc": "萬眾開心",
+        "gear_symbols": "▲＊",
+        "equipment": "T",
+        "draw": 9,
+        "jockey": "蔡明紹",
+        "weight_lbs": 120,
+        "weight_change": -14,
+        "trainer_surname": "黎",
+        "rating_cc": 44,
+        "rating_change": 6,
+        "age": 7,
+        "body_weight_lbs": 1180,
+        "body_weight_change": -13
+      },
+      {
+        "horse_no": 12,
+        "name": "馬運高",
+        "name_oncc": "馬運高",
+        "gear_symbols": "＋",
+        "equipment": "H",
+        "draw": 1,
+        "jockey": "田泰安",
+        "weight_lbs": 118,
+        "weight_change": -2,
+        "trainer_surname": "文",
+        "rating_cc": 42,
+        "rating_change": -4,
+        "age": 4,
+        "body_weight_lbs": 1210,
+        "body_weight_change": 8
+      }
+    ],
+    "race_7": [
+      {
+        "horse_no": 1,
+        "name": "東來欣賞",
+        "name_oncc": "東來欣賞",
+        "gear_symbols": "＋",
+        "equipment": "T",
+        "draw": 4,
+        "jockey": "周俊樂",
+        "weight_lbs": 132,
+        "weight_change": 0,
+        "trainer_surname": "東",
+        "rating_cc": 75,
+        "rating_change": 0,
+        "age": 6,
+        "body_weight_lbs": 1121,
+        "body_weight_change": -24
+      },
+      {
+        "horse_no": 2,
+        "name": "乘數表",
+        "name_oncc": "乘數表",
+        "gear_symbols": "＋",
+        "equipment": "—",
+        "draw": 3,
+        "jockey": "艾道拿",
+        "weight_lbs": 134,
+        "weight_change": 1,
+        "trainer_surname": "羅",
+        "rating_cc": 75,
+        "rating_change": 0,
+        "age": 4,
+        "body_weight_lbs": 1113,
+        "body_weight_change": -7
+      },
+      {
+        "horse_no": 3,
+        "name": "天星",
+        "name_oncc": "天星",
+        "gear_symbols": "★＊2",
+        "equipment": "B",
+        "draw": 10,
+        "jockey": "潘頓",
+        "weight_lbs": 133,
+        "weight_change": 3,
+        "trainer_surname": "希",
+        "rating_cc": 74,
+        "rating_change": -1,
+        "age": 5,
+        "body_weight_lbs": 1102,
+        "body_weight_change": 9
+      },
+      {
+        "horse_no": 4,
+        "name": "競駿皇者",
+        "name_oncc": "競駿皇者",
+        "gear_symbols": "★＊",
+        "equipment": "BT",
+        "draw": 12,
+        "jockey": "霍宏聲",
+        "weight_lbs": 131,
+        "weight_change": -2,
+        "trainer_surname": "游",
+        "rating_cc": 72,
+        "rating_change": -2,
+        "age": 5,
+        "body_weight_lbs": 1080,
+        "body_weight_change": 12
+      },
+      {
+        "horse_no": 5,
+        "name": "傲聖",
+        "name_oncc": "傲聖",
+        "gear_symbols": "★＊",
+        "equipment": "—",
+        "draw": 5,
+        "jockey": "潘明輝",
+        "weight_lbs": 129,
+        "weight_change": -5,
+        "trainer_surname": "賀",
+        "rating_cc": 70,
+        "rating_change": -4,
+        "age": 4,
+        "body_weight_lbs": 1110,
+        "body_weight_change": 15
+      },
+      {
+        "horse_no": 6,
+        "name": "電源之駒",
+        "name_oncc": "電源之駒",
+        "gear_symbols": "＋2",
+        "equipment": "B",
+        "draw": 7,
+        "jockey": "梁家俊",
+        "weight_lbs": 127,
+        "weight_change": 1,
+        "trainer_surname": "廖",
+        "rating_cc": 68,
+        "rating_change": 0,
+        "age": 8,
+        "body_weight_lbs": 1101,
+        "body_weight_change": 0
+      },
+      {
+        "horse_no": 7,
+        "name": "加州本事",
+        "name_oncc": "加州本事",
+        "gear_symbols": "＋",
+        "equipment": "BT",
+        "draw": 11,
+        "jockey": "蔡明紹",
+        "weight_lbs": 124,
+        "weight_change": 1,
+        "trainer_surname": "巫",
+        "rating_cc": 65,
+        "rating_change": 0,
+        "age": 5,
+        "body_weight_lbs": 1079,
+        "body_weight_change": 32
+      },
+      {
+        "horse_no": 8,
+        "name": "首飾悟空",
+        "name_oncc": "首飾悟空",
+        "gear_symbols": "★＊",
+        "equipment": "T",
+        "draw": 2,
+        "jockey": "艾兆禮",
+        "weight_lbs": 124,
+        "weight_change": 6,
+        "trainer_surname": "蔡",
+        "rating_cc": 65,
+        "rating_change": 2,
+        "age": 5,
+        "body_weight_lbs": 1175,
+        "body_weight_change": 30
+      },
+      {
+        "horse_no": 9,
+        "name": "安康萬里",
+        "name_oncc": "安康萬里",
+        "gear_symbols": "★＊",
+        "equipment": "V",
+        "draw": 1,
+        "jockey": "班德禮",
+        "weight_lbs": 123,
+        "weight_change": 1,
+        "trainer_surname": "呂",
+        "rating_cc": 64,
+        "rating_change": -2,
+        "age": 6,
+        "body_weight_lbs": 1118,
+        "body_weight_change": 23
+      },
+      {
+        "horse_no": 10,
+        "name": "正極",
+        "name_oncc": "正極",
+        "gear_symbols": "＊＋2",
+        "equipment": "BT",
+        "draw": 8,
+        "jockey": "黃智弘",
+        "weight_lbs": 119,
+        "weight_change": 2,
+        "trainer_surname": "沈",
+        "rating_cc": 63,
+        "rating_change": 0,
+        "age": 5,
+        "body_weight_lbs": 1166,
+        "body_weight_change": 11
+      },
+      {
+        "horse_no": 11,
+        "name": "盈妍威楓",
+        "name_oncc": "盈妍威楓",
+        "gear_symbols": "▲★＊2",
+        "equipment": "BT",
+        "draw": 9,
+        "jockey": "袁幸堯",
+        "weight_lbs": 111,
+        "weight_change": -11,
+        "trainer_surname": "伍",
+        "rating_cc": 62,
+        "rating_change": 6,
+        "age": 5,
+        "body_weight_lbs": 1113,
+        "body_weight_change": 0
+      },
+      {
+        "horse_no": 12,
+        "name": "丞匡掠影",
+        "name_oncc": "丞匡掠影",
+        "gear_symbols": "＋",
+        "equipment": "B",
+        "draw": 6,
+        "jockey": "鍾易禮",
+        "weight_lbs": 118,
+        "weight_change": -6,
+        "trainer_surname": "徐",
+        "rating_cc": 61,
+        "rating_change": -4,
+        "age": 5,
+        "body_weight_lbs": 1247,
+        "body_weight_change": 5
+      }
+    ],
+    "race_8": [
+      {
+        "horse_no": 1,
+        "name": "人和家興",
+        "name_oncc": "人和家興",
+        "gear_symbols": "＋",
+        "equipment": "BT",
+        "draw": 2,
+        "jockey": "霍宏聲",
+        "weight_lbs": 135,
+        "weight_change": 11,
+        "trainer_surname": "希",
+        "rating_cc": 76,
+        "rating_change": 0,
+        "age": 10,
+        "body_weight_lbs": 1214,
+        "body_weight_change": 0
+      },
+      {
+        "horse_no": 2,
+        "name": "團結勇士",
+        "name_oncc": "團結勇士",
+        "gear_symbols": "＋",
+        "equipment": "HT",
+        "draw": 8,
+        "jockey": "梁家俊",
+        "weight_lbs": 135,
+        "weight_change": 2,
+        "trainer_surname": "鄭",
+        "rating_cc": 76,
+        "rating_change": 0,
+        "age": 5,
+        "body_weight_lbs": 1162,
+        "body_weight_change": 4
+      },
+      {
+        "horse_no": 3,
+        "name": "富心星",
+        "name_oncc": "富心星",
+        "gear_symbols": "★＊2",
+        "equipment": "T",
+        "draw": 4,
+        "jockey": "何澤堯",
+        "weight_lbs": 129,
+        "weight_change": 9,
+        "trainer_surname": "柏",
+        "rating_cc": 70,
+        "rating_change": 6,
+        "age": 5,
+        "body_weight_lbs": 1181,
+        "body_weight_change": -4
+      },
+      {
+        "horse_no": 4,
+        "name": "久久為昇",
+        "name_oncc": "久久為昇",
+        "gear_symbols": "★＊2",
+        "equipment": "X",
+        "draw": 1,
+        "jockey": "奧爾民",
+        "weight_lbs": 129,
+        "weight_change": 3,
+        "trainer_surname": "賀",
+        "rating_cc": 70,
+        "rating_change": -1,
+        "age": 5,
+        "body_weight_lbs": 1021,
+        "body_weight_change": 5
+      },
+      {
+        "horse_no": 5,
+        "name": "飛馬座",
+        "name_oncc": "飛馬座",
+        "gear_symbols": "＊2",
+        "equipment": "T",
+        "draw": 11,
+        "jockey": "周俊樂",
+        "weight_lbs": 125,
+        "weight_change": 3,
+        "trainer_surname": "徐",
+        "rating_cc": 68,
+        "rating_change": 2,
+        "age": 5,
+        "body_weight_lbs": 1138,
+        "body_weight_change": -7
+      },
+      {
+        "horse_no": 6,
+        "name": "富國兄弟",
+        "name_oncc": "富國兄弟",
+        "gear_symbols": "＋",
+        "equipment": "T",
+        "draw": 7,
+        "jockey": "田泰安",
+        "weight_lbs": 126,
+        "weight_change": 5,
+        "trainer_surname": "葉",
+        "rating_cc": 67,
+        "rating_change": 6,
+        "age": 5,
+        "body_weight_lbs": 1116,
+        "body_weight_change": -15
+      },
+      {
+        "horse_no": 7,
+        "name": "勇霸龍",
+        "name_oncc": "勇霸龍",
+        "gear_symbols": "★＊2",
+        "equipment": "B-T-",
+        "draw": 6,
+        "jockey": "艾道拿",
+        "weight_lbs": 123,
+        "weight_change": -1,
+        "trainer_surname": "黎",
+        "rating_cc": 64,
+        "rating_change": -2,
+        "age": 6,
+        "body_weight_lbs": 1253,
+        "body_weight_change": 5
+      },
+      {
+        "horse_no": 8,
+        "name": "繼往開來",
+        "name_oncc": "繼往開來",
+        "gear_symbols": "＋",
+        "equipment": "B",
+        "draw": 5,
+        "jockey": "艾兆禮",
+        "weight_lbs": 122,
+        "weight_change": 2,
+        "trainer_surname": "文",
+        "rating_cc": 63,
+        "rating_change": 2,
+        "age": 5,
+        "body_weight_lbs": 1098,
+        "body_weight_change": 11
+      },
+      {
+        "horse_no": 9,
+        "name": "蓮冠皇",
+        "name_oncc": "蓮冠皇",
+        "gear_symbols": "＋",
+        "equipment": "SW",
+        "draw": 9,
+        "jockey": "希威森",
+        "weight_lbs": 122,
+        "weight_change": -2,
+        "trainer_surname": "廖",
+        "rating_cc": 63,
+        "rating_change": -3,
+        "age": 5,
+        "body_weight_lbs": 1026,
+        "body_weight_change": 3
+      },
+      {
+        "horse_no": 10,
+        "name": "喵喵怪",
+        "name_oncc": "喵喵怪",
+        "gear_symbols": "▲＊2",
+        "equipment": "VT",
+        "draw": 12,
+        "jockey": "袁幸堯",
+        "weight_lbs": 112,
+        "weight_change": -19,
+        "trainer_surname": "巫",
+        "rating_cc": 63,
+        "rating_change": 7,
+        "age": 6,
+        "body_weight_lbs": 1094,
+        "body_weight_change": -15
+      },
+      {
+        "horse_no": 11,
+        "name": "驕陽雄心",
+        "name_oncc": "驕陽雄心",
+        "gear_symbols": "▲＋",
+        "equipment": "SWT",
+        "draw": 3,
+        "jockey": "黃智弘",
+        "weight_lbs": 118,
+        "weight_change": -15,
+        "trainer_surname": "沈",
+        "rating_cc": 62,
+        "rating_change": 6,
+        "age": 4,
+        "body_weight_lbs": 1029,
+        "body_weight_change": -4
+      },
+      {
+        "horse_no": 12,
+        "name": "亞機拉",
+        "name_oncc": "亞機拉",
+        "gear_symbols": "★＊2",
+        "equipment": "T",
+        "draw": 10,
+        "jockey": "鍾易禮",
+        "weight_lbs": 118,
+        "weight_change": 1,
+        "trainer_surname": "東",
+        "rating_cc": 61,
+        "rating_change": -3,
+        "age": 7,
+        "body_weight_lbs": 1062,
+        "body_weight_change": 3
+      }
+    ],
+    "race_9": [
+      {
+        "horse_no": 1,
+        "name": "嘉應傳承",
+        "name_oncc": "嘉應傳承",
+        "gear_symbols": "▼▼▼",
+        "equipment": "SWT",
+        "draw": 1,
+        "jockey": "艾兆禮",
+        "weight_lbs": 135,
+        "weight_change": 19,
+        "trainer_surname": "伍",
+        "rating_cc": 80,
+        "rating_change": -3,
+        "age": 6,
+        "body_weight_lbs": 1192,
+        "body_weight_change": 27
+      },
+      {
+        "horse_no": 2,
+        "name": "紫荊傳令",
+        "name_oncc": "紫荊傳令",
+        "gear_symbols": "",
+        "equipment": "X-T",
+        "draw": 5,
+        "jockey": "潘頓",
+        "weight_lbs": 135,
+        "weight_change": 2,
+        "trainer_surname": "游",
+        "rating_cc": 80,
+        "rating_change": -2,
+        "age": 4,
+        "body_weight_lbs": 1064,
+        "body_weight_change": -6
+      },
+      {
+        "horse_no": 3,
+        "name": "凌登",
+        "name_oncc": "凌登",
+        "gear_symbols": "",
+        "equipment": "B1T",
+        "draw": 7,
+        "jockey": "奧爾民",
+        "weight_lbs": 135,
+        "weight_change": 7,
+        "trainer_surname": "沈",
+        "rating_cc": 80,
+        "rating_change": 6,
+        "age": 5,
+        "body_weight_lbs": 1140,
+        "body_weight_change": 7
+      },
+      {
+        "horse_no": 4,
+        "name": "平凡騎士",
+        "name_oncc": "平凡騎士",
+        "gear_symbols": "",
+        "equipment": "B-X-H2",
+        "draw": 3,
+        "jockey": "霍宏聲",
+        "weight_lbs": 132,
+        "weight_change": 5,
+        "trainer_surname": "柏",
+        "rating_cc": 77,
+        "rating_change": -3,
+        "age": 5,
+        "body_weight_lbs": 1067,
+        "body_weight_change": 22
+      },
+      {
+        "horse_no": 5,
+        "name": "好實力",
+        "name_oncc": "好實力",
+        "gear_symbols": "",
+        "equipment": "T",
+        "draw": 12,
+        "jockey": "周俊樂",
+        "weight_lbs": 129,
+        "weight_change": -3,
+        "trainer_surname": "呂",
+        "rating_cc": 76,
+        "rating_change": 1,
+        "age": 4,
+        "body_weight_lbs": 1086,
+        "body_weight_change": 18
+      },
+      {
+        "horse_no": 6,
+        "name": "將義",
+        "name_oncc": "將義",
+        "gear_symbols": "",
+        "equipment": "T",
+        "draw": 8,
+        "jockey": "何澤堯",
+        "weight_lbs": 126,
+        "weight_change": 5,
+        "trainer_surname": "巫",
+        "rating_cc": 71,
+        "rating_change": 6,
+        "age": 6,
+        "body_weight_lbs": 1141,
+        "body_weight_change": -2
+      },
+      {
+        "horse_no": 7,
+        "name": "浪漫鬥士",
+        "name_oncc": "浪漫鬥士",
+        "gear_symbols": "2",
+        "equipment": "SW1T",
+        "draw": 2,
+        "jockey": "黃智弘",
+        "weight_lbs": 123,
+        "weight_change": -1,
+        "trainer_surname": "沈",
+        "rating_cc": 71,
+        "rating_change": 0,
+        "age": 3,
+        "body_weight_lbs": 1003,
+        "body_weight_change": -4
+      },
+      {
+        "horse_no": 8,
+        "name": "豐辰",
+        "name_oncc": "豐辰",
+        "gear_symbols": "＋",
+        "equipment": "H",
+        "draw": 9,
+        "jockey": "田泰安",
+        "weight_lbs": 126,
+        "weight_change": -1,
+        "trainer_surname": "徐",
+        "rating_cc": 71,
+        "rating_change": 0,
+        "age": 5,
+        "body_weight_lbs": 1129,
+        "body_weight_change": -4
+      },
+      {
+        "horse_no": 9,
+        "name": "中國心",
+        "name_oncc": "中國心",
+        "gear_symbols": "",
+        "equipment": "T1",
+        "draw": 11,
+        "jockey": "楊明綸",
+        "weight_lbs": 125,
+        "weight_change": -1,
+        "trainer_surname": "希",
+        "rating_cc": 70,
+        "rating_change": 0,
+        "age": 5,
+        "body_weight_lbs": 1109,
+        "body_weight_change": 2
+      },
+      {
+        "horse_no": 10,
+        "name": "風將",
+        "name_oncc": "風將",
+        "gear_symbols": "",
+        "equipment": "SWT",
+        "draw": 10,
+        "jockey": "蔡明紹",
+        "weight_lbs": 122,
+        "weight_change": 0,
+        "trainer_surname": "東",
+        "rating_cc": 67,
+        "rating_change": 1,
+        "age": 4,
+        "body_weight_lbs": 1104,
+        "body_weight_change": -20
+      },
+      {
+        "horse_no": 11,
+        "name": "瑪瑙",
+        "name_oncc": "瑪瑙",
+        "gear_symbols": "",
+        "equipment": "B",
+        "draw": 4,
+        "jockey": "潘明輝",
+        "weight_lbs": 119,
+        "weight_change": -3,
+        "trainer_surname": "羅",
+        "rating_cc": 64,
+        "rating_change": -2,
+        "age": 8,
+        "body_weight_lbs": 1149,
+        "body_weight_change": -2
+      },
+      {
+        "horse_no": 12,
+        "name": "財富非凡",
+        "name_oncc": "財富非凡",
+        "gear_symbols": "▲2",
+        "equipment": "T",
+        "draw": 6,
+        "jockey": "班德禮",
+        "weight_lbs": 117,
+        "weight_change": -14,
+        "trainer_surname": "巫",
+        "rating_cc": 62,
+        "rating_change": 6,
+        "age": 5,
+        "body_weight_lbs": 1107,
+        "body_weight_change": 21
+      }
+    ]
+  },
+  "cc_trackwork": {
+    "race_1": [
+      {
+        "horse_no": 1,
+        "name": "堅多福",
+        "trainer_surname": "柏",
+        "weight_lbs": 135,
+        "trackwork_summary": "距上賽17日，賽後2日(9月8日)復課，踱步13課，快跳1課，泥閘0課，草閘0課，彈閘0課，游水5次。",
+        "trackwork_daily": {
+          "7-9": "助HX（飛機場踱步）",
+          "10-13": "助PH（內快踱兩圈）（從化）",
+          "14-16": "助PH（內快踱兩圈）游2（從化）",
+          "17-20": "助50.5PH草地 27.0 23.5游3（從化）",
+          "21-21": "助PH（內倒快兩圈）（從化）",
+          "22-22": "—"
+        }
+      },
+      {
+        "horse_no": 2,
+        "name": "一風雲",
+        "trainer_surname": "丁",
+        "weight_lbs": 134,
+        "trackwork_summary": "距上賽7日，賽後4日(9月20日)復課，踱步3課，快跳0課，泥閘0課，草閘0課，彈閘0課，游水3次。",
+        "trackwork_daily": {
+          "7-9": "助58.7SWH",
+          "10-13": "助50.1玄宇宙游4 26.3 23.8B草閘",
+          "14-16": "出賽谷B好地1800剛 12駒第11-10 3/4BT",
+          "17-20": "助H（飛機場踱步）游2",
+          "21-21": "助H（彭福公園踱）游1",
+          "22-22": "助H（內快踱一圈）"
+        }
+      },
+      {
+        "horse_no": 3,
+        "name": "神駒馬靈",
+        "trainer_surname": "廖",
+        "weight_lbs": 132,
+        "trackwork_summary": "距上賽17日，賽後2日(9月8日)復課，踱步13課，快跳2課，泥閘0課，草閘0課，彈閘0課，游水12次。",
+        "trackwork_daily": {
+          "7-9": "跑步機踱步（上斜）",
+          "10-13": "助H（內快踱一圈）游2（從化）",
+          "14-16": "助1.21.7高高至高游3 29.8 27.9 24.0草地（從化）",
+          "17-20": "助1.24.2康昌之星 32.7 27.9 23.6H游4",
+          "21-21": "助H（內倒快一圈）游1",
+          "22-22": "助H（內快踱一圈）"
+        }
+      },
+      {
+        "horse_no": 4,
+        "name": "紅磚戰士",
+        "trainer_surname": "游",
+        "weight_lbs": 129,
+        "trackwork_summary": "7月23日從化開操，踱步51課，快跳4課，泥閘0課，草閘2課，彈閘1課，游水36次。",
+        "trackwork_daily": {
+          "7-9": "副1200從草1.10.89",
+          "10-13": "助HN（內倒快兩圈）游3（從化）",
+          "14-16": "助HN（內快踱一圈）",
+          "17-20": "助53.0N 29.3 23.7",
+          "21-21": "助（千八教閘）N",
+          "22-22": "助HN（內快踱一圈）"
+        }
+      },
+      {
+        "horse_no": 5,
+        "name": "極速滿貫",
+        "trainer_surname": "黎",
+        "weight_lbs": 130,
+        "trackwork_summary": "7月27日開操，踱步42課，快跳9課，泥閘1課，草閘1課，彈閘0課，游水43次。",
+        "trackwork_daily": {
+          "7-9": "跑步機慢跑（上斜）",
+          "10-13": "助59.8游4 33.3 26.5",
+          "14-16": "民1200泥閘1.12.09 7駒7 5 5-8 1/4游2",
+          "17-20": "助26.2 26.2游4",
+          "21-21": "助（內倒快一圈）游1",
+          "22-22": "助（內快踱一圈）"
+        }
+      },
+      {
+        "horse_no": 6,
+        "name": "開心三多",
+        "trainer_surname": "桂",
+        "weight_lbs": 128,
+        "trackwork_summary": "距上賽17日，賽後1日(9月7日)復課，踱步13課，快跳3課，泥閘0課，草閘0課，彈閘0課，游水13次。",
+        "trackwork_daily": {
+          "7-9": "助HX（內快踱一圈）",
+          "10-13": "助54.2HX游4 27.8 26.4",
+          "14-16": "森53.4HX游3 29.0 24.4",
+          "17-20": "森1.22.7HX游3 30.5 28.4 23.8",
+          "21-21": "助HX（內倒快兩圈）游1",
+          "22-22": "助HX（內快踱一圈）"
+        }
+      },
+      {
+        "horse_no": 7,
+        "name": "綫路達飛",
+        "trainer_surname": "賢",
+        "weight_lbs": 127,
+        "trackwork_summary": "7月24日從化開操，踱步45課，快跳10課，泥閘1課，草閘1課，彈閘0課，游水32次。",
+        "trackwork_daily": {
+          "7-9": "助H（內倒快兩圈）",
+          "10-13": "助57.9H游4 31.1 26.8（從化）",
+          "14-16": "助1.26.4H游3 33.4 27.7 25.3（從化）",
+          "17-20": "助53.1H游4 28.5 24.6（從化）",
+          "21-21": "助H（內倒快兩圈）游1（從化）",
+          "22-22": "助（內快踱一圈）"
+        }
+      },
+      {
+        "horse_no": 8,
+        "name": "電訊驕陽",
+        "trainer_surname": "徐",
+        "weight_lbs": 115,
+        "trackwork_summary": "距上賽14日，賽後3日(9月12日)復課，踱步8課，快跳1課，泥閘0課，草閘0課，彈閘0課，游水7次。",
+        "trackwork_daily": {
+          "7-9": "出賽谷A好地1200班",
+          "10-13": "助H（內快踱一圈）游2",
+          "14-16": "助H（內快踱兩圈）游2",
+          "17-20": "助1.01.1H 33.8 27.3游3",
+          "21-21": "助H（飛機場踱步）",
+          "22-22": "助H（內快踱一圈）"
+        }
+      },
+      {
+        "horse_no": 9,
+        "name": "至高心得",
+        "trainer_surname": "韋",
+        "weight_lbs": 123,
+        "trackwork_summary": "7月29日從化開操，踱步41課，快跳7課，泥閘0課，草閘1課，彈閘0課，游水51次。",
+        "trackwork_daily": {
+          "7-9": "紹1600從草1.39.02",
+          "10-13": "助57.1HNX 32.2 24.9游4（從化）",
+          "14-16": "助HN（內快踱一圈）游3（從化）",
+          "17-20": "助52.0NX游4 28.7 23.3（從化）",
+          "21-21": "助PHNX（內倒快一圈）游1",
+          "22-22": "助PHNX（內快踱一圈）"
+        }
+      },
+      {
+        "horse_no": 10,
+        "name": "威威父子",
+        "trainer_surname": "巫",
+        "weight_lbs": 120,
+        "trackwork_summary": "8月1日開操，踱步39課，快跳7課，泥閘1課，草閘0課，彈閘0課，游水45次。",
+        "trackwork_daily": {
+          "7-9": "班1050泥閘1.02.28",
+          "10-13": "助H（內快踱一圈）游4",
+          "14-16": "助29.4H 29.4游3",
+          "17-20": "助27.1加州本事 27.1H游4",
+          "21-21": "助H（內倒快一圈）游1",
+          "22-22": "助H（內快踱一圈）"
+        }
+      },
+      {
+        "horse_no": 11,
+        "name": "東方魅影",
+        "trainer_surname": "希",
+        "weight_lbs": 119,
+        "trackwork_summary": "距上賽14日，賽後4日(9月13日)從化復課，踱步7課，快跳2課，泥閘0課，草閘0課，彈閘0課，游水10次。",
+        "trackwork_daily": {
+          "7-9": "出賽谷A好地1200班",
+          "10-13": "助H（內快踱一圈）游2（從化）",
+          "14-16": "助1.23.1H游3 29.0 28.5 25.6（從化）",
+          "17-20": "助24.8天外富天 24.8H游4（從化）",
+          "21-21": "助H（外快踱一圈）游1",
+          "22-22": "助BH（內快踱一圈）"
+        }
+      },
+      {
+        "horse_no": 12,
+        "name": "幸運同行",
+        "trainer_surname": "蔡",
+        "weight_lbs": 118,
+        "trackwork_summary": "距上賽17日，賽後4日(9月10日)復課，踱步10課，快跳3課，泥閘0課，草閘0課，彈閘0課，游水14次。",
+        "trackwork_daily": {
+          "7-9": "游2",
+          "10-13": "助CH（內快踱一圈）游4",
+          "14-16": "助55.6CH游3 29.7 25.9",
+          "17-20": "助56.3綠色最威 30.7 25.6CH游4",
+          "21-21": "助CH（內倒快一圈）游1",
+          "22-22": "助CH（內快踱一圈）"
+        }
+      }
+    ],
+    "race_2": [
+      {
+        "horse_no": 1,
+        "name": "紅愛舍",
+        "trainer_surname": "韋",
+        "weight_lbs": 135,
+        "trackwork_summary": "29.5H 26.5游3（從化） 助H（內倒快兩圈） 助H（內快踱一圈） 8月18日從化開操，踱步19課，快跳7課，泥閘1課，草閘0課，彈閘0課，游水8次。",
+        "trackwork_daily": {
+          "7-9": "助H（內倒快兩圈）",
+          "10-13": "助1050從泥1.01.86",
+          "14-16": "7駒4 1 1-1 1/2 EX游1",
+          "17-20": "助29.5H 26.5游2（從化）",
+          "21-21": "—",
+          "22-22": "—"
+        }
+      },
+      {
+        "horse_no": 2,
+        "name": "銳喜",
+        "trainer_surname": "徐",
+        "weight_lbs": 134,
+        "trackwork_summary": "助H（飛機場踱步） 助H（內倒快兩圈） 助H（內快踱一圈） 7月28日從化開操，踱步33課，快跳11課，泥閘0課，草閘0課，彈閘0課，游水47次。（從化閘0課，從化跳6課，從化踱33課）助33",
+        "trackwork_daily": {
+          "7-9": "助H（內快踱一圈）",
+          "10-13": "助57.4H游4",
+          "14-16": "30.2 27.0H游3（從化）",
+          "17-20": "助57.4H游3",
+          "21-21": "31.3 26.9H游4（從化）",
+          "22-22": "助56.6H"
+        }
+      },
+      {
+        "horse_no": 3,
+        "name": "路路勁",
+        "trainer_surname": "羅",
+        "weight_lbs": 132,
+        "trackwork_summary": "助H（內倒快一圈） 助H（彭福公園踱） 7月27日從化開操，踱步32課，快跳12課，泥閘0課，草閘0課，彈閘0課，游水50次。（從化跳7課，從化踱30課）助30 副5",
+        "trackwork_daily": {
+          "7-9": "助H（內快踱一圈）",
+          "10-13": "助53.9H游4",
+          "14-16": "29.9 25.9游3（從化）",
+          "17-20": "助H（飛機場踱步）",
+          "21-21": "30.4 25.9H游4（從化）",
+          "22-22": "助53.6H"
+        }
+      },
+      {
+        "horse_no": 4,
+        "name": "馬馳登",
+        "trainer_surname": "黎",
+        "weight_lbs": 132,
+        "trackwork_summary": "30.2 23.8 助H（內倒快一圈） 助H（內快踱一圈） 8月1日從化開操，踱步40課，快跳10課，泥閘0課，草閘1課，彈閘0課，游水44次。（從化跳8課，從化踱30課）助38 方1",
+        "trackwork_daily": {
+          "7-9": "助H（內快踱一圈）",
+          "10-13": "助55.0游3",
+          "14-16": "30.2 26.4（從化）",
+          "17-20": "助56.8游3",
+          "21-21": "30.2 24.0（從化）",
+          "22-22": "助54.8游4"
+        }
+      },
+      {
+        "horse_no": 5,
+        "name": "飛輪霸",
+        "trainer_surname": "姚",
+        "weight_lbs": 130,
+        "trackwork_summary": "28.5 24.0 助H（內倒快一圈） 7月30日從化開操，踱步40課，快跳10課，泥閘1課，草閘0課，彈閘0課，游水46次。（從化跳10課，從化踱39課）助34 副3 丁3",
+        "trackwork_daily": {
+          "7-9": "助H（飛機場踱步）",
+          "10-13": "助1050泥閘1.00.28",
+          "14-16": "9駒7 6 7-2游4",
+          "17-20": "助52.5H",
+          "21-21": "28.4 24.1游3",
+          "22-22": "助51.3H"
+        }
+      },
+      {
+        "horse_no": 6,
+        "name": "金珀尖子",
+        "trainer_surname": "希",
+        "weight_lbs": 128,
+        "trackwork_summary": "8月28日從化開操，踱步22課，快跳3課，泥閘0課，草閘0課，彈閘0課，游水35次。（從化跳0課，從化踱22課）助22",
+        "trackwork_daily": {
+          "7-9": "跑步機踱步（上斜）",
+          "10-13": "助SWH（內快踱一圈）",
+          "14-16": "—",
+          "17-20": "—",
+          "21-21": "—",
+          "22-22": "—"
+        }
+      },
+      {
+        "horse_no": 7,
+        "name": "銀刺勇士",
+        "trainer_surname": "柏",
+        "weight_lbs": 125,
+        "trackwork_summary": "28.5 24.5 B草閘 助H（內倒快一圈） 助H（內快踱一圈） 8月8日從化開操，踱步34課，快跳10課，泥閘1課，草閘1課，彈閘0課，游水38次。（從化跳7課，從化踱29課）助29 紹1",
+        "trackwork_daily": {
+          "7-9": "助H（內快踱一圈）",
+          "10-13": "紹1050泥閘1.02.71",
+          "14-16": "6駒6 4 3-2 3/4 SW游3",
+          "17-20": "助55.2H游4",
+          "21-21": "28.8 24.9",
+          "22-22": "助54.7H游1"
+        }
+      },
+      {
+        "horse_no": 8,
+        "name": "鄉村威龍",
+        "trainer_surname": "蔡",
+        "weight_lbs": 127,
+        "trackwork_summary": "32.2 27.3 24.3 助H（內倒快兩圈） 助H（彭福公園踱） 7月24日從化開操，踱步52課，快跳8課，泥閘1課，草閘0課，彈閘0課，游水46次。（從化跳6課，從化踱43課）助53",
+        "trackwork_daily": {
+          "7-9": "助H（飛機場踱步）",
+          "10-13": "助1200從泥1.09.80",
+          "14-16": "10駒5 4 7-5 BT游4",
+          "17-20": "助57.1H",
+          "21-21": "32.6 27.4 24.5（從化）",
+          "22-22": "助57.6H游1"
+        }
+      },
+      {
+        "horse_no": 9,
+        "name": "開心五月",
+        "trainer_surname": "東",
+        "weight_lbs": 121,
+        "trackwork_summary": "助H（內倒快一圈） 助H（彭福公園踱） 游1 7月30日從化開操，踱步42課，快跳9課，泥閘0課，草閘1課，彈閘0課，游水46次。（從化跳7課，從化踱37課）助32 副9",
+        "trackwork_daily": {
+          "7-9": "助H（內快踱一圈）",
+          "10-13": "副55.7游3",
+          "14-16": "29.8 25.3（從化）",
+          "17-20": "副56.4H游4",
+          "21-21": "29.7 25.2（從化）",
+          "22-22": "副54.0H"
+        }
+      },
+      {
+        "horse_no": 10,
+        "name": "比特星",
+        "trainer_surname": "賀",
+        "weight_lbs": 119,
+        "trackwork_summary": "26.8 24.2 助H（內倒快兩圈） 助H（內快踱一圈） 8月2日從化開操，踱步38課，快跳10課，泥閘1課，草閘0課，彈閘0課，游水44次。（從化跳7課，從化踱34課）助35 賀1",
+        "trackwork_daily": {
+          "7-9": "助H（飛機場踱步）",
+          "10-13": "助1050從泥1.02.71",
+          "14-16": "10駒10 9 9-2 EX游4",
+          "17-20": "助26.8火焰之威 26.8游3",
+          "21-21": "—",
+          "22-22": "—"
+        }
+      },
+      {
+        "horse_no": 11,
+        "name": "有盈勇士",
+        "trainer_surname": "沈",
+        "weight_lbs": 118,
+        "trackwork_summary": "26.2 24.2 助H（內倒快兩圈） 助H（彭福公園踱） 7月24日從化開操，踱步47課，快跳9課，泥閘1課，草閘0課，彈閘0課，游水47次。（從化跳6課，從化踱37課）助40 沈3",
+        "trackwork_daily": {
+          "7-9": "助H（內快踱一圈）",
+          "10-13": "助1050泥閘1.02.88",
+          "14-16": "11駒10 9 7-1 1/4游4",
+          "17-20": "助H（內倒快一圈）",
+          "21-21": "26.5 24.1（從化）",
+          "22-22": "助26.3H"
+        }
+      },
+      {
+        "horse_no": 12,
+        "name": "首駿",
+        "trainer_surname": "游",
+        "weight_lbs": 118,
+        "trackwork_summary": "助H（內倒快一圈） 助H（內快踱一圈） 7月27日從化開操，踱步46課，快跳9課，泥閘0課，草閘1課，彈閘0課，游水48次。（從化跳8課，從化踱37課）助46 游1",
+        "trackwork_daily": {
+          "7-9": "助H（內快踱一圈）",
+          "10-13": "助52.9H游4",
+          "14-16": "28.9 25.5（從化）",
+          "17-20": "助H（飛機場踱步）游3",
+          "21-21": "29.9 24.0（從化）",
+          "22-22": "助53.9H游1"
+        }
+      }
+    ],
+    "race_3": [
+      {
+        "horse_no": 1,
+        "name": "星願無限",
+        "trainer_surname": "沈",
+        "weight_lbs": 135,
+        "trackwork_summary": "助B（內快踱一圈） 8月1日從化開操，踱步41課，快跳11課，泥閘0課，草閘1課，彈閘0課，游水43次。（從化跳10課，從化踱36課）助40 沈1",
+        "trackwork_daily": {
+          "7-9": "助B（內快踱兩圈）",
+          "10-13": "助51.9B 25.5 22.8（從化）",
+          "14-16": "助51.9B游3 25.5 22.4（從化）",
+          "17-20": "助25.2金色年華 25.2B游4",
+          "21-21": "助B（內倒快一圈）（從化）",
+          "22-22": "助B（飛機場踱步）"
+        }
+      },
+      {
+        "horse_no": 2,
+        "name": "贏玥",
+        "trainer_surname": "巫",
+        "weight_lbs": 132,
+        "trackwork_summary": "助H（內倒快一圈） 助H（彭福公園踱） 8月1日開操，踱步39課，快跳10課，泥閘1課，草閘0課，彈閘0課，游水43次。助38 巫1",
+        "trackwork_daily": {
+          "7-9": "助H（飛機場踱步）",
+          "10-13": "助1050泥閘1.01.53",
+          "14-16": "7駒4 3 2-1 SW游3",
+          "17-20": "助27.5H 24.7",
+          "21-21": "助27.7H 24.2游4",
+          "22-22": "助27.7H游1"
+        }
+      },
+      {
+        "horse_no": 3,
+        "name": "彩虹七色",
+        "trainer_surname": "呂",
+        "weight_lbs": 130,
+        "trackwork_summary": "30.1 24.7 助H（內倒快兩圈） 助H（彭福公園踱） 8月8日從化開操，踱步34課，快跳9課，泥閘0課，草閘1課，彈閘0課，游水45次。（從化跳7課，從化踱28課）助30 呂3",
+        "trackwork_daily": {
+          "7-9": "助H（內快踱一圈）",
+          "10-13": "助57.0H游4",
+          "14-16": "30.2 26.1（從化）",
+          "17-20": "助56.9H游3",
+          "21-21": "28.9 24.7（從化）",
+          "22-22": "助55.7H游4"
+        }
+      },
+      {
+        "horse_no": 4,
+        "name": "睿智多寶",
+        "trainer_surname": "黎",
+        "weight_lbs": 129,
+        "trackwork_summary": "30.6 26.1 助H（內倒快兩圈） 7月24日從化開操，踱步46課，快跳9課，泥閘0課，草閘0課，彈閘0課，游水46次。（從化跳4課，從化踱41課）助44 黎1",
+        "trackwork_daily": {
+          "7-9": "助H（飛機場踱步）",
+          "10-13": "助55.2H游4",
+          "14-16": "30.7 26.3",
+          "17-20": "助53.7H游3",
+          "21-21": "30.7 26.4",
+          "22-22": "助53.8H游4"
+        }
+      },
+      {
+        "horse_no": 5,
+        "name": "凝妙星",
+        "trainer_surname": "希",
+        "weight_lbs": 128,
+        "trackwork_summary": "30.0 26.1 助H（內倒快一圈） 游1 助H（內快踱一圈） 7月27日從化開操，踱步40課，快跳10課，泥閘0課，草閘0課，彈閘0課，游水43次。（從化跳8課，從化踱33課）助33 副6",
+        "trackwork_daily": {
+          "7-9": "助H（飛機場踱步）",
+          "10-13": "副54.8H游4",
+          "14-16": "30.7 26.7（從化）",
+          "17-20": "副56.5H游3",
+          "21-21": "30.6 26.3（從化）",
+          "22-22": "副56.3H游4"
+        }
+      },
+      {
+        "horse_no": 6,
+        "name": "領航天子",
+        "trainer_surname": "廖",
+        "weight_lbs": 128,
+        "trackwork_summary": "26.7 23.2 助SWH（內倒快一圈） 助SWH（內快踱一圈） 7月23日從化開操，踱步52課，快跳9課，泥閘0課，草閘0課，彈閘0課，游水46次。（從化跳8課，從化踱43課）助49 廖1",
+        "trackwork_daily": {
+          "7-9": "助SWH（內快踱一圈）",
+          "10-13": "助51.7游3",
+          "14-16": "27.0 23.3（從化）",
+          "17-20": "助51.3SWH游4",
+          "21-21": "26.8 22.9（從化）",
+          "22-22": "助50.5游1"
+        }
+      },
+      {
+        "horse_no": 7,
+        "name": "有情有義",
+        "trainer_surname": "柏",
+        "weight_lbs": 124,
+        "trackwork_summary": "27.0 23.4 助H（內倒快一圈） 助H（彭福公園踱） 7月23日從化開操，踱步50課，快跳11課，泥閘0課，草閘1課，彈閘0課，游水45次。（從化跳9課，從化踱41課）助50 森1",
+        "trackwork_daily": {
+          "7-9": "助H（內快踱一圈）",
+          "10-13": "森1200從草1.10.03",
+          "14-16": "5駒2 1 1-0 B游3",
+          "17-20": "助27.8幸福駒 27.8H游4",
+          "21-21": "28.6 24.2",
+          "22-22": "助26.9H游1"
+        }
+      },
+      {
+        "horse_no": 8,
+        "name": "蹺妙",
+        "trainer_surname": "游",
+        "weight_lbs": 122,
+        "trackwork_summary": "31.8 27.1 23.9 助H（內倒快兩圈） 助H（彭福公園踱） 7月24日從化開操，踱步44課，快跳12課，泥閘1課，草閘0課，彈閘0課，游水44次。（從化跳5課，從化踱36課）助42 游2",
+        "trackwork_daily": {
+          "7-9": "助H（飛機場踱步）",
+          "10-13": "助1200泥閘1.09.62",
+          "14-16": "8駒8 7 8-3 BT游4",
+          "17-20": "助56.4H",
+          "21-21": "31.5 27.1 23.7（從化）",
+          "22-22": "助57.2H游1"
+        }
+      },
+      {
+        "horse_no": 9,
+        "name": "越駿齊歡",
+        "trainer_surname": "羅",
+        "weight_lbs": 124,
+        "trackwork_summary": "26.7 23.5 助H（內倒快兩圈） 助H（內快踱一圈） 7月24日從化開操，踱步46課，快跳10課，泥閘1課，草閘0課，彈閘0課，游水46次。（從化跳7課，從化踱39課）助42 羅1",
+        "trackwork_daily": {
+          "7-9": "助H（飛機場踱步）",
+          "10-13": "助1050從泥1.01.80",
+          "14-16": "7駒2 1 1-4 EX游4",
+          "17-20": "助27.0鴻運 27.0H游3",
+          "21-21": "—",
+          "22-22": "—"
+        }
+      },
+      {
+        "horse_no": 10,
+        "name": "加州活力",
+        "trainer_surname": "東",
+        "weight_lbs": 131,
+        "trackwork_summary": "30.0 25.9 副H（內倒快一圈） 助H（內快踱一圈） 7月28日從化開操，踱步43課，快跳9課，泥閘1課，草閘0課，彈閘0課，游水44次。（從化跳7課，從化踱35課）副39 助3",
+        "trackwork_daily": {
+          "7-9": "助H（飛機場踱步）",
+          "10-13": "副1200泥閘1.09.00",
+          "14-16": "7駒6 6 7-3 BT游4",
+          "17-20": "副H（內快踱一圈）",
+          "21-21": "30.0 26.0",
+          "22-22": "助55.6H游1"
+        }
+      },
+      {
+        "horse_no": 11,
+        "name": "光明傳承",
+        "trainer_surname": "葉",
+        "weight_lbs": 119,
+        "trackwork_summary": "30.9 24.9 助H（內倒快兩圈） 助H（彭福公園踱） 7月24日從化開操，踱步45課，快跳9課，泥閘0課，草閘1課，彈閘0課，游水48次。（從化跳8課，從化踱36課）助40 葉3",
+        "trackwork_daily": {
+          "7-9": "助H（飛機場踱步）",
+          "10-13": "助1200從草1.10.55",
+          "14-16": "10駒8 7 6-1游4",
+          "17-20": "助55.4H游3",
+          "21-21": "31.0 24.5（從化）",
+          "22-22": "助54.6H"
+        }
+      },
+      {
+        "horse_no": 12,
+        "name": "得意佳作",
+        "trainer_surname": "姚",
+        "weight_lbs": 118,
+        "trackwork_summary": "8月21日從化開操，踱步26課，快跳6課，泥閘0課，草閘0課，彈閘0課，游水40次。（從化跳6課，從化踱26課）助26",
+        "trackwork_daily": {
+          "7-9": "助H（內快踱一圈）",
+          "10-13": "助H1.26.8游4 32.5 27.0 23.3（從化）",
+          "14-16": "助H（內倒快一圈）（從化）",
+          "17-20": "—",
+          "21-21": "—",
+          "22-22": "—"
+        }
+      }
+    ],
+    "race_4": [
+      {
+        "horse_no": 1,
+        "name": "沙井之友",
+        "trainer_surname": "巫",
+        "weight_lbs": 133,
+        "trackwork_summary": "助H（飛機場踱步） 游3 助H（內倒快一圈） 游1 助H（內快踱一圈） 距上賽7日，賽後4日(9月20日)復課，踱步3課，快跳0課，泥閘0課，草閘0課，彈閘0課，游水4次。助3",
+        "trackwork_daily": {
+          "7-9": "助56.6H游3",
+          "10-13": "助53.3納百川",
+          "14-16": "28.9 24.4H游4",
+          "17-20": "出賽谷B好地1200澤",
+          "21-21": "12駒第10-6 3/4T",
+          "22-22": "—"
+        }
+      },
+      {
+        "horse_no": 2,
+        "name": "智勝一籌",
+        "trainer_surname": "賢",
+        "weight_lbs": 135,
+        "trackwork_summary": "助57.9PH游4 33.3 24.6 助PH（飛機場踱步） 游1 助PH（內快踱一圈） 8月8日開操，踱步35課，快跳9課，泥閘1課，草閘0課，彈閘0課，游水33次。助44 紹1",
+        "trackwork_daily": {
+          "7-9": "助1.24.8PH游3",
+          "10-13": "助57.9PH游4",
+          "14-16": "32.2 25.7",
+          "17-20": "紹1200泥閘1.10.22",
+          "21-21": "8駒1 1 1-1游2",
+          "22-22": "—"
+        }
+      },
+      {
+        "horse_no": 3,
+        "name": "應龍飛影",
+        "trainer_surname": "伍",
+        "weight_lbs": 122,
+        "trackwork_summary": "助57.7H游4 30.7 27.0 助56.1H游1 29.5 26.6 助H（內快踱一圈） 距上賽14日，賽後4日(9月13日)復課，踱步8課，快跳2課，泥閘0課，草閘0課，彈閘0課，游水11次。助10",
+        "trackwork_daily": {
+          "7-9": "出賽谷A好地1200袁",
+          "10-13": "助H（飛機場踱步）",
+          "14-16": "游3",
+          "17-20": "助H（內快踱一圈）",
+          "21-21": "游3",
+          "22-22": "—"
+        }
+      },
+      {
+        "horse_no": 4,
+        "name": "星辰千帥",
+        "trainer_surname": "賀",
+        "weight_lbs": 131,
+        "trackwork_summary": "潘50.0B草地 27.6 22.4游4 助57.0H游1 29.6 27.4 7月23日從化開操，踱步46課，快跳12課，泥閘1課，草閘0課，彈閘0課，游水52次。（從化閘0課，從化跳5課，從化踱23課）助46 妮8 潘2",
+        "trackwork_daily": {
+          "7-9": "潘1050泥閘1.01.47",
+          "10-13": "跑步機慢跑 （上斜）",
+          "14-16": "游4",
+          "17-20": "妮53.1H游3",
+          "21-21": "27.7 25.4",
+          "22-22": "—"
+        }
+      },
+      {
+        "horse_no": 5,
+        "name": "莊家班",
+        "trainer_surname": "沈",
+        "weight_lbs": 127,
+        "trackwork_summary": "弘56.2草閘 29.0 27.2游4 助49.6H星願無限草閘 26.1 23.5凌登游1 弘H（內快踱一圈） 7月27日從化開操，踱步47課，快跳8課，泥閘0課，草閘1課，彈閘2課，游水51次。（從化閘1課，從化跳7課，從化踱38課）助55 弘2 梁1",
+        "trackwork_daily": {
+          "7-9": "助H（內快踱兩圈）",
+          "10-13": "助55.2H游4",
+          "14-16": "28.6 26.6",
+          "17-20": "助H（內快踱兩圈）",
+          "21-21": "游3",
+          "22-22": "—"
+        }
+      },
+      {
+        "horse_no": 6,
+        "name": "快樂神駒",
+        "trainer_surname": "廖",
+        "weight_lbs": 129,
+        "trackwork_summary": "副51.9HX游4 27.7 24.2 助52.0HX游1 27.6 24.4 助HX（內快踱一圈） 7月27日從化開操，踱步48課，快跳9課，泥閘1課，草閘0課，彈閘0課，游水15次。（從化閘0課，從化跳7課，從化踱39課）助52 副5 潘1",
+        "trackwork_daily": {
+          "7-9": "助53.3X草地",
+          "10-13": "潘1200泥閘1.10.38",
+          "14-16": "8駒1 1 2-頸游2",
+          "17-20": "副HX（內快踱一圈）",
+          "21-21": "游3",
+          "22-22": "—"
+        }
+      },
+      {
+        "horse_no": 7,
+        "name": "震撼人心",
+        "trainer_surname": "蔡",
+        "weight_lbs": 129,
+        "trackwork_summary": "助59.6游4 33.3 26.3 助57.5辣得準 30.8 26.7游1 助H（內快踱一圈） 距上賽17日，賽後4日(9月10日)復課，踱步10課，快跳3課，泥閘0課，草閘0課，彈閘0課，游水14次。助13",
+        "trackwork_daily": {
+          "7-9": "游2",
+          "10-13": "助H（內快踱一圈）",
+          "14-16": "游4",
+          "17-20": "助56.6辣得準",
+          "21-21": "30.5 26.1游3",
+          "22-22": "—"
+        }
+      },
+      {
+        "horse_no": 8,
+        "name": "禪勝閃亮",
+        "trainer_surname": "呂",
+        "weight_lbs": 128,
+        "trackwork_summary": "周53.9H游4 29.5 24.4 助56.1H游1 30.3 25.8 助H（內快踱一圈） 7月27日開操，踱步40課，快跳9課，泥閘2課，草閘0課，彈閘0課，游水43次。（從化閘1課，從化跳1課，從化踱5課）助48 周2",
+        "trackwork_daily": {
+          "7-9": "助56.2H游3",
+          "10-13": "助1200從泥1.10.78",
+          "14-16": "6駒4 2 2-5 SW游2",
+          "17-20": "助H（內快踱一圈）",
+          "21-21": "游3",
+          "22-22": "—"
+        }
+      },
+      {
+        "horse_no": 9,
+        "name": "將傲",
+        "trainer_surname": "韋",
+        "weight_lbs": 126,
+        "trackwork_summary": "助54.1PHX 29.6 24.5 助PHX（內倒快兩圈） 助PHX（內快踱一圈） 7月23日從化開操，踱步48課，快跳8課，泥閘1課，草閘0課，彈閘0課，游水4次。（從化閘0課，從化跳0課，從化踱10課）助45 民2",
+        "trackwork_daily": {
+          "7-9": "民57.6PHX",
+          "10-13": "民1200泥閘1.10.40",
+          "14-16": "8駒4 4 3-頸 PHX",
+          "17-20": "助PHX（內快踱一圈）",
+          "21-21": "—",
+          "22-22": "—"
+        }
+      },
+      {
+        "horse_no": 10,
+        "name": "平天雄",
+        "trainer_surname": "丁",
+        "weight_lbs": 123,
+        "trackwork_summary": "助54.1都靈福星 29.3 24.8游4 助（內倒快兩圈） 游1 助（內快踱一圈） 7月23日開操，踱步47課，快跳9課，泥閘1課，草閘0課，彈閘0課，游水44次。（從化閘0課，從化跳0課，從化踱1課）助50 副6 明1",
+        "trackwork_daily": {
+          "7-9": "助1.01.1游3",
+          "10-13": "副51.8游4",
+          "14-16": "27.7 24.1",
+          "17-20": "助54.7游3",
+          "21-21": "30.0 24.7",
+          "22-22": "—"
+        }
+      },
+      {
+        "horse_no": 11,
+        "name": "焦點",
+        "trainer_surname": "游",
+        "weight_lbs": 121,
+        "trackwork_summary": "助55.5游4 28.8 26.7 助H（內倒快兩圈） 游1 距上賽17日，賽後3日(9月9日)復課，踱步10課，快跳1課，泥閘0課，草閘0課，彈閘0課，游水14次。助10",
+        "trackwork_daily": {
+          "7-9": "跑步機慢跑 （上斜）",
+          "10-13": "助H（內快踱一圈）",
+          "14-16": "游4",
+          "17-20": "助H（內倒快兩圈）",
+          "21-21": "游3",
+          "22-22": "—"
+        }
+      },
+      {
+        "horse_no": 12,
+        "name": "三強",
+        "trainer_surname": "鄭",
+        "weight_lbs": 120,
+        "trackwork_summary": "助50.5大浪園田 26.3 24.2草閘游1 助1.33.6H 33.5 31.5 28.6 助H（內快踱一圈） 7月28日開操，踱步37課，快跳9課，泥閘1課，草閘0課，彈閘1課，游水33次。助47 綸1",
+        "trackwork_daily": {
+          "7-9": "助H（內快踱一圈）",
+          "10-13": "助54.0H游2",
+          "14-16": "28.8 25.2",
+          "17-20": "助H（內快踱一圈）",
+          "21-21": "游3",
+          "22-22": "—"
+        }
+      }
+    ],
+    "race_5": [
+      {
+        "horse_no": 1,
+        "name": "本領非凡",
+        "trainer_surname": "羅",
+        "weight_lbs": 135,
+        "trackwork_summary": "助1.00.2H 33.4 26.8游4 澤1.00.2H 32.6 27.6游1 助H（內快踱一圈） 7月23日從化開操，踱步47課，快跳11課，泥閘1課，草閘0課，彈閘0課，游水51次。（從化閘1課，從化跳11課，從化踱47課）助58 澤1",
+        "trackwork_daily": {
+          "7-9": "助H（內快踱一圈）",
+          "10-13": "助1200從泥1.10.59",
+          "14-16": "7駒3 4 3-1 1/4游3",
+          "17-20": "助H（內快踱一圈）",
+          "21-21": "游3",
+          "22-22": "—"
+        }
+      },
+      {
+        "horse_no": 2,
+        "name": "大文豪",
+        "trainer_surname": "姚",
+        "weight_lbs": 133,
+        "trackwork_summary": "副52.6B草地 29.0 23.6游4（從化） 助54.5永福 30.3 24.2H游1 副H（內快踱一圈） 7月31日從化開操，踱步41課，快跳10課，泥閘1課，草閘0課，彈閘0課，游水50次。（從化閘1課，從化跳9課，從化踱37課）助43 副9",
+        "trackwork_daily": {
+          "7-9": "副55.7滿鴻利",
+          "10-13": "助1200從泥1.11.65",
+          "14-16": "5駒3 3 1-短頭 B游2",
+          "17-20": "助（內倒快兩圈）",
+          "21-21": "游3（從化）",
+          "22-22": "—"
+        }
+      },
+      {
+        "horse_no": 3,
+        "name": "大學生",
+        "trainer_surname": "韋",
+        "weight_lbs": 128,
+        "trackwork_summary": "助54.3N游4 28.8 25.5 助HX（內倒快兩圈） 游1 助HX（內快踱一圈） 8月2日開操，踱步35課，快跳8課，泥閘0課，草閘1課，彈閘0課，游水42次。（從化閘1課，從化跳2課，從化踱11課）助43 梁1",
+        "trackwork_daily": {
+          "7-9": "梁1200從草1.11.05",
+          "10-13": "助52.8SWNX草地",
+          "14-16": "29.1 23.7游3（從化）",
+          "17-20": "助HN（內快踱一圈）",
+          "21-21": "游2（從化）",
+          "22-22": "—"
+        }
+      },
+      {
+        "horse_no": 4,
+        "name": "赤風驪",
+        "trainer_surname": "柏",
+        "weight_lbs": 128,
+        "trackwork_summary": "助（內快踱兩圈） 游2（從化） 助1.26.2H 30.4 29.5 26.3 助（內快踱兩圈） 8月2日開操，踱步44課，快跳5課，泥閘0課，草閘1課，彈閘0課，游水28次。（從化閘1課，從化跳0課，從化踱14課）助47 弘1 民1",
+        "trackwork_daily": {
+          "7-9": "民1200從草1.11.69",
+          "10-13": "助（內快踱兩圈）",
+          "14-16": "游1（從化）",
+          "17-20": "助（內快踱一圈）",
+          "21-21": "游2（從化）",
+          "22-22": "—"
+        }
+      },
+      {
+        "horse_no": 5,
+        "name": "創科群英",
+        "trainer_surname": "游",
+        "weight_lbs": 124,
+        "trackwork_summary": "助53.3蹺妙 28.2 25.1N游4 跑步機快操 （上斜） 游1 助HN（內快踱一圈） 距上賽14日，賽後3日(9月12日)復課，踱步8課，快跳2課，泥閘0課，草閘0課，彈閘0課，游水11次。助8",
+        "trackwork_daily": {
+          "7-9": "出賽谷A好地1650民",
+          "10-13": "跑步機慢跑 （上斜）",
+          "14-16": "游3",
+          "17-20": "助（內倒快兩圈）",
+          "21-21": "游3",
+          "22-22": "—"
+        }
+      },
+      {
+        "horse_no": 6,
+        "name": "越駿聯歡",
+        "trainer_surname": "黎",
+        "weight_lbs": 124,
+        "trackwork_summary": "梁24.5 24.5游4 副H（內倒快一圈） 游1 副H（內快踱一圈） 8月3日從化開操，踱步35課，快跳9課，泥閘1課，草閘1課，彈閘0課，游水48次。（從化閘1課，從化跳6課，從化踱23課）助34 副7 度2 梁1",
+        "trackwork_daily": {
+          "7-9": "助1.01.7游3",
+          "10-13": "度1200泥閘1.12.38",
+          "14-16": "9駒8 9 7-9 1/2游3",
+          "17-20": "副27.0",
+          "21-21": "27.0游3",
+          "22-22": "—"
+        }
+      },
+      {
+        "horse_no": 7,
+        "name": "滿洛城",
+        "trainer_surname": "希",
+        "weight_lbs": 123,
+        "trackwork_summary": "跑步機慢跑 （上斜） 游4 班1.00.3H 33.2 27.1游1 助H（內快踱一圈） 7月23日從化開操，踱步37課，快跳11課，泥閘1課，草閘1課，彈閘0課，游水50次。（從化閘1課，從化跳10課，從化踱31課）助46 班3",
+        "trackwork_daily": {
+          "7-9": "助H（內快踱兩圈）",
+          "10-13": "助26.3H草地",
+          "14-16": "26.3游4（從化）",
+          "17-20": "班1200泥閘1.11.36",
+          "21-21": "8駒8 8 5-7 1/4游2",
+          "22-22": "—"
+        }
+      },
+      {
+        "horse_no": 8,
+        "name": "金駒永騰",
+        "trainer_surname": "伍",
+        "weight_lbs": 120,
+        "trackwork_summary": "助H（內快踱一圈） 游4 弘56.4H游1 30.0 26.4 助H（內快踱一圈） 距上賽10日，賽後4日(9月17日)復課，踱步5課，快跳1課，泥閘0課，草閘0課，彈閘0課，游水7次。助5 弘1",
+        "trackwork_daily": {
+          "7-9": "助H（內倒快兩圈）",
+          "10-13": "出賽田B好快1600弘",
+          "14-16": "14駒第1-1 1/4B",
+          "17-20": "游2",
+          "21-21": "—",
+          "22-22": "—"
+        }
+      },
+      {
+        "horse_no": 9,
+        "name": "爆竹",
+        "trainer_surname": "東",
+        "weight_lbs": 122,
+        "trackwork_summary": "助54.0游4 29.4 24.6 助H（內倒快兩圈） 游1 助H（內快踱一圈） 8月3日從化開操，踱步39課，快跳11課，泥閘1課，草閘0課，彈閘0課，游水52次。（從化閘1課，從化跳10課，從化踱37課）助50 妮1",
+        "trackwork_daily": {
+          "7-9": "助53.8H游3",
+          "10-13": "妮1200從泥1.10.96",
+          "14-16": "6駒1 3 5-6 1/4游4",
+          "17-20": "助H（內倒快兩圈）",
+          "21-21": "游3（從化）",
+          "22-22": "—"
+        }
+      },
+      {
+        "horse_no": 10,
+        "name": "揀馬之皇",
+        "trainer_surname": "賀",
+        "weight_lbs": 120,
+        "trackwork_summary": "助55.1H游4 28.7 26.4 助（內倒快兩圈） 游1 助（內快踱一圈） 7月23日開操，踱步48課，快跳7課，泥閘2課，草閘0課，彈閘0課，游水46次。助30 妮6 明6",
+        "trackwork_daily": {
+          "7-9": "妮57.9H游3",
+          "10-13": "明1200泥閘1.12.44",
+          "14-16": "9駒5 8 8-10游4",
+          "17-20": "跑步機慢跑 （上斜）",
+          "21-21": "游3",
+          "22-22": "—"
+        }
+      },
+      {
+        "horse_no": 11,
+        "name": "健康小馬",
+        "trainer_surname": "鄭",
+        "weight_lbs": 118,
+        "trackwork_summary": "助PH（內倒快兩圈） 游2（從化） 助PH（內倒快兩圈） 助PH（內快踱一圈） 7月23日從化開操，踱步42課，快跳10課，泥閘0課，草閘1課，彈閘1課，游水28次。（從化閘1課，從化跳11課，從化踱48課）助53 明1",
+        "trackwork_daily": {
+          "7-9": "助55.0PH游2",
+          "10-13": "助54.6PH登山跑道",
+          "14-16": "28.8 25.8游3（從化）",
+          "17-20": "助49.7風繼續吹",
+          "21-21": "26.9 22.8H草閘游2（從化）",
+          "22-22": "—"
+        }
+      },
+      {
+        "horse_no": 12,
+        "name": "同心",
+        "trainer_surname": "呂",
+        "weight_lbs": 117,
+        "trackwork_summary": "紹28.9HX 28.9游4 助56.8HX游1 30.6 26.2 助HX（內快踱一圈） 7月27日開操，踱步39課，快跳9課，泥閘1課，草閘1課，彈閘0課，游水42次。助46 澤2 紹1",
+        "trackwork_daily": {
+          "7-9": "助57.7HX游3",
+          "10-13": "澤1200泥閘1.11.20",
+          "14-16": "9駒4 3 3-2 1/4 VX游3",
+          "17-20": "助HX（內快踱一圈）",
+          "21-21": "游3",
+          "22-22": "—"
+        }
+      }
+    ],
+    "race_6": [
+      {
+        "horse_no": 1,
+        "name": "福進",
+        "trainer_surname": "柏",
+        "weight_lbs": 135,
+        "trackwork_summary": "游3 助H（內倒快兩圈） 游1 助H（內快踱兩圈） 距上賽14日，賽後2日(9月11日)復課，踱步12課，快跳0課，泥閘0課，草閘0課，彈閘0課，游水9次。助12",
+        "trackwork_daily": {
+          "7-9": "出賽谷A好地1000澤",
+          "10-13": "助H（內快踱一圈）",
+          "14-16": "游2",
+          "17-20": "助H（內快踱兩圈）",
+          "21-21": "游3",
+          "22-22": "助H（內快踱兩圈）"
+        }
+      },
+      {
+        "horse_no": 2,
+        "name": "友駿同心",
+        "trainer_surname": "賢",
+        "weight_lbs": 133,
+        "trackwork_summary": "30.1 27.5 助EX（飛機場踱步） 游1 助EX（內快踱一圈） 8月2日開操，踱步39課，快跳11課，泥閘1課，草閘0課，彈閘0課，游水40次。助49 副1 紹1",
+        "trackwork_daily": {
+          "7-9": "助56.6游3",
+          "10-13": "紹1050泥閘1.02.17",
+          "14-16": "7駒2 2 7-6 EX游3",
+          "17-20": "助EX（內倒快兩圈）",
+          "21-21": "游3",
+          "22-22": "助57.6EX游4"
+        }
+      },
+      {
+        "horse_no": 3,
+        "name": "藍地球",
+        "trainer_surname": "伍",
+        "weight_lbs": 131,
+        "trackwork_summary": "30.3 26.3（從化） 助55.3H游1 29.9 25.4 助H（內快踱一圈） 距上賽14日，賽後4日(9月13日)從化復課，踱步8課，快跳2課，泥閘0課，草閘0課，彈閘0課，游水10次。（從化閘0課，從化跳1課，從化踱6課）助10",
+        "trackwork_daily": {
+          "7-9": "出賽谷A好地1000袁",
+          "10-13": "助H（飛機場踱步）",
+          "14-16": "游2（從化）",
+          "17-20": "助H（內快踱一圈）",
+          "21-21": "游3（從化）",
+          "22-22": "助56.6H游4"
+        }
+      },
+      {
+        "horse_no": 4,
+        "name": "巴閉王",
+        "trainer_surname": "呂",
+        "weight_lbs": 129,
+        "trackwork_summary": "29.6 26.1（從化） 助54.4HX游1 29.0 25.4 助HX（內快踱一圈） 距上賽14日，賽後3日(9月12日)從化復課，踱步8課，快跳2課，泥閘0課，草閘0課，彈閘0課，游水10次。（從化閘0課，從化跳1課，從化踱6課）助10",
+        "trackwork_daily": {
+          "7-9": "出賽谷A好地1000周",
+          "10-13": "助H（飛機場踱步）",
+          "14-16": "游2（從化）",
+          "17-20": "助H（內快踱一圈）",
+          "21-21": "游3（從化）",
+          "22-22": "助55.7HX游4"
+        }
+      },
+      {
+        "horse_no": 5,
+        "name": "佐治傳奇",
+        "trainer_surname": "東",
+        "weight_lbs": 128,
+        "trackwork_summary": "28.8 25.3 助H（內倒快兩圈） 游1 助H（內快踱一圈） 距上賽14日，賽後2日(9月11日)復課，踱步10課，快跳2課，泥閘0課，草閘0課，彈閘0課，游水12次。助12",
+        "trackwork_daily": {
+          "7-9": "出賽谷A好地1000禮",
+          "10-13": "助H（內快踱一圈）",
+          "14-16": "游4",
+          "17-20": "助56.3B游3",
+          "21-21": "29.1 27.2",
+          "22-22": "助54.1B游4"
+        }
+      },
+      {
+        "horse_no": 6,
+        "name": "升升雙息",
+        "trainer_surname": "沈",
+        "weight_lbs": 126,
+        "trackwork_summary": "27.6 24.6 助H（內倒快兩圈） 游1 助H（內快踱一圈） 距上賽14日，賽後3日(9月12日)復課，踱步9課，快跳2課，泥閘0課，草閘0課，彈閘0課，游水11次。助11",
+        "trackwork_daily": {
+          "7-9": "出賽谷A好地1000明",
+          "10-13": "助H（內快踱一圈）",
+          "14-16": "游3",
+          "17-20": "助51.6H游3",
+          "21-21": "27.3 24.3",
+          "22-22": "助52.2H游4"
+        }
+      },
+      {
+        "horse_no": 7,
+        "name": "雙劍合璧",
+        "trainer_surname": "希",
+        "weight_lbs": 126,
+        "trackwork_summary": "25.3游4 跑步機慢跑 （上斜） 游1 7月23日從化開操，踱步34課，快跳11課，泥閘1課，草閘1課，彈閘0課，游水49次。（從化閘2課，從化跳10課，從化踱32課）助43 班2",
+        "trackwork_daily": {
+          "7-9": "助H（內倒快兩圈）",
+          "10-13": "助1050從泥1.02.59",
+          "14-16": "5駒4 5 3-9 3/4游3",
+          "17-20": "助26.4H",
+          "21-21": "26.4游3（從化）",
+          "22-22": "班25.3"
+        }
+      },
+      {
+        "horse_no": 8,
+        "name": "螢影飛馳",
+        "trainer_surname": "徐",
+        "weight_lbs": 114,
+        "trackwork_summary": "31.4 26.4H游1（從化） 助H（飛機場踱步） 助H（內快踱一圈） 7月30日從化開操，踱步43課，快跳8課，泥閘0課，草閘1課，彈閘0課，游水37次。（從化閘2課，從化跳9課，從化踱51課）助52",
+        "trackwork_daily": {
+          "7-9": "助H（內快踱一圈）",
+          "10-13": "助57.2立馬行動",
+          "14-16": "31.3 25.9H游4（從化）",
+          "17-20": "助56.7忠良烈漢",
+          "21-21": "29.0 27.7H游3（從化）",
+          "22-22": "助57.8豐辰"
+        }
+      },
+      {
+        "horse_no": 9,
+        "name": "天火同人",
+        "trainer_surname": "韋",
+        "weight_lbs": 116,
+        "trackwork_summary": "29.3 25.7游4 助HNX（內倒快一圈） 游1 助HNX（內快踱一圈） 距上賽14日，賽後4日(9月13日)復課，踱步8課，快跳1課，泥閘0課，草閘0課，彈閘0課，游水11次。助9",
+        "trackwork_daily": {
+          "7-9": "出賽谷A好地1000妮",
+          "10-13": "助HNX（內快踱一圈）",
+          "14-16": "游3",
+          "17-20": "助HNX（內快踱一圈）",
+          "21-21": "游3",
+          "22-22": "助55.0B草地"
+        }
+      },
+      {
+        "horse_no": 10,
+        "name": "領航多財",
+        "trainer_surname": "鄭",
+        "weight_lbs": 120,
+        "trackwork_summary": "27.0 24.3 助50.4傲然草閘 26.2 24.2H 助H（內快踱一圈） 7月23日從化開操，踱步43課，快跳10課，泥閘0課，草閘1課，彈閘1課，游水30次。（從化閘1課，從化跳7課，從化踱30課）助54 顯1",
+        "trackwork_daily": {
+          "7-9": "助H（內快踱兩圈）",
+          "10-13": "助55.6頑童",
+          "14-16": "28.7 26.9H游3",
+          "17-20": "助H（內快踱兩圈）",
+          "21-21": "游3",
+          "22-22": "助51.3H游1"
+        }
+      },
+      {
+        "horse_no": 11,
+        "name": "萬眾開心",
+        "trainer_surname": "黎",
+        "weight_lbs": 120,
+        "trackwork_summary": "紹1050泥閘1.02.76 副H（內倒快一圈） 游1 助H（內快踱一圈） 7月27日開操，踱步41課，快跳11課，泥閘3課，草閘0課，彈閘0課，游水44次。助41 副8 艾1 紹2",
+        "trackwork_daily": {
+          "7-9": "助27.7H",
+          "10-13": "副27.9H",
+          "14-16": "27.9游4",
+          "17-20": "5駒3 4 5-7 1/2游2",
+          "21-21": "助27.4H",
+          "22-22": "27.4游4"
+        }
+      },
+      {
+        "horse_no": 12,
+        "name": "馬運高",
+        "trainer_surname": "文",
+        "weight_lbs": 118,
+        "trackwork_summary": "助H（內倒快一圈） 助H（內快踱一圈） 7月23日從化開操，踱步51課，快跳8課，泥閘0課，草閘1課，彈閘1課，游水25次。（從化閘1課，從化跳6課，從化踱31課）助55 副3 田3",
+        "trackwork_daily": {
+          "7-9": "副55.9H",
+          "10-13": "助H（內快踱一圈）",
+          "14-16": "田45.6H草閘",
+          "17-20": "23.8 21.8",
+          "21-21": "田54.3H游1",
+          "22-22": "29.6 24.7"
+        }
+      }
+    ],
+    "race_7": [
+      {
+        "horse_no": 1,
+        "name": "東來欣賞",
+        "trainer_surname": "東",
+        "weight_lbs": 132,
+        "trackwork_summary": "30.2 24.1 鍾H（內倒快兩圈） 游1 鍾H（內快踱一圈） 8月1日開操，踱步42課，快跳10課，泥閘0課，草閘1課，彈閘0課，游水46次。（從化閘1課，從化跳9課，從化踱34課）助49 鍾3 副1",
+        "trackwork_daily": {
+          "7-9": "助55.8游3",
+          "10-13": "助55.9游4",
+          "14-16": "30.4 25.5（從化）",
+          "17-20": "助56.3游3",
+          "21-21": "29.9 26.4（從化）",
+          "22-22": "副54.3游4"
+        }
+      },
+      {
+        "horse_no": 2,
+        "name": "乘數表",
+        "trainer_surname": "羅",
+        "weight_lbs": 134,
+        "trackwork_summary": "32.5 26.6 助58.1HN游1 32.3 25.8 助HN（內快踱一圈） 7月28日從化開操，踱步44課，快跳11課，泥閘1課，草閘0課，彈閘0課，游水51次。（從化閘1課，從化跳9課，從化踱36課）助56",
+        "trackwork_daily": {
+          "7-9": "助H（內快踱一圈）",
+          "10-13": "助1200從泥1.09.86",
+          "14-16": "5駒2 2 3-5 1/4游3",
+          "17-20": "助HN（內快踱一圈）",
+          "21-21": "游3",
+          "22-22": "助59.1HN游4"
+        }
+      },
+      {
+        "horse_no": 3,
+        "name": "天星",
+        "trainer_surname": "希",
+        "weight_lbs": 133,
+        "trackwork_summary": "28.3游3 助PH（內倒快兩圈） 游1 距上賽17日，賽後3日(9月9日)復課，踱步8課，快跳2課，泥閘0課，草閘0課，彈閘0課，游水12次。（從化閘0課，從化跳1課，從化踱5課）助8",
+        "trackwork_daily": {
+          "7-9": "跑步機慢跑 （上斜）",
+          "10-13": "助H（內快踱一圈）",
+          "14-16": "游4（從化）",
+          "17-20": "助24.8火焰閃爍",
+          "21-21": "24.8H草地游3（從化）",
+          "22-22": "助28.3PH"
+        }
+      },
+      {
+        "horse_no": 4,
+        "name": "競駿皇者",
+        "trainer_surname": "游",
+        "weight_lbs": 131,
+        "trackwork_summary": "游4 助H（內倒快兩圈） 游1 助H（內快踱一圈） 8月1日從化開操，踱步41課，快跳6課，泥閘0課，草閘1課，彈閘0課，游水51次。（從化閘0課，從化跳1課，從化踱17課）助39 聲1",
+        "trackwork_daily": {
+          "7-9": "助26.2草地",
+          "10-13": "跑步機慢跑 （上斜）",
+          "14-16": "游4",
+          "17-20": "助54.8騰龍踏雪",
+          "21-21": "29.2 25.6游3",
+          "22-22": "跑步機快操 （上斜）"
+        }
+      },
+      {
+        "horse_no": 5,
+        "name": "傲聖",
+        "trainer_surname": "賀",
+        "weight_lbs": 129,
+        "trackwork_summary": "28.2 25.7 助（內倒快兩圈） 游1 7月28日開操，踱步44課，快跳10課，泥閘0課，草閘0課，彈閘1課，游水45次。助39 妮4 明3",
+        "trackwork_daily": {
+          "7-9": "助48.8賢者福星草閘",
+          "10-13": "助55.3游4",
+          "14-16": "29.3 26.0",
+          "17-20": "明54.1賢者福星",
+          "21-21": "30.4 23.7游3",
+          "22-22": "助53.9游3"
+        }
+      },
+      {
+        "horse_no": 6,
+        "name": "電源之駒",
+        "trainer_surname": "廖",
+        "weight_lbs": 127,
+        "trackwork_summary": "28.4 25.9（從化） 助H（內倒快兩圈） 游1 助H（內快踱一圈） 距上賽14日，賽後2日(9月11日)復課，踱步9課，快跳2課，泥閘0課，草閘0課，彈閘0課，游水10次。（從化閘0課，從化跳1課，從化踱6課）助10",
+        "trackwork_daily": {
+          "7-9": "出賽谷A好地1200度",
+          "10-13": "助H（內快踱一圈）",
+          "14-16": "游2（從化）",
+          "17-20": "助H（內快踱一圈）",
+          "21-21": "游3（從化）",
+          "22-22": "助54.3H游4"
+        }
+      },
+      {
+        "horse_no": 7,
+        "name": "加州本事",
+        "trainer_surname": "巫",
+        "weight_lbs": 124,
+        "trackwork_summary": "27.0B游4 助H（內倒快一圈） 游1 助H（內快踱一圈） 8月1日開操，踱步37課，快跳10課，泥閘1課，草閘0課，彈閘0課，游水42次。助45 紹3",
+        "trackwork_daily": {
+          "7-9": "紹26.2H",
+          "10-13": "紹1200泥閘1.10.80",
+          "14-16": "8駒2 1 4-2 1/2 B游1",
+          "17-20": "助H（內快踱一圈）",
+          "21-21": "游1",
+          "22-22": "助27.0威威父子"
+        }
+      },
+      {
+        "horse_no": 8,
+        "name": "首飾悟空",
+        "trainer_surname": "蔡",
+        "weight_lbs": 124,
+        "trackwork_summary": "31.0 24.6H 助PH（內倒快一圈） 助PH（內快踱一圈） 7月23日開操，踱步45課，快跳12課，泥閘1課，草閘1課，彈閘0課，游水24次。（從化閘1課，從化跳3課，從化踱12課）助57 田2",
+        "trackwork_daily": {
+          "7-9": "田1000從草0.57.25",
+          "10-13": "助1.02.7H",
+          "14-16": "33.9 28.8（從化）",
+          "17-20": "助1.00.6H",
+          "21-21": "32.7 27.9（從化）",
+          "22-22": "助55.6競駿輝煌"
+        }
+      },
+      {
+        "horse_no": 9,
+        "name": "安康萬里",
+        "trainer_surname": "呂",
+        "weight_lbs": 123,
+        "trackwork_summary": "30.3 26.4 班57.2H 30.8 26.4 副H（內快踱一圈） 距上賽14日，賽後3日(9月12日)復課，踱步9課，快跳2課，泥閘0課，草閘0課，彈閘0課，游水3次。助7 副2 班2",
+        "trackwork_daily": {
+          "7-9": "出賽谷A好地1200周",
+          "10-13": "助H（飛機場踱步）",
+          "14-16": "游2",
+          "17-20": "助H（內快踱一圈）",
+          "21-21": "游1",
+          "22-22": "班56.7H"
+        }
+      },
+      {
+        "horse_no": 10,
+        "name": "正極",
+        "trainer_surname": "沈",
+        "weight_lbs": 119,
+        "trackwork_summary": "助H（飛機場踱步） 助H（內倒快兩圈） 游1 助H（內快踱一圈） 距上賽10日，賽後3日(9月16日)復課，踱步6課，快跳1課，泥閘0課，草閘0課，彈閘0課，游水7次。助7",
+        "trackwork_daily": {
+          "7-9": "助H（內快踱兩圈）",
+          "10-13": "出賽田B好快1200弘",
+          "14-16": "14駒第7-4BT",
+          "17-20": "游2",
+          "21-21": "助1.26.7游4",
+          "22-22": "33.9 27.8 25.0"
+        }
+      },
+      {
+        "horse_no": 11,
+        "name": "盈妍威楓",
+        "trainer_surname": "伍",
+        "weight_lbs": 111,
+        "trackwork_summary": "度49.3H幸福特約草閘 助55.6H游1 30.0 25.6 助H（內快踱一圈） 7月27日開操，踱步39課，快跳9課，泥閘1課，草閘0課，彈閘2課，游水43次。助48 禮2 度1",
+        "trackwork_daily": {
+          "7-9": "禮50.3長勝金剛",
+          "10-13": "助57.5H游4",
+          "14-16": "30.9 26.6",
+          "17-20": "26.3 23.0心中之星游3",
+          "21-21": "助56.6H游4",
+          "22-22": "30.4 26.2"
+        }
+      },
+      {
+        "horse_no": 12,
+        "name": "丞匡掠影",
+        "trainer_surname": "徐",
+        "weight_lbs": 118,
+        "trackwork_summary": "鍾1200泥閘1.10.19 助H（內倒快兩圈） 助H（內快踱兩圈） 8月9日開操，踱步29課，快跳9課，泥閘1課，草閘0課，彈閘0課，游水31次。助38 鍾1",
+        "trackwork_daily": {
+          "7-9": "助56.3H游1",
+          "10-13": "助56.0H游4",
+          "14-16": "29.2 26.8",
+          "17-20": "8駒1 1 1-3 1/2 B游1",
+          "21-21": "助56.3H游4",
+          "22-22": "30.4 25.9"
+        }
+      }
+    ],
+    "race_8": [
+      {
+        "horse_no": 1,
+        "name": "人和家興",
+        "trainer_surname": "希",
+        "weight_lbs": 135,
+        "trackwork_summary": "23.3游4（從化） 助H（內倒快兩圈） 游1 距上賽14日，賽後4日(9月13日)從化復課，踱步6課，快跳2課，泥閘0課，草閘0課，彈閘0課，游水10次。（從化閘0課，從化跳2課，從化踱4課）助8",
+        "trackwork_daily": {
+          "7-9": "出賽谷A好地1200袁",
+          "10-13": "助HX（內快踱一圈）",
+          "14-16": "游2（從化）",
+          "17-20": "助28.4HX登山跑道",
+          "21-21": "28.4游3（從化）",
+          "22-22": "助23.3HX"
+        }
+      },
+      {
+        "horse_no": 2,
+        "name": "團結勇士",
+        "trainer_surname": "鄭",
+        "weight_lbs": 135,
+        "trackwork_summary": "游3 助27.4H 27.4 助H（內快踱一圈） 距上賽10日，賽後3日(9月16日)復課，踱步6課，快跳1課，泥閘0課，草閘0課，彈閘0課，游水5次。助7",
+        "trackwork_daily": {
+          "7-9": "助H（內倒快兩圈）",
+          "10-13": "出賽田B好快1000梁",
+          "14-16": "14駒第7-3 1/4HT",
+          "17-20": "助H（內快踱一圈）",
+          "21-21": "游2",
+          "22-22": "助H（內快踱一圈）"
+        }
+      },
+      {
+        "horse_no": 3,
+        "name": "富心星",
+        "trainer_surname": "柏",
+        "weight_lbs": 129,
+        "trackwork_summary": "游4 助1.25.8 30.7 29.6 25.5 助（內快踱兩圈） 7月23日開操，踱步51課，快跳8課，泥閘1課，草閘0課，彈閘0課，游水36次。（從化閘0課，從化跳0課，從化踱0課）助56 弘4",
+        "trackwork_daily": {
+          "7-9": "弘1.24.5游2",
+          "10-13": "弘1200泥閘1.09.65",
+          "14-16": "8駒3 3 4-1 3/4游1",
+          "17-20": "弘（內倒快兩圈）",
+          "21-21": "游3",
+          "22-22": "助（內快踱兩圈）"
+        }
+      },
+      {
+        "horse_no": 4,
+        "name": "久久為昇",
+        "trainer_surname": "賀",
+        "weight_lbs": 129,
+        "trackwork_summary": "31.1游4 助（外快踱一圈） 游1 7月28日開操，踱步43課，快跳6課，泥閘1課，草閘0課，彈閘0課，游水44次。助16 民6",
+        "trackwork_daily": {
+          "7-9": "助HX（內快踱一圈）",
+          "10-13": "助52.2X游4",
+          "14-16": "29.3 22.9",
+          "17-20": "跑步機慢跑 （上斜）",
+          "21-21": "游3",
+          "22-22": "民31.1X"
+        }
+      },
+      {
+        "horse_no": 5,
+        "name": "飛馬座",
+        "trainer_surname": "徐",
+        "weight_lbs": 125,
+        "trackwork_summary": "周1200泥閘1.11.78游3 助（內倒快兩圈） 助（內快踱兩圈） 8月8日開操，踱步32課，快跳7課，泥閘1課，草閘1課，彈閘0課，游水32次。助39 周2",
+        "trackwork_daily": {
+          "7-9": "助55.1游1",
+          "10-13": "助56.1游4",
+          "14-16": "29.8 26.3",
+          "17-20": "助（內快踱兩圈）",
+          "21-21": "游2",
+          "22-22": "10駒5 6 9-17 3/4 P"
+        }
+      },
+      {
+        "horse_no": 6,
+        "name": "富國兄弟",
+        "trainer_surname": "葉",
+        "weight_lbs": 126,
+        "trackwork_summary": "31.2 26.9 助57.1H 30.8 26.3 助H（內快踱一圈） 8月3日從化開操，踱步39課，快跳7課，泥閘1課，草閘0課，彈閘0課，游水43次。（從化閘0課，從化跳3課，從化踱26課）助44 田3",
+        "trackwork_daily": {
+          "7-9": "田1200泥閘1.10.84",
+          "10-13": "助H（內快踱兩圈）",
+          "14-16": "游4",
+          "17-20": "助55.8H游3",
+          "21-21": "28.6 27.2",
+          "22-22": "田58.1H游4"
+        }
+      },
+      {
+        "horse_no": 7,
+        "name": "勇霸龍",
+        "trainer_surname": "黎",
+        "weight_lbs": 123,
+        "trackwork_summary": "26.5游4 助（內倒快一圈） 游1 助（內快踱一圈） 距上賽14日，賽後4日(9月13日)復課，踱步8課，快跳2課，泥閘0課，草閘0課，彈閘0課，游水11次。助9 明1",
+        "trackwork_daily": {
+          "7-9": "出賽谷A好地1200艾",
+          "10-13": "助（內快踱一圈）",
+          "14-16": "游3",
+          "17-20": "明26.4",
+          "21-21": "26.4游3",
+          "22-22": "助26.5"
+        }
+      },
+      {
+        "horse_no": 8,
+        "name": "繼往開來",
+        "trainer_surname": "文",
+        "weight_lbs": 122,
+        "trackwork_summary": "30.6 26.3游4 助SWH（內倒快一圈） 助SWH（內快踱一圈） 7月28日開操，踱步45課，快跳10課，泥閘2課，草閘0課，彈閘0課，游水33次。助54 袁1 禮2",
+        "trackwork_daily": {
+          "7-9": "助54.4SWH",
+          "10-13": "禮1200泥閘1.09.80",
+          "14-16": "9駒3 3 1-4 3/4 B游2",
+          "17-20": "助57.2SWH",
+          "21-21": "29.5 27.7游2",
+          "22-22": "禮56.9SWH"
+        }
+      },
+      {
+        "horse_no": 9,
+        "name": "蓮冠皇",
+        "trainer_surname": "廖",
+        "weight_lbs": 122,
+        "trackwork_summary": "游3（從化） 助52.7H游1 27.3 25.4 助H（內快踱一圈） 7月23日從化開操，踱步50課，快跳10課，泥閘0課，草閘1課，彈閘0課，游水40次。（從化閘1課，從化跳9課，從化踱48課）助60 森1",
+        "trackwork_daily": {
+          "7-9": "森1200從草1.11.20",
+          "10-13": "助53.3H游4",
+          "14-16": "27.7 25.6（從化）",
+          "17-20": "助51.8游3",
+          "21-21": "28.2 23.6（從化）",
+          "22-22": "助H（內倒快兩圈）"
+        }
+      },
+      {
+        "horse_no": 10,
+        "name": "喵喵怪",
+        "trainer_surname": "巫",
+        "weight_lbs": 112,
+        "trackwork_summary": "29.8 25.3 助HN（內倒快一圈） 助HN（內快踱一圈） 7月28日從化開操，踱步45課，快跳8課，泥閘0課，草閘1課，彈閘0課，游水0次。（從化閘1課，從化跳7課，從化踱41課）助53 聲1",
+        "trackwork_daily": {
+          "7-9": "助HN（內快踱一圈）",
+          "10-13": "助28.7H",
+          "14-16": "28.7（從化）",
+          "17-20": "助55.1V",
+          "21-21": "29.5 25.6（從化）",
+          "22-22": "助55.1V"
+        }
+      },
+      {
+        "horse_no": 11,
+        "name": "驕陽雄心",
+        "trainer_surname": "沈",
+        "weight_lbs": 118,
+        "trackwork_summary": "28.0 25.0 助H（內倒快兩圈） 游1 助H（內快踱一圈） 7月23日開操，踱步49課，快跳8課，泥閘2課，草閘0課，彈閘0課，游水41次。助51 弘8",
+        "trackwork_daily": {
+          "7-9": "弘H（內快踱一圈）",
+          "10-13": "弘1200泥閘1.10.54",
+          "14-16": "9駒2 1 2-4 3/4 SW游3",
+          "17-20": "弘57.1H",
+          "21-21": "30.1 27.0",
+          "22-22": "助53.0H游3"
+        }
+      },
+      {
+        "horse_no": 12,
+        "name": "亞機拉",
+        "trainer_surname": "東",
+        "weight_lbs": 118,
+        "trackwork_summary": "30.3 24.0 助H（內倒快兩圈） 助H（內快踱一圈） 7月27日從化開操，踱步46課，快跳11課，泥閘0課，草閘1課，彈閘0課，游水0次。（從化閘1課，從化跳7課，從化踱36課）助55 鍾2 度1",
+        "trackwork_daily": {
+          "7-9": "助H（內倒快兩圈）",
+          "10-13": "助52.8",
+          "14-16": "29.1 23.7",
+          "17-20": "助54.6",
+          "21-21": "30.3 24.3",
+          "22-22": "鍾54.3"
+        }
+      }
+    ],
+    "race_9": [
+      {
+        "horse_no": 1,
+        "name": "嘉應傳承",
+        "trainer_surname": "伍",
+        "weight_lbs": 135,
+        "trackwork_summary": "禮1200泥閘1.11.82 禮55.5H游1 30.2 25.3 助PH（內快踱兩圈） 7月23日從化開操，踱步47課，快跳8課，泥閘1課，草閘2課，彈閘0課，游水45次。（從化閘2課，從化跳9課，從化踱54課）助52 副2 袁1 禮3",
+        "trackwork_daily": {
+          "7-9": "助H（內快踱兩圈）",
+          "10-13": "助56.0H游3",
+          "14-16": "30.3 25.7（從化）",
+          "17-20": "7駒6 5 5-4 SW游2",
+          "21-21": "助PH（內快踱一圈）",
+          "22-22": "游4"
+        }
+      },
+      {
+        "horse_no": 2,
+        "name": "紫荊傳令",
+        "trainer_surname": "游",
+        "weight_lbs": 135,
+        "trackwork_summary": "33.4 29.1 25.6游4 助H（內倒快兩圈） 游1 助H（內快踱一圈） 7月18日從化開操，踱步52課，快跳8課，泥閘1課，草閘1課，彈閘0課，游水46次。（從化閘1課，從化跳4課，從化踱31課）副5 助43 潘1",
+        "trackwork_daily": {
+          "7-9": "潘1200泥閘1.10.83",
+          "10-13": "跑步機慢跑 （上斜）",
+          "14-16": "游4",
+          "17-20": "助52.0游3",
+          "21-21": "27.9 24.1",
+          "22-22": "助1.28.1退役馬"
+        }
+      },
+      {
+        "horse_no": 3,
+        "name": "凌登",
+        "trainer_surname": "沈",
+        "weight_lbs": 135,
+        "trackwork_summary": "助48.4B星願無限草閘 25.8 22.6莊家班游1 助（內快踱一圈） 7月23日開操，踱步50課，快跳8課，泥閘1課，草閘0課，彈閘1課，游水42次。助57 民2 周1",
+        "trackwork_daily": {
+          "7-9": "助（內快踱兩圈）",
+          "10-13": "民1200泥閘1.10.74",
+          "14-16": "8駒5 5 6-8 1/2 B游3",
+          "17-20": "助（內快踱兩圈）",
+          "21-21": "助55.3B游3",
+          "22-22": "28.7 26.6"
+        }
+      },
+      {
+        "horse_no": 4,
+        "name": "平凡騎士",
+        "trainer_surname": "柏",
+        "weight_lbs": 132,
+        "trackwork_summary": "10駒10 10 10-5 H游1 助（內倒快兩圈） （從化） 助（內快踱兩圈） 7月24日從化開操，踱步43課，快跳7課，泥閘0課，草閘2課，彈閘0課，游水35次。（從化閘2課，從化跳7課，從化踱42課）助50 弘1 聲1",
+        "trackwork_daily": {
+          "7-9": "弘1200從草1.11.69游1",
+          "10-13": "助（內快踱兩圈）",
+          "14-16": "游4（從化）",
+          "17-20": "助23.7草地",
+          "21-21": "23.7游2（從化）",
+          "22-22": "聲1200從草1.12.32"
+        }
+      },
+      {
+        "horse_no": 5,
+        "name": "好實力",
+        "trainer_surname": "呂",
+        "weight_lbs": 129,
+        "trackwork_summary": "30.2 26.8 副55.5H游1 29.7 25.8 副H（內快踱一圈） 7月27日從化開操，踱步40課，快跳9課，泥閘1課，草閘1課，彈閘0課，游水45次。（從化閘0課，從化跳0課，從化踱6課）助25 副24 周2",
+        "trackwork_daily": {
+          "7-9": "副58.0H游3",
+          "10-13": "周1200泥閘1.11.23",
+          "14-16": "8駒4 6 5-5游3",
+          "17-20": "副H（內快踱一圈）",
+          "21-21": "游3",
+          "22-22": "副57.0H游4"
+        }
+      },
+      {
+        "horse_no": 6,
+        "name": "將義",
+        "trainer_surname": "巫",
+        "weight_lbs": 126,
+        "trackwork_summary": "30.1 26.4 助H（內倒快一圈） 游1 助H（內快踱一圈） 距上賽14日，賽後4日(9月13日)復課，踱步9課，快跳1課，泥閘0課，草閘0課，彈閘0課，游水10次。助10",
+        "trackwork_daily": {
+          "7-9": "出賽谷A好地1650澤",
+          "10-13": "助H（內快踱一圈）",
+          "14-16": "游2",
+          "17-20": "助H（內快踱一圈）",
+          "21-21": "游3",
+          "22-22": "助56.5H游4"
+        }
+      },
+      {
+        "horse_no": 7,
+        "name": "浪漫鬥士",
+        "trainer_surname": "沈",
+        "weight_lbs": 123,
+        "trackwork_summary": "游3 助H（內倒快兩圈） 游1 助H（內快踱一圈） 距上賽7日，賽後3日(9月19日)復課，踱步4課，快跳0課，泥閘0課，草閘0課，彈閘0課，游水4次。助4",
+        "trackwork_daily": {
+          "7-9": "助H（內快踱兩圈）",
+          "10-13": "助54.1H游4",
+          "14-16": "27.9 26.2",
+          "17-20": "出賽谷B好地1650鍾",
+          "21-21": "12駒第9-3 3/4T",
+          "22-22": "助H（內快踱一圈）"
+        }
+      },
+      {
+        "horse_no": 8,
+        "name": "豐辰",
+        "trainer_surname": "徐",
+        "weight_lbs": 126,
+        "trackwork_summary": "31.4 26.4H（從化） 助H（內倒快兩圈） 助H（內快踱兩圈） 7月23日從化開操，踱步45課，快跳11課，泥閘0課，草閘2課，彈閘0課，游水42次。（從化閘2課，從化跳10課，從化踱41課）助57 紹1",
+        "trackwork_daily": {
+          "7-9": "紹1200從草1.12.24",
+          "10-13": "助H（內快踱兩圈）",
+          "14-16": "游4（從化）",
+          "17-20": "助55.0H游3",
+          "21-21": "28.9 26.1（從化）",
+          "22-22": "助57.8螢影飛馳"
+        }
+      },
+      {
+        "horse_no": 9,
+        "name": "中國心",
+        "trainer_surname": "希",
+        "weight_lbs": 125,
+        "trackwork_summary": "助1.23.7H游1 31.0 27.3 25.4 距上賽14日，賽後5日(9月14日)從化復課，踱步5課，快跳3課，泥閘0課，草閘0課，彈閘0課，游水10次。（從化閘0課，從化跳2課，從化踱4課）助8",
+        "trackwork_daily": {
+          "7-9": "出賽谷A好地1650綸",
+          "10-13": "游2",
+          "14-16": "助1.29.7H游3",
+          "17-20": "33.4 29.5 26.8（從化）",
+          "21-21": "助58.0凝妙星",
+          "22-22": "33.0 25.0H游4（從化）"
+        }
+      },
+      {
+        "horse_no": 10,
+        "name": "風將",
+        "trainer_surname": "東",
+        "weight_lbs": 122,
+        "trackwork_summary": "30.6 26.1 助H（內倒快兩圈） 游1 助H（內快踱一圈） 距上賽14日，賽後2日(9月11日)復課，踱步10課，快跳2課，泥閘0課，草閘0課，彈閘0課，游水12次。助12",
+        "trackwork_daily": {
+          "7-9": "出賽谷A好地1650紹",
+          "10-13": "助H（內快踱一圈）",
+          "14-16": "游4",
+          "17-20": "助57.9SW游3",
+          "21-21": "31.6 26.3",
+          "22-22": "助56.7SW游4"
+        }
+      },
+      {
+        "horse_no": 11,
+        "name": "瑪瑙",
+        "trainer_surname": "羅",
+        "weight_lbs": 119,
+        "trackwork_summary": "31.4 26.6（從化） 助57.2H游1 31.5 25.7 助H（內快踱一圈） 距上賽14日，賽後4日(9月13日)從化復課，踱步8課，快跳2課，泥閘0課，草閘0課，彈閘0課，游水10次。（從化閘0課，從化跳1課，從化踱6課）助10",
+        "trackwork_daily": {
+          "7-9": "出賽谷A好地1650明",
+          "10-13": "助H（飛機場踱步）",
+          "14-16": "游3（從化）",
+          "17-20": "助H（內快踱一圈）",
+          "21-21": "游3（從化）",
+          "22-22": "助58.0BH游3"
+        }
+      },
+      {
+        "horse_no": 12,
+        "name": "財富非凡",
+        "trainer_surname": "巫",
+        "weight_lbs": 117,
+        "trackwork_summary": "29.9 26.0 助H（內倒快一圈） 游1 助H（內快踱一圈） 8月1日開操，踱步39課，快跳9課，泥閘1課，草閘0課，彈閘0課，游水46次。助48 班1",
+        "trackwork_daily": {
+          "7-9": "助H（內快踱一圈）",
+          "10-13": "助55.4H游4",
+          "14-16": "29.5 25.9",
+          "17-20": "助54.8超和平",
+          "21-21": "29.8 25.0H游3",
+          "22-22": "助55.9H游4"
+        }
+      }
+    ]
+  },
+  "cc_sources": {
+    "expert_fav_page": "https://racing.on.cc/racing/fav/current/rjfavg0001x0.html",
+    "expert_count": 11,
+    "expert_names": [
+      "卡洛斯",
+      "匡公",
+      "金駒",
+      "西門獨",
+      "諸葛數",
+      "長風",
+      "陳志懷",
+      "明治朗",
+      "內幕料",
+      "網中神",
+      "洛飛"
+    ],
+    "total_tips_analyzed": 88,
+    "merge_key_rule": "Primary: (race_no + horse_no); Secondary: name cross-validate only",
+    "date": "2026-09-23",
+    "venue": "HV",
+    "dynamic_cache_used_barrier": false,
+    "dynamic_cache_used_trackwork": false,
+    "barrier_race_1_page": "https://racing.on.cc/racing/ifo/current/rjifoa0001x0.html",
+    "trackwork_race_1_page": "https://racing.on.cc/racing/mor/current/rjmorc0001x0.html",
+    "barrier_race_2_page": "https://racing.on.cc/racing/ifo/current/rjifoa0002x0.html",
+    "trackwork_race_2_page": "https://racing.on.cc/racing/mor/current/rjmorc0002x0.html",
+    "barrier_race_3_page": "https://racing.on.cc/racing/ifo/current/rjifoa0003x0.html",
+    "trackwork_race_3_page": "https://racing.on.cc/racing/mor/current/rjmorc0003x0.html",
+    "barrier_race_4_page": "https://racing.on.cc/racing/ifo/current/rjifoa0004x0.html",
+    "trackwork_race_4_page": "https://racing.on.cc/racing/mor/current/rjmorc0004x0.html",
+    "barrier_race_5_page": "https://racing.on.cc/racing/ifo/current/rjifoa0005x0.html",
+    "trackwork_race_5_page": "https://racing.on.cc/racing/mor/current/rjmorc0005x0.html",
+    "barrier_race_6_page": "https://racing.on.cc/racing/ifo/current/rjifoa0006x0.html",
+    "trackwork_race_6_page": "https://racing.on.cc/racing/mor/current/rjmorc0006x0.html",
+    "barrier_race_7_page": "https://racing.on.cc/racing/ifo/current/rjifoa0007x0.html",
+    "trackwork_race_7_page": "https://racing.on.cc/racing/mor/current/rjmorc0007x0.html",
+    "barrier_race_8_page": "https://racing.on.cc/racing/ifo/current/rjifoa0008x0.html",
+    "trackwork_race_8_page": "https://racing.on.cc/racing/mor/current/rjmorc0008x0.html",
+    "barrier_race_9_page": "https://racing.on.cc/racing/ifo/current/rjifoa0009x0.html",
+    "trackwork_race_9_page": "https://racing.on.cc/racing/mor/current/rjmorc0009x0.html"
+  }
+}

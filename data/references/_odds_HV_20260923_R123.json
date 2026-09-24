@@ -1,0 +1,59 @@
+[
+    {
+      "url": "https://bet.hkjc.com/ch/racing/wp/2026-09-23/HV/1",
+      "raceNumber": 1,
+      "updateTime": "23/09/2026 00:55",
+      "horses": [
+        {"number": 1, "name": "堅多福", "draw": "12", "weight": "135", "jockey": "何澤堯", "trainer": "方嘉柏", "odds_win": 14, "odds_place": 4.7},
+        {"number": 2, "name": "一風雲", "draw": "5", "weight": "134", "jockey": "金誠剛", "trainer": "丁冠豪", "odds_win": 31, "odds_place": 7.7},
+        {"number": 3, "name": "神駒馬靈", "draw": "4", "weight": "132", "jockey": "霍宏聲", "trainer": "廖康銘", "odds_win": 5.8, "odds_place": 2.2},
+        {"number": 4, "name": "紅磚戰士", "draw": "1", "weight": "131", "jockey": "周俊樂 (-2)", "trainer": "游達榮", "odds_win": 10, "odds_place": 3.3},
+        {"number": 5, "name": "極速滿貫", "draw": "10", "weight": "130", "jockey": "奧爾民", "trainer": "黎昭昇", "odds_win": 15, "odds_place": 5.4},
+        {"number": 6, "name": "開心三多", "draw": "11", "weight": "128", "jockey": "希威森", "trainer": "桂福特", "odds_win": 9.3, "odds_place": 2.2},
+        {"number": 7, "name": "綫路達飛", "draw": "6", "weight": "127", "jockey": "楊明綸", "trainer": "蘇偉賢", "odds_win": 31, "odds_place": 9.7},
+        {"number": 8, "name": "電訊驕陽", "draw": "8", "weight": "125", "jockey": "袁幸堯 (-10)", "trainer": "徐雨石", "odds_win": 4.8, "odds_place": 1.4},
+        {"number": 9, "name": "至高心得", "draw": "2", "weight": "123", "jockey": "梁家俊", "trainer": "韋達", "odds_win": 18, "odds_place": 5.7},
+        {"number": 10, "name": "威威父子", "draw": "7", "weight": "120", "jockey": "田泰安", "trainer": "巫偉傑", "odds_win": 15, "odds_place": 5.1},
+        {"number": 11, "name": "東方魅影", "draw": "3", "weight": "119", "jockey": "潘頓", "trainer": "大衛希斯", "odds_win": 3.8, "odds_place": 1.7},
+        {"number": 12, "name": "幸運同行", "draw": "9", "weight": "118", "jockey": "艾兆禮", "trainer": "蔡約翰", "odds_win": 21, "odds_place": 6.7}
+      ]
+    },
+    {
+      "url": "https://bet.hkjc.com/ch/racing/wp/2026-09-23/HV/2",
+      "raceNumber": 2,
+      "updateTime": "23/09/2026 00:55",
+      "horses": [
+        {"number": 1, "name": "紅愛舍", "draw": "12", "weight": "135", "jockey": "楊明綸", "trainer": "韋達", "odds_win": 19, "odds_place": 3.8},
+        {"number": 2, "name": "銳喜", "draw": "2", "weight": "134", "jockey": "蔡明紹", "trainer": "徐雨石", "odds_win": 19, "odds_place": 6.1},
+        {"number": 3, "name": "路路勁", "draw": "8", "weight": "132", "jockey": "田泰安", "trainer": "羅富全", "odds_win": 9.5, "odds_place": 2.9},
+        {"number": 4, "name": "馬馳登", "draw": "7", "weight": "132", "jockey": "艾兆禮", "trainer": "黎昭昇", "odds_win": 4.9, "odds_place": 1.9},
+        {"number": 5, "name": "飛輪霸", "draw": "11", "weight": "130", "jockey": "潘明輝", "trainer": "姚本輝", "odds_win": 18, "odds_place": 4.1},
+        {"number": 6, "name": "金珀尖子", "draw": "6", "weight": "128", "jockey": "金誠剛", "trainer": "大衛希斯", "odds_win": 45, "odds_place": 8.2},
+        {"number": 7, "name": "銀刺勇士", "draw": "1", "weight": "128", "jockey": "黃智弘 (-3)", "trainer": "方嘉柏", "odds_win": 7.1, "odds_place": 2.2},
+        {"number": 8, "name": "鄉村威龍", "draw": "10", "weight": "127", "jockey": "艾道拿", "trainer": "蔡約翰", "odds_win": 23, "odds_place": 4.9},
+        {"number": 9, "name": "開心五月", "draw": "4", "weight": "123", "jockey": "鍾易禮 (-2)", "trainer": "告東尼", "odds_win": 3.2, "odds_place": 1.8},
+        {"number": 10, "name": "比特星", "draw": "5", "weight": "119", "jockey": "潘頓", "trainer": "賀賢", "odds_win": 6.5, "odds_place": 2.3},
+        {"number": 11, "name": "有盈勇士", "draw": "9", "weight": "118", "jockey": "希威森", "trainer": "沈集成", "odds_win": 20, "odds_place": 6.4},
+        {"number": 12, "name": "首駿", "draw": "3", "weight": "118", "jockey": "班德禮", "trainer": "游達榮", "odds_win": 29, "odds_place": 5.5}
+      ]
+    },
+    {
+      "url": "https://bet.hkjc.com/ch/racing/wp/2026-09-23/HV/3",
+      "raceNumber": 3,
+      "updateTime": "23/09/2026 00:55",
+      "horses": [
+        {"number": 1, "name": "星願無限", "draw": "11", "weight": "135", "jockey": "希威森", "trainer": "沈集成", "odds_win": 20, "odds_place": 5.8},
+        {"number": 2, "name": "贏玥", "draw": "7", "weight": "132", "jockey": "潘頓", "trainer": "巫偉傑", "odds_win": 5.9, "odds_place": 2.6},
+        {"number": 3, "name": "彩虹七色", "draw": "5", "weight": "130", "jockey": "何澤堯", "trainer": "呂健威", "odds_win": 18, "odds_place": 5.7},
+        {"number": 4, "name": "睿智多寶", "draw": "6", "weight": "129", "jockey": "艾道拿", "trainer": "黎昭昇", "odds_win": 15, "odds_place": 2.9},
+        {"number": 5, "name": "凝妙星", "draw": "3", "weight": "128", "jockey": "奧爾民", "trainer": "大衛希斯", "odds_win": 4.6, "odds_place": 1.9},
+        {"number": 6, "name": "領航天子", "draw": "10", "weight": "128", "jockey": "霍宏聲", "trainer": "廖康銘", "odds_win": 12, "odds_place": 4},
+        {"number": 7, "name": "有情有義", "draw": "4", "weight": "127", "jockey": "黃智弘 (-3)", "trainer": "方嘉柏", "odds_win": 10, "odds_place": 3.4},
+        {"number": 8, "name": "蹺妙", "draw": "2", "weight": "124", "jockey": "周俊樂 (-2)", "trainer": "游達榮", "odds_win": 5.3, "odds_place": 1.5},
+        {"number": 9, "name": "越駿齊歡", "draw": "1", "weight": "124", "jockey": "梁家俊", "trainer": "羅富全", "odds_win": 10, "odds_place": 3.4},
+        {"number": 10, "name": "加州活力", "draw": "8", "weight": "131", "jockey": "艾兆禮", "trainer": "告東尼", "odds_win": 11, "odds_place": 5},
+        {"number": 11, "name": "光明傳承", "draw": "9", "weight": "119", "jockey": "班德禮", "trainer": "葉楚航", "odds_win": 22, "odds_place": 5.5},
+        {"number": 12, "name": "得意佳作", "draw": "12", "weight": "118", "jockey": "田泰安", "trainer": "姚本輝", "odds_win": 17, "odds_place": 5.1}
+      ]
+    }
+]

@@ -1,0 +1,27 @@
+{
+  "name": "horse-ai-live",
+  "version": "2.1.0",
+  "description": "HKJC 賽馬 AI Live 智能分析系統 - 10 維度評分模型 · 125 場真實 backtest · 頭馬命中率 60%",
+  "private": false,
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "dev": "echo \"Use local server_plain.ps1 for local dev (Port 9000)\"",
+    "build": "echo \"Static app - no build needed. public/ folder serves directly\"",
+    "vercel-build": "echo \"Skip build, outputDirectory = public\"",
+    "deploy": "vercel --prod",
+    "start": "echo \"Run server: powershell -File server_plain.ps1\""
+  },
+  "keywords": [
+    "hkjc",
+    "horse-racing",
+    "ai-scoring",
+    "pwa",
+    "hong-kong"
+  ],
+  "author": "HorseAI Live",
+  "license": "MIT",
+  "dependencies": {},
+  "devDependencies": {}
+}

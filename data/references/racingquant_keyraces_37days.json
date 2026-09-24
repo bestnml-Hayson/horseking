@@ -1,0 +1,22 @@
+{
+  "meta": {
+    "source": "racingquant.com 首頁 重心場次推介歷史成績",
+    "range": "22-03-2026 R2 至 16-09-2026 R4",
+    "note": "個別 37 行紀錄需由 snapshot 逐行填入；下陣列每行 schema: {race_date:\"YYYY-MM-DD\", race_no:number, first4_picks_top3_positions:[p1,p2,p3,p4|null], win_ok:boolean, place_ok:boolean, quinella_ok:boolean, qplace_ok:boolean, tierce_ok:boolean}"
+  },
+  "aggregate_totals": {
+    "total_races": 37,
+    "win_hits": 13,
+    "place_hits": 25,
+    "qp_hits": 28,
+    "q_hits": 18,
+    "tierce_hits": 10,
+    "win_rate_pct": 35,
+    "place_rate_pct": 68,
+    "quinella_place_rate_pct": 76,
+    "quinella_rate_pct": 49,
+    "tierce_rate_pct": 27
+  },
+  "key_races": [
+  ]
+}

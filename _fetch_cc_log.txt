@@ -1,0 +1,54 @@
+﻿.venv\Scripts\python.exe : Traceback (most recent call last):
+At line:1 char:24
++ ... rae\horse ; .venv\Scripts\python.exe -u _fetch_cc_batch.py 2>&1 | Out ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Traceback (most recent call last) 
+   ::String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  File "D:\Trae\horse\_fetch_cc_batch.py", line 162, in <module>
+    main()
+    ~~~~^^
+  File "D:\Trae\horse\_fetch_cc_batch.py", line 120, in main
+    browser = p.chromium.launch(headless=True)
+  File "D:\Trae\horse\.venv\Lib\site-packages\playwright\sync_api\_generated.py
+", line 16814, in launch
+    self._sync(
+    ~~~~~~~~~~^
+        self._impl_obj.launch(
+        ^^^^^^^^^^^^^^^^^^^^^^
+    ...<17 lines>...
+        )
+        ^
+    )
+    ^
+  File "D:\Trae\horse\.venv\Lib\site-packages\playwright\_impl\_sync_base.py", 
+line 115, in _sync
+    return task.result()
+           ~~~~~~~~~~~^^
+  File "D:\Trae\horse\.venv\Lib\site-packages\playwright\_impl\_browser_type.py
+", line 101, in launch
+    await self._channel.send(
+        "launch", TimeoutSettings.launch_timeout, params
+    )
+  File "D:\Trae\horse\.venv\Lib\site-packages\playwright\_impl\_connection.py",
+ line 76, in send
+    return await self._connection.wrap_api_call(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "D:\Trae\horse\.venv\Lib\site-packages\playwright\_impl\_connection.py",
+ line 632, in wrap_api_call
+    raise rewrite_error(error, f"{parsed_st['apiName']}: {error}") from None
+playwright._impl._errors.Error: BrowserType.launch: Executable doesn't exist at
+ C:\Users\Admin\AppData\Local\ms-playwright\chromium_headless_shell-1243\chrome
+-headless-shell-win64\chrome-headless-shell.exe
+╔════════════════════════════════════════════════════════════╗
+║ Looks like Playwright was just installed or updated.       ║
+║ Please run the following command to download new browsers: ║
+║                                                            ║
+║     playwright install                                     ║
+║                                                            ║
+║ <3 Playwright Team                                         ║
+╚════════════════════════════════════════════════════════════╝

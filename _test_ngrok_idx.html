@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<meta name="theme-color" content="#0a0a0a" media="(prefers-color-scheme: dark)" />
+<meta name="theme-color" content="#d4af37" media="(prefers-color-scheme: light)" />
+<meta name="color-scheme" content="dark" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="賽馬AI" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="application-name" content="賽馬AI Live" />
+<meta name="msapplication-TileColor" content="#0a0a0a" />
+<meta name="msapplication-tap-highlight" content="no" />
+<meta name="format-detection" content="telephone=no" />
+<meta name="description" content="HKJC 賽馬AI 10維度評分模型 · 真實數據 · 頭馬命中率60% · 智能預測分析系統" />
+<link rel="manifest" href="/manifest.webmanifest" />
+<link rel="icon" type="image/png" sizes="192x192" href="/data/icons/icon-192.png" />
+<link rel="icon" type="image/png" sizes="512x512" href="/data/icons/icon-512.png" />
+<link rel="apple-touch-icon" sizes="120x120" href="/data/icons/icon-120.png" />
+<link rel="apple-touch-icon" sizes="152x152" href="/data/icons/icon-152.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="/data/icons/icon-180.png" />
+<link rel="apple-touch-icon" sizes="167x167" href="/data/icons/icon-167.png" />
+<link rel="apple-touch-icon" sizes="192x192" href="/data/icons/icon-192.png" />
+<meta property="og:type" content="website" />
+<meta property="og:title" content="🐎 賽馬 AI Live · 智能分析系統" />
+<meta property="og:description" content="HKJC 10 維度評分模型 · 真實數據 · 頭馬命中率 60%" />
+<meta property="og:image" content="/data/icons/icon-512.png" />
+<meta property="og:site_name" content="賽馬AI Live" />
+<title>🐎 賽馬 AI Live · 綜合分析系統</title>
+<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+
+<!-- ========== 手機風格頂部 Header ========== -->
+<header class="app-header">
+  <div class="header-icon" onclick="showToast('設定功能開發中', 'warn')">⚙️</div>
+  <div class="header-title">
+    <span class="logo-emoji">🐎</span>
+    <span>賽馬 AI Live</span>
+    <span class="header-subtitle">· 真實數據 · 智能分析</span>
+  </div>
+  <div class="header-icon" onclick="triggerDataRefresh()" title="立即更新數據">🧹</div>
+  <div class="header-icon" onclick="manualRefresh()">🔄</div>
+</header>
+
+<!-- ========== 狀態列 ========== -->
+<div class="status-row">
+  <span class="status-pill"><span class="dot"></span><span id="dbStatus">數據已載入</span></span>
+  <span class="status-pill">📊 賽事：<b id="statsCount">—</b></span>
+  <span class="status-pill">⏱️ 更新：<b id="lastUpdate">—</b></span>
+  <span class="status-pill">⏳ <b id="countdown">300s</b></span>
+  <button class="btn secondary" onclick="reanalyzeCurrent()" style="margin-left:auto;padding:5px 12px;font-size:12px;">🧠 分析</button>
+</div>
+
+<div class="container">
+
+  <!-- TAB: DASHBOARD 首頁 -->
+  <div data-panel="dashboard" class="tab-panel active">
+
+    <div class="stat-grid" id="statCards"></div>
+
+    <div class="accuracy-card" id="accuracyCard"></div>
+
+    <div class="card">
+      <div class="card-title">
+        <h3><span class="emoji">🔥</span>近期 AI 預測準確度</h3>
+      </div>
+      <div class="table-scroll">
+        <table class="data-table" id="accuracyTable">
+          <thead><tr><th>賽事</th><th>場地</th><th>距離</th><th>AI頭馬</th><th>真實</th><th>命中</th><th>入Q</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">
+        <h3><span class="emoji">📅</span>賽事時間表</h3>
+      </div>
+      <div class="schedule-list" id="scheduleList"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">
+        <h3><span class="emoji">📈</span>路程/班次分佈</h3>
+      </div>
+      <div id="distClassStats"></div>
+    </div>
+
+  </div>
+
+  <!-- TAB: RACE 賽程 (卡片式賽事列表) -->
+  <div data-panel="race" class="tab-panel">
+
+    <!-- 次級 Tab -->
+    <div class="sub-tabs" id="raceSubTabs">
+      <div class="sub-tab active" data-racefilter="all">全部</div>
+      <div class="sub-tab" data-racefilter="pending">待賽</div>
+      <div class="sub-tab" data-racefilter="finished">已完賽</div>
+    </div>
+
+    <!-- 賽事卡片容器（每場賽事一張 Card） -->
+    <div id="raceCardsContainer"></div>
+
+  </div>
+
+  <!-- TAB: HISTORY 歷史 -->
+  <div data-panel="history" class="tab-panel">
+    <div class="card">
+      <div class="card-title">
+        <h3><span class="emoji">📜</span>已完賽歷史賽事回顧</h3>
+      </div>
+      <div class="table-scroll">
+        <table class="data-table" id="historyTable">
+          <thead><tr>
+            <th>日期</th><th>場次</th><th>場地/距離/班次</th><th>真頭馬</th><th>AI預測</th><th>獨贏回報</th><th>Q回報</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: JOCKEYS 騎練榜 -->
+  <div data-panel="jockeys" class="tab-panel">
+    <div class="card">
+      <div class="card-title">
+        <h3><span class="emoji">🎖️</span>騎師榜（今季勝出率）</h3>
+      </div>
+      <div class="table-scroll">
+        <table class="data-table" id="jockeysTable">
+          <thead><tr><th>#</th><th>騎師</th><th>出賽</th><th>勝出</th><th>勝率</th><th>入Q率</th><th>形態</th><th>專長路程</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">
+        <h3><span class="emoji">👨‍🏫</span>練馬師榜（今季勝出率）</h3>
+      </div>
+      <div class="table-scroll">
+        <table class="data-table" id="trainersTable">
+          <thead><tr><th>#</th><th>練馬師</th><th>出馬</th><th>勝出</th><th>勝率</th><th>入Q率</th><th>近期走勢</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: HORSES 馬匹榜 -->
+  <div data-panel="horses" class="tab-panel">
+    <div class="card">
+      <div class="card-title">
+        <h3><span class="emoji">🐴</span>馬匹檔案排行榜</h3>
+      </div>
+      <div class="table-scroll">
+        <table class="data-table" id="horsesTable">
+          <thead><tr>
+            <th>#</th><th>馬編</th><th>馬名</th><th>班次/練馬</th><th>出賽</th><th>冠亞季</th><th>近績3場</th><th>評分</th><th>走勢</th><th>最近</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ========== 底部導航欄 ========== -->
+<nav class="bottom-nav">
+  <div class="nav-item active" data-tab="dashboard">
+    <div class="nav-icon">🏠</div>
+    <div class="nav-label">首頁</div>
+  </div>
+  <div class="nav-item" data-tab="race">
+    <div class="nav-icon">🏇</div>
+    <div class="nav-label">賽程</div>
+  </div>
+  <div class="nav-item" data-tab="history">
+    <div class="nav-icon">📜</div>
+    <div class="nav-label">歷史</div>
+  </div>
+  <div class="nav-item" data-tab="jockeys">
+    <div class="nav-icon">🎖️</div>
+    <div class="nav-label">騎練</div>
+  </div>
+  <div class="nav-item" data-tab="horses">
+    <div class="nav-icon">🐴</div>
+    <div class="nav-label">馬匹</div>
+  </div>
+</nav>
+
+<div class="toast" id="toast"></div>
+
+<script src="/ai.js"></script>
+<script src="/app.js"></script>
+<script>
+(function () {
+  var params = new URLSearchParams(window.location.search);
+  var tab = params.get('tab');
+  var refresh = params.get('refresh');
+  if (tab && typeof window !== 'undefined' && window.addEventListener) {
+    window.addEventListener('load', function () {
+      setTimeout(function () {
+        var el = document.querySelector('.nav-item[data-tab="' + tab + '"]');
+        if (el) el.click();
+      }, 800);
+    });
+  }
+  if (refresh && typeof triggerDataRefresh === 'function') {
+    window.addEventListener('load', function () { setTimeout(triggerDataRefresh, 1500); });
+  }
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('/sw.js', { scope: '/' })
+        .then(function () { /* ok */ })
+        .catch(function () { /* fallback */ });
+    });
+  }
+  var deferredPrompt = null;
+  window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault();
+    deferredPrompt = e;
+    if (window.localStorage && !localStorage.getItem('pwa_prompt_seen')) {
+      localStorage.setItem('pwa_prompt_seen', '1');
+      if (typeof showToast === 'function') {
+        setTimeout(function () {
+          showToast('💡 安裝到手機桌面：按瀏覽器分享 → 加至主畫面', 'success', 6000);
+        }, 3000);
+      }
+    }
+  });
+  window.addEventListener('appinstalled', function () {
+    if (typeof showToast === 'function') showToast('✅ 賽馬 AI 已安裝到手機！', 'success');
+  });
+})();
+</script>
+</body>
+</html>

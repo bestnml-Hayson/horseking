@@ -1,0 +1,46 @@
+{
+  "meta": {
+    "source": "racing.on.cc/index.html"
+  },
+  "race_date": "2026-09-23",
+  "venue": "HV",
+  "day_notes": {
+    "track_variant": "C欄 C+3彎",
+    "first_post_time": "18:40",
+    "triple_treble_jackpot": 1500000,
+    "double_treble_jackpot_1": 250000,
+    "trainer_birthday": "巫偉傑 9月28日",
+    "suspended_jockeys_delayed": [
+      {"name": "黃智弘", "dates": ["2026-10-01", "2026-10-04"], "return": "2026-10-07", "days": 2}
+    ],
+    "absent_jockeys": ["布文 (養傷)"],
+    "suspended_jockeys": [
+      {"name": "巴度", "days": 3, "return": "2026-10-01"}
+    ],
+    "stewards": ["陳衍里醫生", "陳錦榮先生"],
+    "next_meetings": [
+      "2026-09-27 周日 沙田日賽",
+      "2026-09-26 周六 澳洲金玫瑰錦標賽馬日 轉播"
+    ]
+  },
+  "content_links": {
+    "racecard": "https://racing.on.cc/racing/ifo/current/rjifoa0001x0.html",
+    "track_results": "https://racing.on.cc/racing/ifo/current/rjifom0001x0.html",
+    "jockey_trainer_course": "https://racing.on.cc/racing/ifo/current/rjifon0001x0.html",
+    "morning_work_big_track": "https://racing.on.cc/racing/ifo/current/rjifob0001x0.html",
+    "morning_work_inner": "https://racing.on.cc/racing/ifo/current/rjifoc0001x0.html",
+    "fast_jump": "https://racing.on.cc/racing/ifo/current/rjifod0001x0.html",
+    "walk": "https://racing.on.cc/racing/ifo/current/rjifoe0001x0.html",
+    "swim": "https://racing.on.cc/racing/ifo/current/rjifof0001x0.html",
+    "barrier_trial": "https://racing.on.cc/racing/ifo/current/rjifog0001x0.html",
+    "jockey_trainer_quinella": "https://racing.on.cc/racing/ifo/current/rjifoh0001x0.html",
+    "route_class": "https://racing.on.cc/racing/ifo/current/rjifoi0001x0.html",
+    "jockey_stat": "https://racing.on.cc/racing/ifo/current/rjifoj0001x0.html",
+    "trainer_stat": "https://racing.on.cc/racing/ifo/current/rjifok0001x0.html",
+    "horse_comment": "https://racing.on.cc/racing/ifo/current/rjifol0001x0.html",
+    "weight_draw": "https://racing.on.cc/racing/ifo/current/rjifop0001x0.html",
+    "gear_change": "https://racing.on.cc/racing/ifo/current/rjifoq0001x0.html",
+    "pool_info": "https://racing.on.cc/racing/ifo/current/rjifor0001x0.html",
+    "scratches": "https://racing.on.cc/racing/ifo/current/rjifos0001x0.html"
+  }
+}

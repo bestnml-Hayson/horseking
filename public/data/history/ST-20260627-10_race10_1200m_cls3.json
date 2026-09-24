@@ -1,0 +1,578 @@
+{
+    "meta":  {
+                 "import_from":  "https://racing.hkjc.com/zh-hk/local/information/localresults?racedate=2026/06/27\u0026Racecourse=ST\u0026RaceNo=10",
+                 "race_name_full":  "香港賽",
+                 "update_time":  "2026-09-21 22:08:54"
+             },
+    "race_info":  {
+                      "race_id":  "ST-20260627-10",
+                      "race_date":  "2026-06-27",
+                      "race_number":  10,
+                      "venue":  "沙田",
+                      "track":  "",
+                      "surface":  "草地",
+                      "distance_m":  1200,
+                      "class":  "第三班",
+                      "rating_range":  "80-60",
+                      "prize":  "HK$1,860,000",
+                      "going":  "",
+                      "post_time":  "17:30",
+                      "result_available":  true,
+                      "num_horses":  814,
+                      "official_result":  [
+                                              {
+                                                  "finish":  1,
+                                                  "code":  "L232",
+                                                  "number":  6,
+                                                  "name":  "堅先生",
+                                                  "jockey":  "田泰安",
+                                                  "trainer":  "桂福特",
+                                                  "margin":  "---",
+                                                  "run_time":  "1:08.47"
+                                              },
+                                              {
+                                                  "finish":  2,
+                                                  "code":  "L020",
+                                                  "number":  11,
+                                                  "name":  "香港仔",
+                                                  "jockey":  "艾兆禮",
+                                                  "trainer":  "羅富全",
+                                                  "margin":  "1-3/4",
+                                                  "run_time":  "1:08.75"
+                                              },
+                                              {
+                                                  "finish":  3,
+                                                  "code":  "L121",
+                                                  "number":  7,
+                                                  "name":  "傑出雷霆",
+                                                  "jockey":  "何澤堯",
+                                                  "trainer":  "呂健威",
+                                                  "margin":  "2-3/4",
+                                                  "run_time":  "1:08.90"
+                                              },
+                                              {
+                                                  "finish":  4,
+                                                  "code":  "L155",
+                                                  "number":  5,
+                                                  "name":  "國千金",
+                                                  "jockey":  "奧爾民",
+                                                  "trainer":  "黎昭昇",
+                                                  "margin":  "3",
+                                                  "run_time":  "1:08.94"
+                                              },
+                                              {
+                                                  "finish":  5,
+                                                  "code":  "L375",
+                                                  "number":  4,
+                                                  "name":  "電光高昇",
+                                                  "jockey":  "布文",
+                                                  "trainer":  "韋達",
+                                                  "margin":  "4",
+                                                  "run_time":  "1:09.10"
+                                              },
+                                              {
+                                                  "finish":  6,
+                                                  "code":  "L152",
+                                                  "number":  2,
+                                                  "name":  "開心指數",
+                                                  "jockey":  "黃寶妮",
+                                                  "trainer":  "文家良",
+                                                  "margin":  "4-1/4",
+                                                  "run_time":  "1:09.14"
+                                              },
+                                              {
+                                                  "finish":  7,
+                                                  "code":  "J219",
+                                                  "number":  3,
+                                                  "name":  "飲杯",
+                                                  "jockey":  "霍宏聲",
+                                                  "trainer":  "大衛希斯",
+                                                  "margin":  "4-1/4",
+                                                  "run_time":  "1:09.15"
+                                              },
+                                              {
+                                                  "finish":  8,
+                                                  "code":  "K365",
+                                                  "number":  9,
+                                                  "name":  "千杯不醉",
+                                                  "jockey":  "希威森",
+                                                  "trainer":  "廖康銘",
+                                                  "margin":  "4-1/4",
+                                                  "run_time":  "1:09.16"
+                                              },
+                                              {
+                                                  "finish":  9,
+                                                  "code":  "H439",
+                                                  "number":  8,
+                                                  "name":  "健康快車",
+                                                  "jockey":  "艾道拿",
+                                                  "trainer":  "蔡約翰",
+                                                  "margin":  "4-3/4",
+                                                  "run_time":  "1:09.22"
+                                              },
+                                              {
+                                                  "finish":  10,
+                                                  "code":  "J303",
+                                                  "number":  1,
+                                                  "name":  "得道猴王",
+                                                  "jockey":  "潘頓",
+                                                  "trainer":  "告東尼",
+                                                  "margin":  "5-1/2",
+                                                  "run_time":  "1:09.36"
+                                              },
+                                              {
+                                                  "finish":  11,
+                                                  "code":  "K476",
+                                                  "number":  12,
+                                                  "name":  "勝於藍",
+                                                  "jockey":  "金誠剛",
+                                                  "trainer":  "伍鵬志",
+                                                  "margin":  "6",
+                                                  "run_time":  "1:09.42"
+                                              },
+                                              {
+                                                  "finish":  12,
+                                                  "code":  "K512",
+                                                  "number":  10,
+                                                  "name":  "贏完又贏",
+                                                  "jockey":  "鍾易禮",
+                                                  "trainer":  "沈集成",
+                                                  "margin":  "6-1/4",
+                                                  "run_time":  "1:09.45"
+                                              },
+                                              {
+                                                  "finish":  13,
+                                                  "code":  "G016",
+                                                  "number":  14,
+                                                  "name":  "鈁糖武士",
+                                                  "jockey":  "黃智弘",
+                                                  "trainer":  "方嘉柏",
+                                                  "margin":  "7-1/2",
+                                                  "run_time":  "1:09.68"
+                                              },
+                                              {
+                                                  "finish":  14,
+                                                  "code":  "L284",
+                                                  "number":  13,
+                                                  "name":  "銳喜",
+                                                  "jockey":  "巫顯東",
+                                                  "trainer":  "徐雨石",
+                                                  "margin":  "23-1/2",
+                                                  "run_time":  "1:12.23"
+                                              }
+                                          ],
+                      "payouts":  {
+
+                                  }
+                  },
+    "horses":  [
+                   {
+                       "number":  1,
+                       "code":  "J303",
+                       "name":  "得道猴王",
+                       "draw":  5,
+                       "rating":  66,
+                       "weight":  135,
+                       "jockey":  "潘頓",
+                       "trainer":  "告東尼",
+                       "best_time_sec":  69.36,
+                       "odds_win":  8.1,
+                       "odds_place":  0,
+                       "last_3":  [
+                                      {
+                                          "date":  "2026-09-06",
+                                          "venue":  "ST",
+                                          "race_no":  10,
+                                          "finish":  10,
+                                          "distance_m":  1200,
+                                          "class":  "第三班"
+                                      },
+                                      {
+                                          "date":  "2026-06-27",
+                                          "venue":  "ST",
+                                          "race_no":  10,
+                                          "finish":  10,
+                                          "distance_m":  1200,
+                                          "class":  "第三班"
+                                      }
+                                  ],
+                       "finish":  10
+                   },
+                   {
+                       "number":  2,
+                       "code":  "L152",
+                       "name":  "開心指數",
+                       "draw":  7,
+                       "rating":  72,
+                       "weight":  126,
+                       "jockey":  "黃寶妮",
+                       "trainer":  "文家良",
+                       "best_time_sec":  69.14,
+                       "odds_win":  10,
+                       "odds_place":  0,
+                       "last_3":  [
+                                      {
+                                          "date":  "2026-06-27",
+                                          "venue":  "ST",
+                                          "race_no":  10,
+                                          "finish":  6,
+                                          "distance_m":  1200,
+                                          "class":  "第三班"
+                                      }
+                                  ],
+                       "finish":  6
+                   },
+                   {
+                       "number":  3,
+                       "code":  "J219",
+                       "name":  "飲杯",
+                       "draw":  13,
+                       "rating":  71,
+                       "weight":  129,
+                       "jockey":  "霍宏聲",
+                       "trainer":  "大衛希斯",
+                       "best_time_sec":  69.15,
+                       "odds_win":  124,
+                       "odds_place":  0,
+                       "last_3":  [
+                                      {
+                                          "date":  "2026-07-12",
+                                          "venue":  "ST",
+                                          "race_no":  9,
+                                          "finish":  10,
+                                          "distance_m":  1200,
+                                          "class":  "第三班"
+                                      },
+                                      {
+                                          "date":  "2026-06-27",
+                                          "venue":  "ST",
+                                          "race_no":  10,
+                                          "finish":  7,
+                                          "distance_m":  1200,
+                                          "class":  "第三班"
+                                      },
+                                      {
+                                          "date":  "2026-06-10",
+                                          "venue":  "HV",
+                                          "race_no":  8,
+                                          "finish":  11,
+                                          "distance_m":  1200,
+                                          "class":  "第三班"
+                                      }
+                                  ],
+                       "finish":  7
+                   },
+                   {
+                       "number":  4,
+                       "code":  "L375",
+                       "name":  "電光高昇",
+                       "draw":  6,
+                       "rating":  74,
+                       "weight":  127,
+                       "jockey":  "布文",
+                       "trainer":  "韋達",
+                       "best_time_sec":  69.1,
+                       "odds_win":  34,
+                       "odds_place":  0,
+                       "last_3":  [
+                                      {
+                                          "date":  "2026-06-27",
+                                          "venue":  "ST",
+                                          "race_no":  10,
+                                          "finish":  5,
+                                          "distance_m":  1200,
+                                          "class":  "第三班"
+                                      }
+                                  ],
+                       "finish":  5
+                   },
+                   {
+                       "number":  5,
+                       "code":  "L155",
+                       "name":  "國千金",
+                       "draw":  8,
+                       "rating":  75,
+                       "weight":  126,
+                       "jockey":  "奧爾民",
+                       "trainer":  "黎昭昇",
+                       "best_time_sec":  68.94,
+                       "odds_win":  41,
+                       "odds_place":  0,
+                       "last_3":  [
+                                      {
+                                          "date":  "2026-07-15",
+                                          "venue":  "HV",
+                                          "race_no":  9,
+                                          "finish":  10,
+                                          "distance_m":  1200,
+                                          "class":  "第三班"
+                                      },
+                                      {
+                                          "date":  "2026-06-27",
+                                          "venue":  "ST",
+                                          "race_no":  10,
+                                          "finish":  4,
+                                          "distance_m":  1200,
+                                          "class":  "第三班"
+                                      }
+                                  ],
+                       "finish":  4
+                   },
+                   {
+                       "number":  6,
+                       "code":  "L232",
+                       "name":  "堅先生",
+                       "draw":  2,
+                       "rating":  80,
+                       "weight":  126,
+                       "jockey":  "田泰安",
+                       "trainer":  "桂福特",
+                       "best_time_sec":  68.47,
+                       "odds_win":  1.2,
+                       "odds_place":  0,
+                       "last_3":  [
+                                      {
+                                          "date":  "2026-06-27",
+                                          "venue":  "ST",
+                                          "race_no":  10,
+                                          "finish":  1,
+                                          "distance_m":  1200,
+                                          "class":  "第三班"
+                                      }
+                                  ],
+                       "finish":  1
+                   },
+                   {
+                       "number":  7,
+                       "code":  "L121",
+                       "name":  "傑出雷霆",
+                       "draw":  11,
+                       "rating":  77,
+                       "weight":  126,
+                       "jockey":  "何澤堯",
+                       "trainer":  "呂健威",
+                       "best_time_sec":  68.9,
+                       "odds_win":  25,
+                       "odds_place":  0,
+                       "last_3":  [
+                                      {
+                                          "date":  "2026-07-15",
+                                          "venue":  "HV",
+                                          "race_no":  9,
+                                          "finish":  3,
+                                          "distance_m":  1200,
+                                          "class":  "第三班"
+                                      },
+                                      {
+                                          "date":  "2026-06-27",
+                                          "venue":  "ST",
+                                          "race_no":  10,
+                                          "finish":  3,
+                                          "distance_m":  1200,
+                                          "class":  "第三班"
+                                      }
+                                  ],
+                       "finish":  3
+                   },
+                   {
+                       "number":  8,
+                       "code":  "H439",
+                       "name":  "健康快車",
+                       "draw":  3,
+                       "rating":  68,
+                       "weight":  123,
+                       "jockey":  "艾道拿",
+                       "trainer":  "蔡約翰",
+                       "best_time_sec":  69.22,
+                       "odds_win":  28,
+                       "odds_place":  0,
+                       "last_3":  [
+                                      {
+                                          "date":  "2026-06-27",
+                                          "venue":  "ST",
+                                          "race_no":  10,
+                                          "finish":  9,
+                                          "distance_m":  1200,
+                                          "class":  "第三班"
+                                      },
+                                      {
+                                          "date":  "2026-06-10",
+                                          "venue":  "HV",
+                                          "race_no":  9,
+                                          "finish":  7,
+                                          "distance_m":  1200,
+                                          "class":  "第三班"
+                                      }
+                                  ],
+                       "finish":  9
+                   },
+                   {
+                       "number":  9,
+                       "code":  "K365",
+                       "name":  "千杯不醉",
+                       "draw":  9,
+                       "rating":  69,
+                       "weight":  121,
+                       "jockey":  "希威森",
+                       "trainer":  "廖康銘",
+                       "best_time_sec":  69.16,
+                       "odds_win":  37,
+                       "odds_place":  0,
+                       "last_3":  [
+                                      {
+                                          "date":  "2026-09-06",
+                                          "venue":  "ST",
+                                          "race_no":  10,
+                                          "finish":  8,
+                                          "distance_m":  1200,
+                                          "class":  "第三班"
+                                      },
+                                      {
+                                          "date":  "2026-06-27",
+                                          "venue":  "ST",
+                                          "race_no":  10,
+                                          "finish":  8,
+                                          "distance_m":  1200,
+                                          "class":  "第三班"
+                                      }
+                                  ],
+                       "finish":  8
+                   },
+                   {
+                       "number":  10,
+                       "code":  "K512",
+                       "name":  "贏完又贏",
+                       "draw":  14,
+                       "rating":  63,
+                       "weight":  117,
+                       "jockey":  "鍾易禮",
+                       "trainer":  "沈集成",
+                       "best_time_sec":  69.45,
+                       "odds_win":  177,
+                       "odds_place":  0,
+                       "last_3":  [
+                                      {
+                                          "date":  "2026-06-27",
+                                          "venue":  "ST",
+                                          "race_no":  10,
+                                          "finish":  12,
+                                          "distance_m":  1200,
+                                          "class":  "第三班"
+                                      }
+                                  ],
+                       "finish":  12
+                   },
+                   {
+                       "number":  11,
+                       "code":  "L020",
+                       "name":  "香港仔",
+                       "draw":  12,
+                       "rating":  78,
+                       "weight":  119,
+                       "jockey":  "艾兆禮",
+                       "trainer":  "羅富全",
+                       "best_time_sec":  68.75,
+                       "odds_win":  53,
+                       "odds_place":  0,
+                       "last_3":  [
+                                      {
+                                          "date":  "2026-06-27",
+                                          "venue":  "ST",
+                                          "race_no":  10,
+                                          "finish":  2,
+                                          "distance_m":  1200,
+                                          "class":  "第三班"
+                                      }
+                                  ],
+                       "finish":  2
+                   },
+                   {
+                       "number":  12,
+                       "code":  "K476",
+                       "name":  "勝於藍",
+                       "draw":  10,
+                       "rating":  65,
+                       "weight":  118,
+                       "jockey":  "金誠剛",
+                       "trainer":  "伍鵬志",
+                       "best_time_sec":  69.42,
+                       "odds_win":  235,
+                       "odds_place":  0,
+                       "last_3":  [
+                                      {
+                                          "date":  "2026-07-12",
+                                          "venue":  "ST",
+                                          "race_no":  9,
+                                          "finish":  8,
+                                          "distance_m":  1200,
+                                          "class":  "第三班"
+                                      },
+                                      {
+                                          "date":  "2026-06-27",
+                                          "venue":  "ST",
+                                          "race_no":  10,
+                                          "finish":  11,
+                                          "distance_m":  1200,
+                                          "class":  "第三班"
+                                      }
+                                  ],
+                       "finish":  11
+                   },
+                   {
+                       "number":  13,
+                       "code":  "L284",
+                       "name":  "銳喜",
+                       "draw":  4,
+                       "rating":  60,
+                       "weight":  116,
+                       "jockey":  "巫顯東",
+                       "trainer":  "徐雨石",
+                       "best_time_sec":  72.23,
+                       "odds_win":  295,
+                       "odds_place":  0,
+                       "last_3":  [
+                                      {
+                                          "date":  "2026-06-27",
+                                          "venue":  "ST",
+                                          "race_no":  10,
+                                          "finish":  14,
+                                          "distance_m":  1200,
+                                          "class":  "第三班"
+                                      },
+                                      {
+                                          "date":  "2026-06-10",
+                                          "venue":  "HV",
+                                          "race_no":  9,
+                                          "finish":  10,
+                                          "distance_m":  1200,
+                                          "class":  "第三班"
+                                      }
+                                  ],
+                       "finish":  14
+                   },
+                   {
+                       "number":  14,
+                       "code":  "G016",
+                       "name":  "鈁糖武士",
+                       "draw":  1,
+                       "rating":  62,
+                       "weight":  115,
+                       "jockey":  "黃智弘",
+                       "trainer":  "方嘉柏",
+                       "best_time_sec":  69.68,
+                       "odds_win":  83,
+                       "odds_place":  0,
+                       "last_3":  [
+                                      {
+                                          "date":  "2026-06-27",
+                                          "venue":  "ST",
+                                          "race_no":  10,
+                                          "finish":  13,
+                                          "distance_m":  1200,
+                                          "class":  "第三班"
+                                      }
+                                  ],
+                       "finish":  13
+                   }
+               ]
+}

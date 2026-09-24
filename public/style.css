@@ -1,0 +1,965 @@
+/* =========================================================
+   賽馬 AI 分析 APP - 黑金風格 (Mobile First)
+   ========================================================= */
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+:root {
+  --bg: #000000;
+  --bg-card: #111111;
+  --bg-card2: #1a1a1a;
+  --bg-card3: #222222;
+  --gold: #c9a962;
+  --gold-light: #e8d5a7;
+  --gold-dark: #a08242;
+  --accent: #c9a962;
+  --red: #ef4444;
+  --green: #22c55e;
+  --blue: #3b82f6;
+  --text: #ffffff;
+  --text-dim: #8a8a8a;
+  --text-dimmer: #555555;
+  --border: #2a2a2a;
+  --border-light: #333333;
+  --radius: 12px;
+  --radius-lg: 16px;
+  --shadow: 0 2px 12px rgba(0,0,0,0.6);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+html, body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang TC",
+    "Microsoft JhengHei", "Helvetica Neue", Arial, sans-serif;
+  line-height: 1.5;
+  min-height: 100vh;
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+}
+.container {
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 12px 14px calc(80px + var(--safe-bottom));
+}
+@media (min-width: 768px) {
+  .container {
+    max-width: 720px;
+    padding: 16px 20px calc(80px + var(--safe-bottom));
+  }
+}
+
+/* ========== 手機風格頂部 Header ========== */
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(0,0,0,0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 16px;
+  padding-top: calc(12px + env(safe-area-inset-top));
+  padding-top: calc(12px + max(12px, env(safe-area-inset-top)));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+.app-header .header-icon {
+  width: 36px; height: 36px;
+  display: grid; place-items: center;
+  font-size: 20px;
+  color: var(--gold);
+  cursor: pointer;
+  border-radius: 50%;
+  transition: background .15s;
+}
+.app-header .header-icon:active { background: var(--bg-card2); }
+.app-header .header-title {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--gold-light);
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.app-header .header-title .logo-emoji { font-size: 18px; }
+.header-subtitle {
+  display: none;
+}
+@media (min-width: 768px) {
+  .header-subtitle {
+    display: inline;
+    font-size: 12px;
+    color: var(--text-dim);
+    font-weight: 500;
+  }
+}
+
+/* ========== 狀態列 (Header 下方) ========== */
+.status-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 10px 14px;
+  overflow-x: auto;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 12px;
+}
+.status-row::-webkit-scrollbar { display: none; }
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  background: var(--bg-card2);
+  border-radius: 999px;
+  font-size: 12px;
+  color: var(--text-dim);
+  white-space: nowrap;
+  border: 1px solid var(--border);
+}
+.status-pill b { color: var(--gold); font-weight: 700; }
+.status-pill .dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 0 3px rgba(34,197,94,0.18);
+}
+
+/* ========== 頂部次級 Tab (首頁/賽程/賠率 etc.) ========== */
+.sub-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 8px 14px;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  margin-bottom: 12px;
+}
+.sub-tabs::-webkit-scrollbar { display: none; }
+.sub-tab {
+  padding: 7px 16px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-dim);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all .15s;
+  border: 1px solid transparent;
+}
+.sub-tab.active {
+  color: var(--gold);
+  background: rgba(201,169,98,0.12);
+  border-color: rgba(201,169,98,0.3);
+}
+
+/* ========== 卡片通用樣式 ========== */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 14px;
+  margin-bottom: 12px;
+  box-shadow: var(--shadow);
+}
+.card-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.card-title h3 {
+  font-size: 15px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--gold-light);
+}
+.card-title h3 .emoji { font-size: 17px; }
+.card-title .action-btn {
+  font-size: 12px;
+  padding: 5px 12px;
+  border-radius: 8px;
+  background: var(--bg-card2);
+  color: var(--gold);
+  cursor: pointer;
+  border: 1px solid var(--border);
+  font-weight: 600;
+}
+
+/* ========== 統計卡片 Grid ========== */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-bottom: 12px;
+}
+@media (min-width: 600px) {
+  .stat-grid { grid-template-columns: repeat(4, 1fr); }
+}
+.stat-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px;
+}
+.stat-card .label {
+  color: var(--text-dim);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.stat-card .value {
+  font-size: 22px;
+  font-weight: 900;
+  color: var(--gold);
+  margin-top: 4px;
+}
+.stat-card .delta {
+  font-size: 11px;
+  color: var(--green);
+  margin-top: 2px;
+}
+.stat-card .delta.down { color: var(--red); }
+
+/* ========== 賽事卡片 (Race Card) - 重點參考風格 ========== */
+.race-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  margin-bottom: 12px;
+  overflow: hidden;
+  transition: all .2s;
+}
+.race-card.pending { border-left: 3px solid var(--gold); }
+.race-card.finished { border-left: 3px solid var(--blue); }
+.race-card-header {
+  padding: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.race-card-header:active { background: var(--bg-card2); }
+.race-header-main { flex: 1; min-width: 0; }
+.race-num-badge {
+  display: inline-block;
+  background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+  color: #000;
+  font-weight: 900;
+  font-size: 12px;
+  padding: 3px 10px;
+  border-radius: 6px;
+  margin-bottom: 6px;
+}
+.race-name {
+  font-size: 16px;
+  font-weight: 800;
+  margin-bottom: 6px;
+  color: var(--text);
+  line-height: 1.3;
+}
+.race-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+.race-meta-row span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.race-meta-row b { color: var(--text); font-weight: 600; }
+
+.race-header-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.countdown-circle {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 2px solid var(--red);
+  display: grid;
+  place-items: center;
+  position: relative;
+  background: rgba(239,68,68,0.06);
+  flex-shrink: 0;
+}
+.countdown-circle .time {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--red);
+}
+.countdown-circle .label {
+  position: absolute;
+  bottom: -2px;
+  font-size: 9px;
+  color: var(--red);
+  background: var(--bg-card);
+  padding: 0 3px;
+}
+.race-chevron {
+  color: var(--text-dim);
+  font-size: 18px;
+  transition: transform .2s;
+}
+.race-card.expanded .race-chevron { transform: rotate(180deg); }
+
+.race-card-body {
+  display: none;
+  padding: 0 14px 14px;
+  border-top: 1px solid var(--border);
+  background: var(--bg-card2);
+}
+.race-card.expanded .race-card-body {
+  display: block;
+}
+
+/* 賽事卡片 Body 內的區塊 */
+.race-section {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+.race-section:last-child { border-bottom: none; }
+.race-section-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--gold);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin-bottom: 10px;
+}
+
+/* 排名 Grid */
+.rank-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+@media (min-width: 600px) {
+  .rank-grid { grid-template-columns: repeat(4, 1fr); }
+}
+.rank-card {
+  border-radius: 10px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  position: relative;
+}
+.rank-card.rank-1 { border-top: 3px solid var(--gold); }
+.rank-card.rank-2 { border-top: 3px solid #c0c0c0; }
+.rank-card.rank-3 { border-top: 3px solid #cd7f32; }
+.rank-card.rank-4 { border-top: 3px solid var(--blue); }
+.rank-medal {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-weight: 900;
+  color: #000;
+  font-size: 13px;
+}
+.rank-1 .rank-medal { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); }
+.rank-2 .rank-medal { background: linear-gradient(135deg, #e5e7eb, #9ca3af); }
+.rank-3 .rank-medal { background: linear-gradient(135deg, #f59e0b, #c2410c); color: #fff; }
+.rank-4 .rank-medal { background: linear-gradient(135deg, #60a5fa, #2563eb); color: #fff; }
+.rank-card .horse-num {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+.rank-card .horse-name {
+  font-size: 15px;
+  font-weight: 800;
+  margin: 2px 0;
+}
+.rank-card .horse-code {
+  color: var(--gold);
+  font-weight: 700;
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+.ai-score-bar {
+  background: var(--bg-card3);
+  border-radius: 999px;
+  overflow: hidden;
+  height: 7px;
+  margin-bottom: 6px;
+}
+.ai-score-bar .fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--gold-dark), var(--gold));
+  border-radius: 999px;
+}
+.ai-score-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--text-dim);
+}
+.ai-score-label b { color: var(--gold); }
+
+/* ========== 表格樣式 (手機版優化) ========== */
+.table-scroll {
+  overflow-x: auto;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg-card2);
+  -webkit-overflow-scrolling: touch;
+}
+.table-scroll::-webkit-scrollbar { height: 4px; }
+.table-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+table.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  min-width: 580px;
+}
+table.data-table th, table.data-table td {
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+table.data-table thead th {
+  background: var(--bg-card3);
+  color: var(--text-dim);
+  font-weight: 700;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+table.data-table tbody tr:active { background: rgba(201,169,98,0.05); }
+.rank-pill {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  font-weight: 800;
+  font-size: 12px;
+  background: var(--bg-card3);
+  border: 1px solid var(--border);
+}
+.rank-pill.top1 { background: var(--gold); color: #000; }
+.rank-pill.top2 { background: #d1d5db; color: #000; }
+.rank-pill.top3 { background: #f59e0b; color: #fff; }
+.rank-pill.top4 { background: #60a5fa; color: #fff; }
+.last3 { display: inline-flex; gap: 3px; }
+.last3 span {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  font-weight: 700;
+  font-size: 11px;
+  background: var(--bg-card3);
+  border: 1px solid var(--border);
+}
+.last3 span.good { background: rgba(34,197,94,0.2); color: #86efac; border-color: rgba(34,197,94,0.35); }
+.last3 span.mid { background: rgba(201,169,98,0.2); color: var(--gold-light); border-color: rgba(201,169,98,0.35); }
+.last3 span.bad { background: rgba(59,130,246,0.2); color: #93c5fd; border-color: rgba(59,130,246,0.35); }
+.mini-pill {
+  display: inline-grid;
+  place-items: center;
+  min-width: 28px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  border: 1px solid var(--border);
+  background: var(--bg-card3);
+}
+.mini-pill.good { background: rgba(34,197,94,0.2); color: #86efac; border-color: rgba(34,197,94,0.35); }
+.mini-pill.mid { background: rgba(201,169,98,0.2); color: var(--gold-light); border-color: rgba(201,169,98,0.35); }
+.mini-pill.bad { background: rgba(59,130,246,0.2); color: #93c5fd; border-color: rgba(59,130,246,0.35); }
+.odds { font-weight: 800; color: var(--gold); }
+.odds.hot { color: var(--red); }
+.odds.cold { color: var(--green); }
+.mini-score {
+  background: var(--bg-card3);
+  height: 5px;
+  width: 80px;
+  border-radius: 999px;
+  overflow: hidden;
+  display: inline-block;
+  vertical-align: middle;
+}
+.mini-score .fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--gold-dark), var(--gold));
+}
+
+/* ========== Pace / Step ========== */
+.pace-tag {
+  display: inline-block;
+  background: linear-gradient(135deg, var(--red), var(--gold));
+  color: #fff;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+.pace-desc {
+  color: var(--text-dim);
+  margin-bottom: 10px;
+  font-size: 13px;
+}
+.pace-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+@media (min-width: 600px) {
+  .pace-grid { grid-template-columns: 1fr 1fr; }
+}
+.pace-subcard {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+}
+.pace-subcard h4 {
+  font-size: 12px;
+  margin-bottom: 8px;
+  color: var(--gold);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.pace-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 10px;
+  border-radius: 7px;
+  background: var(--bg-card2);
+  margin-bottom: 5px;
+  font-size: 13px;
+}
+.pace-item:last-child { margin-bottom: 0; }
+.pace-item .info .small { color: var(--text-dim); font-size: 11px; }
+.pace-score {
+  background: rgba(201,169,98,0.15);
+  color: var(--gold);
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 11px;
+}
+
+/* ========== 投注策略 ========== */
+.hot-warn {
+  background: rgba(239,68,68,0.06);
+  border: 1px solid rgba(239,68,68,0.3);
+  border-left: 3px solid var(--red);
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+.hot-warn .warn-title {
+  color: #fca5a5;
+  font-weight: 800;
+  margin-bottom: 5px;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.hot-warn ul { padding-left: 18px; color: #fca5a5; font-size: 12.5px; }
+.hot-warn li { margin-bottom: 2px; }
+
+.bet-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+@media (min-width: 600px) {
+  .bet-grid { grid-template-columns: repeat(2, 1fr); }
+}
+.bet-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+}
+.bet-card h4 {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+.bet-tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: rgba(59,130,246,0.18);
+  color: #93c5fd;
+  font-size: 11px;
+  font-weight: 700;
+  margin-bottom: 5px;
+}
+.bet-tag.core { background: rgba(34,197,94,0.18); color: #86efac; }
+.bet-tag.safe { background: rgba(201,169,98,0.18); color: var(--gold-light); }
+.bet-tag.cold { background: rgba(168,85,247,0.18); color: #d8b4fe; }
+
+table.budget-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+table.budget-table th, table.budget-table td {
+  padding: 9px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+table.budget-table thead th {
+  background: var(--bg-card3);
+  color: var(--text-dim);
+  font-size: 11px;
+  font-weight: 600;
+}
+table.budget-table tfoot td {
+  background: rgba(201,169,98,0.08);
+  color: var(--gold);
+  font-weight: 800;
+  border-top: 2px solid var(--gold);
+  border-bottom: none;
+}
+table.budget-table .amt { text-align: right; font-weight: 700; }
+
+/* ========== 賽事資訊 Meta Grid ========== */
+.race-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-bottom: 4px;
+}
+@media (min-width: 500px) {
+  .race-meta-grid { grid-template-columns: repeat(4, 1fr); }
+}
+.meta-cell {
+  background: var(--bg-card2);
+  border-radius: 8px;
+  padding: 10px;
+  border: 1px solid var(--border);
+}
+.meta-cell .label {
+  color: var(--text-dim);
+  font-size: 10px;
+  margin-bottom: 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.meta-cell .value {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--gold);
+}
+
+/* ========== 底部導航欄 ========== */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(10,10,10,0.96);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: space-around;
+  padding: 6px 0 calc(6px + var(--safe-bottom));
+  z-index: 200;
+}
+@media (min-width: 768px) {
+  .bottom-nav {
+    left: 50%;
+    transform: translateX(-50%);
+    width: 720px;
+    border-left: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+    border-bottom-left-radius: var(--radius-lg);
+    border-bottom-right-radius: var(--radius-lg);
+  }
+}
+.nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 6px 4px;
+  cursor: pointer;
+  transition: all .15s;
+  color: var(--text-dimmer);
+}
+.nav-item:active { background: var(--bg-card2); }
+.nav-item.active { color: var(--gold); }
+.nav-item .nav-icon {
+  font-size: 22px;
+  line-height: 1;
+}
+.nav-item .nav-label {
+  font-size: 10px;
+  font-weight: 600;
+}
+
+/* ========== Tab Panel ========== */
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* ========== Toast ========== */
+.toast {
+  position: fixed;
+  bottom: calc(90px + var(--safe-bottom));
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  background: var(--bg-card2);
+  border: 1px solid var(--border-light);
+  color: var(--text);
+  padding: 12px 20px;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+  font-size: 13px;
+  z-index: 9999;
+  transition: transform .3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  max-width: calc(100% - 40px);
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+.toast.success { border-color: rgba(34,197,94,0.4); }
+.toast.warn { border-color: rgba(201,169,98,0.4); }
+
+/* ========== Horse Detail Modal ========== */
+.modal-mask {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.75);
+  display: flex; align-items: flex-end; justify-content: center;
+  z-index: 10000;
+  -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
+}
+.modal-mask .modal-card {
+  width: 100%; max-width: 560px;
+  background: linear-gradient(180deg, #141414 0%, #0b0b0b 100%);
+  border: 1px solid var(--border-light);
+  border-top-left-radius: 20px; border-top-right-radius: 20px;
+  max-height: 90vh; overflow: hidden;
+  display: flex; flex-direction: column;
+  box-shadow: 0 -20px 60px rgba(212,175,55,0.15);
+  animation: modalSlideUp .35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes modalSlideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+.modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--border-light);
+  background: rgba(212,175,55,0.06);
+}
+.modal-header .modal-title {
+  display: flex; align-items: baseline;
+  font-size: 17px; font-weight: 700; color: var(--text);
+}
+.modal-body {
+  padding: 16px 18px 24px; overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.hd-section { margin-bottom: 18px; }
+.hd-section h4 {
+  margin: 0 0 10px; font-size: 13px;
+  color: var(--gold); text-transform: uppercase; letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--border-light); padding-bottom: 6px;
+}
+.hd-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px 14px;
+}
+.hd-grid .cell {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 6px 10px; background: var(--bg-card2); border-radius: 8px;
+  font-size: 12.5px;
+}
+.hd-grid .cell .k { color: var(--text-dim); }
+.hd-grid .cell .v { font-weight: 600; color: var(--text); }
+.score-bar-row {
+  display: flex; align-items: center; gap: 10px; padding: 6px 0;
+  font-size: 12.5px;
+}
+.score-bar-row .k { width: 74px; color: var(--text-dim); flex-shrink: 0; }
+.score-bar-row .bar {
+  flex: 1; height: 8px; border-radius: 4px;
+  background: rgba(255,255,255,0.06); overflow: hidden;
+}
+.score-bar-row .bar > div {
+  height: 100%;
+  background: linear-gradient(90deg, #d4af37, #f0d87a);
+  border-radius: 4px; transition: width .4s ease;
+}
+.score-bar-row .n { width: 44px; text-align: right; font-weight: 700; color: var(--gold); }
+.hd-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.hd-table th, .hd-table td {
+  padding: 7px 6px; text-align: left;
+  border-bottom: 1px solid var(--border-light);
+}
+.hd-table th { color: var(--text-dim); font-weight: 500; font-size: 11px; }
+.hd-table td { color: var(--text); }
+.hd-table td.fin-1 { color: var(--green); font-weight: 700; }
+.hd-table td.fin-2 { color: #60a5fa; font-weight: 600; }
+.hd-table td.fin-3 { color: #c084fc; font-weight: 600; }
+.hd-total {
+  margin-top: 10px; padding: 14px;
+  background: linear-gradient(135deg, rgba(212,175,55,0.14), rgba(212,175,55,0.03));
+  border: 1px solid rgba(212,175,55,0.35);
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.hd-total .label { color: var(--text-dim); font-size: 12px; }
+.hd-total .val { font-size: 24px; font-weight: 800; color: var(--gold); }
+.horse-click { cursor: pointer; transition: background .2s ease, transform .2s ease; }
+.horse-click:hover { background: rgba(212,175,55,0.06); }
+.rank-card.horse-click:active, .horse-click:active {
+  transform: scale(0.99);
+  background: rgba(212,175,55,0.1);
+}
+
+/* ========== Race Picker ========== */
+.rp-date-grid, .rp-race-grid {
+  display: flex; flex-direction: column; gap: 8px;
+}
+.rp-date-card, .rp-race-card {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px 14px;
+  background: var(--bg-card2);
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all .2s ease;
+}
+.rp-date-card:hover, .rp-race-card:hover {
+  border-color: rgba(212,175,55,0.5);
+  background: rgba(212,175,55,0.08);
+}
+.rp-date-card:active, .rp-race-card:active { transform: scale(0.99); }
+.rp-date-card .left, .rp-race-card .left {
+  display: flex; flex-direction: column;
+}
+.rp-date-card .d { font-weight: 700; font-size: 15px; color: var(--text); }
+.rp-date-card .sub { font-size: 11.5px; color: var(--text-dim); margin-top: 2px; }
+.rp-date-card .badge, .rp-race-card .badge {
+  font-size: 11px; padding: 4px 8px; border-radius: 999px;
+  background: rgba(212,175,55,0.15); color: var(--gold);
+  font-weight: 700;
+}
+.rp-date-card.today {
+  border-color: rgba(212,175,55,0.65);
+  background: linear-gradient(135deg, rgba(212,175,55,0.18), rgba(212,175,55,0.04));
+}
+.rp-race-card .r { font-weight: 700; font-size: 15px; color: var(--text); }
+.rp-race-card .sub { font-size: 11.5px; color: var(--text-dim); margin-top: 2px; }
+.rp-race-card .time { font-weight: 700; color: var(--green); font-size: 12px; }
+.rp-race-card.done .time { color: var(--text-dim); }
+.rp-race-card.selected {
+  border-color: rgba(212,175,55,0.8);
+  background: linear-gradient(135deg, rgba(212,175,55,0.22), rgba(212,175,55,0.06));
+}
+
+/* ========== 準確度卡片 ========== */
+.accuracy-card {
+  background: linear-gradient(135deg, rgba(34,197,94,0.08), rgba(59,130,246,0.05));
+  border: 1px solid rgba(34,197,94,0.25);
+  border-radius: var(--radius-lg);
+  padding: 14px;
+  margin-bottom: 12px;
+}
+.accuracy-card h4 {
+  color: #86efac;
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+.accuracy-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+@media (min-width: 500px) {
+  .accuracy-grid { grid-template-columns: repeat(4, 1fr); }
+}
+.accuracy-item {
+  background: rgba(0,0,0,0.3);
+  padding: 10px;
+  border-radius: 8px;
+}
+.accuracy-item .label { color: var(--text-dim); font-size: 11px; }
+.accuracy-item .value { font-size: 18px; font-weight: 800; color: var(--green); }
+
+/* ========== 賽程時間表列表 ========== */
+.schedule-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.schedule-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 12px;
+  background: var(--bg-card2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.schedule-item:active { background: var(--bg-card3); }
+.schedule-item .date {
+  font-weight: 700;
+  color: var(--gold);
+}
+.schedule-item .count {
+  color: var(--text-dim);
+  font-size: 12px;
+}
+
+/* ========== Button ========== */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, var(--gold) 0%, var(--gold-dark) 100%);
+  color: #000;
+  font-weight: 700;
+  border: none;
+  padding: 9px 16px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: transform .15s, box-shadow .15s;
+  box-shadow: 0 3px 12px rgba(201,169,98,0.25);
+}
+.btn:active { transform: translateY(1px); }
+.btn.secondary {
+  background: var(--bg-card2);
+  color: var(--gold);
+  box-shadow: none;
+  border: 1px solid var(--border);
+}
+.btn.secondary:active { background: var(--bg-card3); }

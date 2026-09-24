@@ -1,0 +1,242 @@
+{
+    "meta":  {
+                 "import_from":  "https://racing.hkjc.com/zh-hk/local/information/localresults?racedate=2026/06/13\u0026Racecourse=ST\u0026RaceNo=1",
+                 "race_name_full":  "香港賽",
+                 "update_time":  "2026-09-21 22:10:57"
+             },
+    "race_info":  {
+                      "race_id":  "ST-20260613-01",
+                      "race_date":  "2026-06-13",
+                      "race_number":  1,
+                      "venue":  "沙田",
+                      "track":  "",
+                      "surface":  "草地",
+                      "distance_m":  0,
+                      "class":  "",
+                      "rating_range":  "",
+                      "prize":  "HK$950,000",
+                      "going":  "",
+                      "post_time":  "13:00",
+                      "result_available":  true,
+                      "num_horses":  774,
+                      "official_result":  [
+                                              {
+                                                  "finish":  1,
+                                                  "code":  "L441",
+                                                  "number":  6,
+                                                  "name":  "星球勇士",
+                                                  "jockey":  "艾道拿",
+                                                  "trainer":  "大衛希斯",
+                                                  "margin":  "---",
+                                                  "run_time":  "0:55.81"
+                                              },
+                                              {
+                                                  "finish":  3,
+                                                  "code":  "L393",
+                                                  "number":  7,
+                                                  "name":  "量子猴王",
+                                                  "jockey":  "鍾易禮",
+                                                  "trainer":  "告東尼",
+                                                  "margin":  "4-1/2",
+                                                  "run_time":  "0:56.53"
+                                              },
+                                              {
+                                                  "finish":  4,
+                                                  "code":  "L355",
+                                                  "number":  5,
+                                                  "name":  "紅悅舍",
+                                                  "jockey":  "田泰安",
+                                                  "trainer":  "韋達",
+                                                  "margin":  "8",
+                                                  "run_time":  "0:57.09"
+                                              },
+                                              {
+                                                  "finish":  5,
+                                                  "code":  "L335",
+                                                  "number":  2,
+                                                  "name":  "龍騰盛世",
+                                                  "jockey":  "希威森",
+                                                  "trainer":  "呂健威",
+                                                  "margin":  "8-3/4",
+                                                  "run_time":  "0:57.20"
+                                              },
+                                              {
+                                                  "finish":  6,
+                                                  "code":  "L308",
+                                                  "number":  4,
+                                                  "name":  "銳行星",
+                                                  "jockey":  "何澤堯",
+                                                  "trainer":  "方嘉柏",
+                                                  "margin":  "9-1/2",
+                                                  "run_time":  "0:57.32"
+                                              },
+                                              {
+                                                  "finish":  7,
+                                                  "code":  "L190",
+                                                  "number":  3,
+                                                  "name":  "機緣燦爛",
+                                                  "jockey":  "梁家俊",
+                                                  "trainer":  "鄭俊偉",
+                                                  "margin":  "19",
+                                                  "run_time":  "0:58.87"
+                                              }
+                                          ],
+                      "payouts":  {
+
+                                  }
+                  },
+    "horses":  [
+                   {
+                       "number":  2,
+                       "code":  "L335",
+                       "name":  "龍騰盛世",
+                       "draw":  4,
+                       "rating":  0,
+                       "weight":  126,
+                       "jockey":  "希威森",
+                       "trainer":  "呂健威",
+                       "best_time_sec":  57.2,
+                       "odds_win":  21,
+                       "odds_place":  0,
+                       "last_3":  [
+                                      {
+                                          "date":  "2026-06-13",
+                                          "venue":  "ST",
+                                          "race_no":  1,
+                                          "finish":  5,
+                                          "distance_m":  0,
+                                          "class":  ""
+                                      }
+                                  ],
+                       "finish":  5
+                   },
+                   {
+                       "number":  3,
+                       "code":  "L190",
+                       "name":  "機緣燦爛",
+                       "draw":  3,
+                       "rating":  0,
+                       "weight":  126,
+                       "jockey":  "梁家俊",
+                       "trainer":  "鄭俊偉",
+                       "best_time_sec":  58.87,
+                       "odds_win":  35,
+                       "odds_place":  0,
+                       "last_3":  [
+                                      {
+                                          "date":  "2026-06-13",
+                                          "venue":  "ST",
+                                          "race_no":  1,
+                                          "finish":  7,
+                                          "distance_m":  0,
+                                          "class":  ""
+                                      }
+                                  ],
+                       "finish":  7
+                   },
+                   {
+                       "number":  4,
+                       "code":  "L308",
+                       "name":  "銳行星",
+                       "draw":  1,
+                       "rating":  0,
+                       "weight":  126,
+                       "jockey":  "何澤堯",
+                       "trainer":  "方嘉柏",
+                       "best_time_sec":  57.32,
+                       "odds_win":  9.3,
+                       "odds_place":  0,
+                       "last_3":  [
+                                      {
+                                          "date":  "2026-06-13",
+                                          "venue":  "ST",
+                                          "race_no":  1,
+                                          "finish":  6,
+                                          "distance_m":  0,
+                                          "class":  ""
+                                      }
+                                  ],
+                       "finish":  6
+                   },
+                   {
+                       "number":  5,
+                       "code":  "L355",
+                       "name":  "紅悅舍",
+                       "draw":  5,
+                       "rating":  0,
+                       "weight":  126,
+                       "jockey":  "田泰安",
+                       "trainer":  "韋達",
+                       "best_time_sec":  57.09,
+                       "odds_win":  37,
+                       "odds_place":  0,
+                       "last_3":  [
+                                      {
+                                          "date":  "2026-06-13",
+                                          "venue":  "ST",
+                                          "race_no":  1,
+                                          "finish":  4,
+                                          "distance_m":  0,
+                                          "class":  ""
+                                      }
+                                  ],
+                       "finish":  4
+                   },
+                   {
+                       "number":  6,
+                       "code":  "L441",
+                       "name":  "星球勇士",
+                       "draw":  6,
+                       "rating":  0,
+                       "weight":  121,
+                       "jockey":  "艾道拿",
+                       "trainer":  "大衛希斯",
+                       "best_time_sec":  55.81,
+                       "odds_win":  1.6,
+                       "odds_place":  0,
+                       "last_3":  [
+                                      {
+                                          "date":  "2026-06-13",
+                                          "venue":  "ST",
+                                          "race_no":  1,
+                                          "finish":  1,
+                                          "distance_m":  0,
+                                          "class":  ""
+                                      }
+                                  ],
+                       "finish":  1
+                   },
+                   {
+                       "number":  7,
+                       "code":  "L393",
+                       "name":  "量子猴王",
+                       "draw":  7,
+                       "rating":  0,
+                       "weight":  119,
+                       "jockey":  "鍾易禮",
+                       "trainer":  "告東尼",
+                       "best_time_sec":  56.53,
+                       "odds_win":  3.5,
+                       "odds_place":  0,
+                       "last_3":  [
+                                      {
+                                          "date":  "2026-09-13",
+                                          "venue":  "ST",
+                                          "race_no":  7,
+                                          "finish":  7,
+                                          "distance_m":  1400,
+                                          "class":  "第四班"
+                                      },
+                                      {
+                                          "date":  "2026-06-13",
+                                          "venue":  "ST",
+                                          "race_no":  1,
+                                          "finish":  3,
+                                          "distance_m":  0,
+                                          "class":  ""
+                                      }
+                                  ],
+                       "finish":  3
+                   }
+               ]
+}

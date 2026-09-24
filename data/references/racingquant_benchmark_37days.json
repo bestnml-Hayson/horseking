@@ -1,0 +1,15 @@
+{
+  "benchmark_summary": {
+    "sample_size_race_days": 37,
+    "win_rate_pct": 35,
+    "place_rate_pct": 68,
+    "quinella_place_rate_pct": 76,
+    "quinella_rate_pct": 49,
+    "tierce_rate_pct": 27,
+    "win_hits": 13,
+    "place_hits": 25,
+    "qp_hits": 28,
+    "q_hits": 18,
+    "tierce_hits": 10
+  }
+}

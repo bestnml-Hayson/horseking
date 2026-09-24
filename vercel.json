@@ -1,0 +1,62 @@
+{
+  "name": "horse-ai-live",
+  "version": 2,
+  "buildCommand": null,
+  "installCommand": "echo no-deps",
+  "outputDirectory": "public",
+  "headers": [
+    {
+      "source": "/(.*)\\.webmanifest",
+      "headers": [
+        { "key": "Content-Type", "value": "application/manifest+json; charset=utf-8" },
+        { "key": "Cache-Control", "value": "public, max-age=3600" }
+      ]
+    },
+    {
+      "source": "/(.*)\\.js",
+      "headers": [
+        { "key": "Content-Type", "value": "application/javascript; charset=utf-8" },
+        { "key": "Cache-Control", "value": "public, max-age=1800, s-maxage=3600, stale-while-revalidate=86400" }
+      ]
+    },
+    {
+      "source": "/(.*)\\.css",
+      "headers": [
+        { "key": "Content-Type", "value": "text/css; charset=utf-8" },
+        { "key": "Cache-Control", "value": "public, max-age=1800, stale-while-revalidate=86400" }
+      ]
+    },
+    {
+      "source": "/(.*)\\.json",
+      "headers": [
+        { "key": "Content-Type", "value": "application/json; charset=utf-8" },
+        { "key": "Cache-Control", "value": "s-maxage=60, stale-while-revalidate=300" },
+        { "key": "Access-Control-Allow-Origin", "value": "*" }
+      ]
+    },
+    {
+      "source": "/data/icons/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=2592000, immutable" }
+      ]
+    },
+    {
+      "source": "/sw\\.js",
+      "headers": [
+        { "key": "Content-Type", "value": "application/javascript; charset=utf-8" },
+        { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" },
+        { "key": "Service-Worker-Allowed", "value": "/" }
+      ]
+    }
+  ],
+  "rewrites": [
+    { "source": "/api/history/:match*", "destination": "/data/history/:match*" },
+    { "source": "/api/stats/:match*", "destination": "/data/stats/:match*" },
+    { "source": "/api/profiles/:match*", "destination": "/data/profiles/:match*" },
+    { "source": "/api/references/:match*", "destination": "/data/references/:match*" },
+    { "source": "/api/trackwork/:match*", "destination": "/data/trackwork/:match*" },
+    { "source": "/api/races", "destination": "/api/list.json" },
+    { "source": "/api/list", "destination": "/api/list.json" },
+    { "source": "/api/refresh", "destination": "/api/refresh_static.json" }
+  ]
+}

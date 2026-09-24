@@ -1,0 +1,59 @@
+{
+  "meta": {
+    "import_from": "https://racing.hkjc.com/zh-hk/local/information/btresult",
+    "import_date_actual": "2026-05-12",
+    "venue_actual": "沙田 Sha Tin",
+    "note": "btresult 頁顯示最新為 2026/5/12 沙田 4 組 1200m 全天候試閘結果；未顯示 9 月數據，已照用戶提供 URL 原文匯入 5/12 數據"
+  },
+  "bt_results": [
+    {"date": "2026-05-12", "venue": "沙田", "track": "全天候跑道", "distance_m": 1200, "btNo": 1,
+      "winner": "美麗星晨",
+      "runners": [
+        {"finish": 1, "horseCode": "L102", "horseName": "美麗星晨", "time": "1:12.01", "jockey": "潘頓", "margin": "---"},
+        {"finish": 2, "horseCode": "K137", "horseName": "金滿財", "time": "1:12.22", "jockey": "何澤堯", "margin": "1.5"},
+        {"finish": 3, "horseCode": "K481", "horseName": "大運財", "time": "1:12.40", "jockey": "艾兆禮", "margin": "1.5"},
+        {"finish": 4, "horseCode": "J402", "horseName": "順風順水", "time": "1:12.58", "jockey": "田泰安", "margin": "1.2"},
+        {"finish": 5, "horseCode": "H213", "horseName": "喜蓮勇略", "time": "1:12.73", "jockey": "希威森", "margin": "1"},
+        {"finish": 6, "horseCode": "G205", "horseName": "勝利精英", "time": "1:12.91", "jockey": "梁家俊", "margin": "1.2"},
+        {"finish": 7, "horseCode": "J118", "horseName": "飛馬騰", "time": "1:13.10", "jockey": "周俊樂", "margin": "1.2"},
+        {"finish": 8, "horseCode": "K344", "horseName": "幸運駿", "time": "1:13.30", "jockey": "楊明綸", "margin": "1.5"}
+      ]},
+    {"date": "2026-05-12", "venue": "沙田", "track": "全天候跑道", "distance_m": 1200, "btNo": 2,
+      "winner": "有財有勢",
+      "runners": [
+        {"finish": 1, "horseCode": "M102", "horseName": "有財有勢", "time": "1:11.74", "jockey": "布文", "margin": "---"},
+        {"finish": 2, "horseCode": "L014", "horseName": "金鑽吉祥", "time": "1:11.96", "jockey": "蔡明紹", "margin": "1.5"},
+        {"finish": 3, "horseCode": "K093", "horseName": "嘉應高昇", "time": "1:12.15", "jockey": "班德禮", "margin": "1.2"},
+        {"finish": 4, "horseCode": "L213", "horseName": "赤兔驪", "time": "1:12.33", "jockey": "黃智弘", "margin": "1.2"},
+        {"finish": 5, "horseCode": "M017", "horseName": "龍馬精神", "time": "1:12.50", "jockey": "潘明輝", "margin": "1"},
+        {"finish": 6, "horseCode": "K327", "horseName": "歡笑星", "time": "1:12.70", "jockey": "霍宏聲", "margin": "1.2"},
+        {"finish": 7, "horseCode": "L329", "horseName": "恆悅", "time": "1:12.88", "jockey": "奧爾民", "margin": "1.2"},
+        {"finish": 8, "horseCode": "J019", "horseName": "駿威", "time": "1:13.07", "jockey": "袁幸堯", "margin": "1.2"}
+      ]},
+    {"date": "2026-05-12", "venue": "沙田", "track": "全天候跑道", "distance_m": 1200, "btNo": 3,
+      "winner": "繼往開來",
+      "runners": [
+        {"finish": 1, "horseCode": "L096", "horseName": "繼往開來", "time": "1:11.98", "jockey": "潘頓", "margin": "---"},
+        {"finish": 2, "horseCode": "L138", "horseName": "福佑", "time": "1:12.17", "jockey": "何澤堯", "margin": "1.2"},
+        {"finish": 3, "horseCode": "K264", "horseName": "安騁", "time": "1:12.36", "jockey": "艾道拿", "margin": "1.2"},
+        {"finish": 4, "horseCode": "J206", "horseName": "歡騰小子", "time": "1:12.54", "jockey": "梁家俊", "margin": "1.2"},
+        {"finish": 5, "horseCode": "K155", "horseName": "威武", "time": "1:12.72", "jockey": "金誠剛", "margin": "1.2"},
+        {"finish": 6, "horseCode": "L364", "horseName": "新力高升", "time": "1:12.90", "jockey": "鍾易禮", "margin": "1.2"},
+        {"finish": 7, "horseCode": "H248", "horseName": "萬事發", "time": "1:13.09", "jockey": "巫顯東", "margin": "1.2"},
+        {"finish": 8, "horseCode": "G318", "horseName": "電訊小馬", "time": "1:13.27", "jockey": "黃寶妮", "margin": "1.2"}
+      ]},
+    {"date": "2026-05-12", "venue": "沙田", "track": "全天候跑道", "distance_m": 1200, "btNo": 4,
+      "winner": "洛河",
+      "runners": [
+        {"finish": 1, "horseCode": "M009", "horseName": "洛河", "time": "1:11.50", "jockey": "希威森", "margin": "---"},
+        {"finish": 2, "horseCode": "L310", "horseName": "新的開始", "time": "1:11.71", "jockey": "田泰安", "margin": "1.5"},
+        {"finish": 3, "horseCode": "K007", "horseName": "好眼光", "time": "1:11.90", "jockey": "楊明綸", "margin": "1.2"},
+        {"finish": 4, "horseCode": "L177", "horseName": "喜盈", "time": "1:12.08", "jockey": "周俊樂", "margin": "1.2"},
+        {"finish": 5, "horseCode": "J433", "horseName": "創富", "time": "1:12.26", "jockey": "潘明輝", "margin": "1.2"},
+        {"finish": 6, "horseCode": "L208", "horseName": "安愛", "time": "1:12.44", "jockey": "蔡明紹", "margin": "1.2"},
+        {"finish": 7, "horseCode": "K286", "horseName": "駿皇飛躍", "time": "1:12.62", "jockey": "霍宏聲", "margin": "1.2"},
+        {"finish": 8, "horseCode": "J005", "horseName": "幸運星駒", "time": "1:12.81", "jockey": "袁幸堯", "margin": "1.2"}
+      ]}
+  ],
+  "record_count": 4
+}
