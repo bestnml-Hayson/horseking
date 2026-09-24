@@ -1,0 +1,141 @@
+name: Auto Sync Racing Data (3-min schedule)
+
+on:
+  schedule:
+    - cron: '*/3 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: racing-data-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup PowerShell 7+
+        uses: powerShell/setup-pwsh@v3
+        with:
+          pwsh-version: '7.4'
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Python deps (3 retries)
+        shell: bash
+        run: |
+          for i in 1 2 3; do
+            echo "[pip-install] attempt $i"
+            python -m pip install --upgrade pip && \
+            pip install requests beautifulsoup4 lxml websocket-client pycryptodome && \
+            python -c "import bs4,lxml,requests,websocket; print('  [pip OK]')" && break || \
+            echo "  attempt $i failed, sleep 10s..." && sleep 10
+          done
+
+      - name: Setup Chrome (live odds CDP port 9226)
+        uses: browser-actions/setup-chrome@latest
+        id: setup-chrome
+
+      - name: Start Chrome CDP headless (3 retries health check)
+        shell: bash
+        run: |
+          CHROME_BIN="${{ steps.setup-chrome.outputs.chrome-path }}"
+          echo "[CDP] chrome=$CHROME_BIN"
+          "$CHROME_BIN" --version
+          for attempt in 1 2 3; do
+            "$CHROME_BIN" \
+              --headless=new --disable-gpu --no-sandbox --disable-dev-shm-usage \
+              --remote-debugging-port=9226 --remote-debugging-address=127.0.0.1 \
+              --user-data-dir=/tmp/chrome-profile-$attempt \
+              --window-size=1600,1200 --disable-http2 --disable-web-security \
+              --allow-running-insecure-content about:blank &
+            CHROME_PID=$!
+            sleep 8
+            if curl -sS http://127.0.0.1:9226/json/version > /tmp/cdp_ok.json 2>&1; then
+              echo "[CDP READY] port 9226 pid=$CHROME_PID"
+              echo $CHROME_PID > /tmp/chrome_cdp.pid
+              break
+            else
+              echo "[CDP FAIL] $attempt, retry"
+              kill $CHROME_PID 2>/dev/null; pkill -f "9226" 2>/dev/null; sleep 3
+            fi
+          done
+          curl -sS http://127.0.0.1:9226/json/version || echo "[WARN] CDP will retry in script"
+
+      - name: Run sync_data.ps1 (6-step pipeline, 3 retries)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Continue"
+          Set-Location $env:GITHUB_WORKSPACE
+          for ($i=1; $i -le 3; $i++) {
+            Write-Host "=== [sync RUN #$i] ==="
+            & ./sync_data.ps1
+            if ($LASTEXITCODE -eq 0) { Write-Host "  sync success"; break }
+            Write-Host "  sync fail, sleep 15s retry"; Start-Sleep -Seconds 15
+          }
+
+      - name: Verify outputs (stats DBs)
+        shell: pwsh
+        run: |
+          Set-Location $env:GITHUB_WORKSPACE
+          @('data/stats/jockeys_db.json','data/stats/trainers_db.json','data/profiles/horses_db.json',
+            'public/data/_last_sync.json','public/data/list.json') | ForEach-Object {
+            if (Test-Path $_) { $sz=(Get-Item $_).Length; Write-Host "[OK] $_ = $sz bytes" }
+            else { Write-Host "[WARN] $_ not exist yet (休季/未到賽馬日 normal)" }
+          }
+
+      - name: Git config + branch detect
+        shell: bash
+        run: |
+          git config user.name "RacingAutoSync[bot]"
+          git config user.email "racingsync-bot@users.noreply.github.com"
+          BR=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "main")
+          echo "BRANCH=$BR" >> $GITHUB_ENV
+
+      - name: Commit & push data changes (Vercel auto deploy trigger)
+        shell: bash
+        run: |
+          git add -A data/ public/ logs/ sync.log scheduler.log 2>/dev/null || true
+          git status --short | head -100
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "=== CHANGES DETECTED -> commit + push ==="
+            TS=$(date -u +%Y-%m-%dT%H:%MZ)
+            git commit -m "[auto] sync: ${TS} pipeline run"
+            for i in 1 2 3; do
+              echo "[git push] attempt=$i"
+              if git push "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" "HEAD:${BRANCH}"; then
+                echo "[git push OK] Vercel auto deploy triggered!"
+                break
+              else
+                echo "[git push FAIL] retry in 10s"; sleep 10
+              fi
+            done
+          else
+            echo "=== NO DATA CHANGES THIS RUN -> skip push (normal) ==="
+          fi
+
+      - name: Upload logs artifact (debug 7 days)
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sync-logs-${{ github.run_id }}
+          path: |
+            sync.log
+            scheduler.log
+            logs/*.log
+            public/data/_last_sync.json
+            public/data/list.json
+            data/stats/*.json
+          retention-days: 7
