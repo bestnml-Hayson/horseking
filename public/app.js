@@ -603,8 +603,15 @@
     opts = opts || {};
     DB.races = {}; DB.raceIndex = [];
     const seen = {};
-    for (let i = 0; i < RACE_FILES.length; i++) {
-      const f = RACE_FILES[i];
+    let raceFiles = RACE_FILES.slice();
+    try {
+      const list = await api('/api/list.json');
+      if (list && list.race_files && list.race_files.length) {
+        raceFiles = list.race_files.slice();
+      }
+    } catch (e) { console.warn('list.json load failed, fallback to hardcoded', e); }
+    for (let i = 0; i < raceFiles.length; i++) {
+      const f = raceFiles[i];
       let r = await api('/api/history/' + f);
       if (!r || r.error) r = await api('/data/history/' + f);
       if (r && r.race_info) {
