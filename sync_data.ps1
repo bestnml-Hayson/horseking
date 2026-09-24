@@ -1,5 +1,14 @@
 $ErrorActionPreference = "Continue"
-$rootDir = "d:\Trae\horse"
+$ErrorActionPreference = "Continue"
+# ====== 修復：跨平台自動偵測 repo root，兼容 GitHub Actions Linux + Windows ======
+$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$rootDir = if ([string]::IsNullOrWhiteSpace($scriptDir)) { (Get-Location).Path } else { $scriptDir }
+if (-not $rootDir) { $rootDir = (Get-Location).Path }
+$dataDir = Join-Path $rootDir "data"
+$publicDataDir = Join-Path $rootDir (Join-Path "public" "data")
+$appJsPath = Join-Path $rootDir (Join-Path "public" "app.js")
+$logFile = Join-Path $rootDir "sync.log"
+$utf8NoBom = [Text.UTF8Encoding]::new($false)
 $dataDir = Join-Path $rootDir "data"
 $publicDataDir = Join-Path $rootDir "public\data"
 $appJsPath = Join-Path $rootDir "public\app.js"
@@ -39,8 +48,24 @@ function Get-StrOr([object]$val, [string]$def = $null) {
 
 Append-Log "=== SYNC START ==="
 
-$pythonExe = Join-Path $rootDir ".venv\Scripts\python.exe"
-$pythonOK = (Test-Path $pythonExe)
+# ====== 修復：跨平台 python 自動偵測 (GitHub Actions 用系統 python3) ======
+function Find-PythonExe {
+    $candidates = @(
+        (Join-Path $rootDir (Join-Path ".venv" "Scripts" "python.exe")),
+        (Join-Path $rootDir (Join-Path ".venv" "bin" "python3")),
+        "python3", "python", "py -3", "py"
+    )
+    foreach ($c in $candidates) {
+        try {
+            $null = & $c --version 2>&1
+            if ($LASTEXITCODE -eq 0) { return $c }
+        } catch {}
+    }
+    return $null
+}
+$pythonExe = Find-PythonExe
+$pythonOK = (-not [string]::IsNullOrWhiteSpace($pythonExe))
+Append-Log ("[BOOT] rootDir=" + $rootDir + " python=" + $pythonExe + " pythonOK=" + $pythonOK)
 
 $summary = [ordered]@{
     start_time = (Get-Date -Format "yyyy-MM-dd HH:mm:ss")
