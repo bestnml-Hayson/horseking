@@ -6,7 +6,6 @@
    ========================================================= */
 (function (global) {
     'use strict';
-    'use strict';
 
     // ===== 加呢段：預先加載你手動輸入嘅專家貼士 expert_notes.json =====
     let expertNotes = {};
@@ -19,7 +18,6 @@
         }
     } catch (e) { expertNotes = {}; }
 
-    function minMax(values, reverse) {
     function minMax(values, reverse) {
         if (!values || values.length === 0) return {};
         const mn = Math.min.apply(null, values);
