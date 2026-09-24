@@ -105,18 +105,23 @@ jobs:
           echo "Using branch: $BR"
           echo "BRANCH=$BR" >> $GITHUB_ENV
 
-      - name: Commit & push data changes (Vercel auto deploy trigger)
+            - name: Commit & push data changes (Vercel auto deploy trigger)
         shell: bash
         run: |
           TARGET_BRANCH="${BRANCH:-main}"
           if [ "$TARGET_BRANCH" = "HEAD" ]; then TARGET_BRANCH="main"; fi
           echo "Target branch for push: $TARGET_BRANCH"
-          git add -A data/ public/ logs/ sync.log scheduler.log 2>/dev/null || true
+          
+          # 強制加入所有 data/public 新檔（唔俾 .gitignore 阻止到）
+          git add -f -A data/ public/ 2>/dev/null || true
+          git add -f logs/ sync.log scheduler.log 2>/dev/null || true
+          
           git status --short | head -100
+          
           if [ -n "$(git status --porcelain)" ]; then
             echo "=== CHANGES DETECTED -> commit + push ==="
             TS=$(date -u +%Y-%m-%dT%H:%MZ)
-            git commit -m "[auto] sync: ${TS} pipeline run"
+            git commit --allow-empty -m "[auto] sync: ${TS} pipeline run"
             for i in 1 2 3; do
               echo "[git push] attempt=$i -> HEAD:$TARGET_BRANCH"
               if git push --force "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" "HEAD:${TARGET_BRANCH}"; then
@@ -131,7 +136,6 @@ jobs:
           else
             echo "=== NO DATA CHANGES THIS RUN -> skip push (normal) ==="
           fi
-
       - name: Upload logs artifact (debug 7 days)
         uses: actions/upload-artifact@v4
         if: always()
