@@ -1,0 +1,29 @@
+{
+  "meta": {
+    "import_from": "https://racing.hkjc.com/racing/information/chinese/Racing/Racecard.aspx?racedate=2026/09/27&Racecourse=HV&RaceNo=8",
+    "import_time": "2026-09-24 21:24:22",
+    "race_name_full": "董事盃",
+    "update_time": "2026-09-24 21:24:22",
+    "note": "CURRENT auto-bootstrapped from HKJC racecard (跑馬地 2026-09-27 R8)"
+  },
+  "race_info": {
+    "race_id": "HV-20260927-08",
+    "race_date": "2026-09-27",
+    "race_number": 8,
+    "venue": "跑馬地",
+    "track": "",
+    "surface": "草地",
+    "distance_m": 0,
+    "class": "",
+    "rating_range": "",
+    "prize": "",
+    "going": "好地",
+    "post_time": "16:30",
+    "result_available": false,
+    "num_horses": 0,
+    "official_result": [],
+    "split_times": [],
+    "payouts": {}
+  },
+  "horses": []
+}
