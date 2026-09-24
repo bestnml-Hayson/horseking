@@ -1,5 +1,4 @@
 $ErrorActionPreference = "Continue"
-# ====== FIX: Auto-detect repo root (cross-platform: GitHub Actions Linux + Windows local) ======
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $rootDir = if ([string]::IsNullOrWhiteSpace($scriptDir)) { (Get-Location).Path } else { $scriptDir }
 if (-not $rootDir) { $rootDir = (Get-Location).Path }
@@ -42,7 +41,6 @@ function Get-StrOr([object]$val, [string]$def = $null) {
 
 Append-Log "=== SYNC START ==="
 
-# ====== FIX: Cross-platform python auto-detect (GitHub Actions uses system python3) ======
 function Find-PythonExe {
     $candidates = @(
         (Join-Path $rootDir (Join-Path ".venv" "Scripts" "python.exe")),
@@ -59,10 +57,22 @@ function Find-PythonExe {
 }
 $pythonExe = Find-PythonExe
 $pythonOK = (-not [string]::IsNullOrWhiteSpace($pythonExe))
-Append-Log ("[BOOT] rootDir=" + $rootDir + " python=" + $pythonExe + " pythonOK=" + $pythonOK)
+
+function Find-PwshExe {
+    $candidates = @("pwsh", "powershell", "powershell.exe", "pwsh-preview")
+    foreach ($c in $candidates) {
+        try {
+            $null = & $c --version 2>&1
+            if ($LASTEXITCODE -eq 0) { return $c }
+        } catch {}
+    }
+    return $null
+}
+$pwshExe = Find-PwshExe
+Append-Log ("[BOOT] rootDir=" + $rootDir + " python=" + $pythonExe + " pythonOK=" + $pythonOK + " pwshExe=" + $pwshExe)
 
 $summary = [ordered]@{
-    start_time = (Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    start_time = (Get-Date -Format "yyyy-MM-dd HH:mm:ss")
     step_a_updated = 0
     step_a_renamed = 0
     step_b_bootstrapped = 0
@@ -95,7 +105,6 @@ foreach ($sd in @("history", "profiles", "stats", "references", "trackwork")) {
     if (-not (Test-Path $dstDir)) { New-Item -ItemType Directory -Path $dstDir -Force | Out-Null }
 }
 
-# ============ STEP A: _auto_update_results.py（完賽結算 + rename） ============
 $updateScript = Join-Path $rootDir "_auto_update_results.py"
 if ($pythonOK -and (Test-Path $updateScript)) {
     Append-Log "[Step A] Running _auto_update_results.py ..."
@@ -114,7 +123,7 @@ if ($pythonOK -and (Test-Path $updateScript)) {
             }
             Append-Log ("[Step A] OK: updated=" + $summary.step_a_updated + " renamed=" + $summary.step_a_renamed)
         } else {
-            Append-Log "[Step A] WARN: 冇 JSON output" "WARN"
+            Append-Log "[Step A] WARN: no JSON output" "WARN"
         }
     } catch {
         Add-Error ("[A] FAIL: " + $_.Exception.Message)
@@ -123,14 +132,14 @@ if ($pythonOK -and (Test-Path $updateScript)) {
     Append-Log ("[Step A] SKIP: pythonOK=" + $pythonOK + " script=" + (Test-Path $updateScript)) "WARN"
 }
 
-# ============ STEP B: _auto_bootstrap_next_raceday.py（下賽日骨架） ============
 $bootstrapScript = Join-Path $rootDir "_auto_bootstrap_next_raceday.py"
 $nextDateDash = $null
 $nextVenue = $null
 if ($pythonOK -and (Test-Path $bootstrapScript)) {
     Append-Log "[Step B] Running _auto_bootstrap_next_raceday.py ..."
+    $bArgs = @("--force-date", "2026-09-27", "--venue", "ST")
     try {
-        $raw = & $pythonExe -B $bootstrapScript --min-days 1 2>&1
+        $raw = & $pythonExe -B $bootstrapScript @bArgs 2>&1
         $outText = ($raw | Out-String).Trim()
         foreach ($l in ($raw | ForEach-Object { [string]$_ })) {
             if ($l -and -not $l.StartsWith("{")) { Append-Log ("  B> " + $l) }
@@ -155,7 +164,7 @@ if ($pythonOK -and (Test-Path $bootstrapScript)) {
             }
             Append-Log ("[Step B] OK: bootstrapped=" + $summary.step_b_bootstrapped + " next=" + $nextDateDash + "/" + $nextVenue + " races=" + $summary.step_b_races)
         } else {
-            Append-Log "[Step B] WARN: 冇 JSON output" "WARN"
+            Append-Log "[Step B] WARN: no JSON output" "WARN"
         }
     } catch {
         Add-Error ("[B] FAIL: " + $_.Exception.Message)
@@ -164,7 +173,6 @@ if ($pythonOK -and (Test-Path $bootstrapScript)) {
     Append-Log "[Step B] SKIP" "WARN"
 }
 
-# ============ STEP C: _fetch_live_odds.py（賽前 7 日內先抓 odds） ============
 $oddsScript = Join-Path $rootDir "_fetch_live_odds.py"
 $shouldFetchOdds = $false
 if ($nextDateDash -and $nextVenue) {
@@ -175,7 +183,7 @@ if ($nextDateDash -and $nextVenue) {
     } catch {}
 }
 if ($pythonOK -and (Test-Path $oddsScript) -and $shouldFetchOdds) {
-    Append-Log ("[Step C] Fetching odds for " + $nextDateDash + "/" + $nextVenue + " ..."
+    Append-Log ("[Step C] Fetching odds for " + $nextDateDash + "/" + $nextVenue + " ...")
     try {
         $raw = & $pythonExe -B $oddsScript --date $nextDateDash --venue $nextVenue 2>&1
         $outText = ($raw | Out-String).Trim()
@@ -190,20 +198,19 @@ if ($pythonOK -and (Test-Path $oddsScript) -and $shouldFetchOdds) {
             }
             Append-Log ("[Step C] OK: odds_updated=" + $summary.step_c_odds_updated)
         } else {
-            Append-Log "[Step C] WARN: 冇 JSON output (odds 可能未開盤，正常)" "WARN"
+            Append-Log "[Step C] WARN: no JSON output (odds may not be live yet, normal)" "WARN"
         }
     } catch {
         Append-Log ("[Step C] WARN: " + $_.Exception.Message) "WARN"
     }
 } else {
     if (-not $shouldFetchOdds) {
-        Append-Log "[Step C] SKIP: 下一賽日超過 7 日或未知，暫唔抓 odds"
+        Append-Log "[Step C] SKIP: next race > 7 days away or unknown"
     } else {
         Append-Log "[Step C] SKIP" "WARN"
     }
 }
 
-# ============ STEP D: _populate_and_merge_cc.py（合併 on.cc 情報） ============
 $ccMergeScript = Join-Path $rootDir "_populate_and_merge_cc.py"
 if ($pythonOK -and (Test-Path $ccMergeScript)) {
     $ccArgs = @()
@@ -211,7 +218,7 @@ if ($pythonOK -and (Test-Path $ccMergeScript)) {
         $ymdNoDash = $nextDateDash -replace "-", ""
         $ccArgs = @("--date", $ymdNoDash, "--venue", $nextVenue, "--next-date")
     }
-    Append-Log ("[Step D] Running _populate_and_merge_cc.py " + ($ccArgs -join " ") + " ..."
+    Append-Log ("[Step D] Running _populate_and_merge_cc.py " + ($ccArgs -join " ") + " ...")
     try {
         $raw = & $pythonExe -B $ccMergeScript @ccArgs 2>&1
         foreach ($l in ($raw | ForEach-Object { [string]$_ })) {
@@ -227,12 +234,11 @@ if ($pythonOK -and (Test-Path $ccMergeScript)) {
     Append-Log "[Step D] SKIP" "WARN"
 }
 
-# ============ STEP E: rebuild_aggregate.ps1 + prepare_deploy.ps1 ============
 $rebuildScript = Join-Path $rootDir "rebuild_aggregate.ps1"
 if (Test-Path $rebuildScript) {
     Append-Log "[Step E] Running rebuild_aggregate.ps1 ..."
     try {
-        & powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $rebuildScript 2>&1 | ForEach-Object {
+        & $pwshExe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $rebuildScript 2>&1 | ForEach-Object {
             $l = $_
             if ($l -is [System.Management.Automation.ErrorRecord]) { $l = $l.Exception.Message }
             Append-Log ("  E> " + [string]$l)
@@ -246,7 +252,7 @@ if (Test-Path $rebuildScript) {
     if (Test-Path $prepareScript) {
         Append-Log "[Step E-2] Running prepare_deploy.ps1 ..."
         try {
-            & powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $prepareScript 2>&1 | ForEach-Object {
+            & $pwshExe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $prepareScript 2>&1 | ForEach-Object {
                 $l = $_
                 if ($l -is [System.Management.Automation.ErrorRecord]) { $l = $l.Exception.Message }
                 Append-Log ("  E2> " + [string]$l)
@@ -258,7 +264,6 @@ if (Test-Path $rebuildScript) {
     Append-Log "[Step E] SKIP (rebuild_aggregate.ps1 not found)" "WARN"
 }
 
-# ============ STEP F: data/ → public/data/ (sync 所有子資料夾) ============
 Append-Log "[Step F] Syncing data/* -> public/data/*"
 $subDirs = @("history", "stats", "profiles", "references", "trackwork", "odds")
 $f_copied = 0
@@ -290,8 +295,7 @@ $summary.step_f_copied_files = $f_copied
 $summary.step_f_skipped_files = $f_skipped
 Append-Log ("[Step F] File sync done: copied=" + $f_copied + " skipped=" + $f_skipped)
 
-# ============ STEP G: Fetch + Parse HKJC Live Odds (即時賠率/退出馬/騎師變動) ============
-Append-Log "[Step G] Fetch HKJC live odds page (HKJC/racing.hkjc.com"
+Append-Log "[Step G] Fetch HKJC live odds page"
 $oddsDir = Join-Path $dataDir "odds"
 $publicOddsDir = Join-Path $publicDataDir "odds"
 if (-not (Test-Path $oddsDir)) { New-Item -ItemType Directory -Path $oddsDir -Force | Out-Null }
@@ -305,12 +309,11 @@ $summary.step_g_odds_ok = $false
 try {
     $resp = Invoke-WebRequest -Uri $oddsUrl -UseBasicParsing -TimeoutSec 45 -ErrorAction Stop
     [IO.File]::WriteAllText($oddsRawFile, $resp.Content, $utf8NoBom)
-    $summary.step_g_odds_raw_saved = $true
     Append-Log ("  [G] Raw HTML saved: " + (Get-Item $oddsRawFile).Length + " bytes")
 
     $html = $resp.Content
     $oddsOut = [ordered]@{
-        generated_at = (Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+        generated_at = (Get-Date -Format "yyyy-MM-dd HH:mm:ss")
         racedate = $todayHK
         win_odds = @{}
         scratched = @()
@@ -327,10 +330,8 @@ try {
         }
         $scratched = [regex]::Matches($html, '退出.*?No\.?\s*(\d+)', [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
         foreach ($sm in $scratched) { $oddsOut.scratched += [int]$sm.Groups[1].Value }
-        $summary.step_g_odds_parsed = $true
     } catch {
         Append-Log ("  [G] Parse odds WARN: " + $_.Exception.Message) "WARN"
-        $summary.step_g_odds_parsed = $false
     }
 
     $json = $oddsOut | ConvertTo-Json -Depth 10 -Compress
@@ -348,10 +349,9 @@ try {
     $summary.step_g_odds_ok = $false
 }
 
-# ============ 最後：掃描 history 總數 + 寫 _last_sync.json ============
 $raceFilesArray = @()
 $seenRaceId = @{}
-if (Test-Path $publicHistDir)) {
+if (Test-Path $publicHistDir) {
     $allJson = Get-ChildItem $publicHistDir -Filter "*.json" | Where-Object { $_.Name -notlike "_*" } | Sort-Object Name
     foreach ($jf in $allJson) {
         $skip = $false
