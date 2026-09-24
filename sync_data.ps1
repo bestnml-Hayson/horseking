@@ -273,7 +273,67 @@ foreach ($sd in $subDirs) {
     }
 }
 Append-Log ("[Step F] File sync done: copied=" + $summary.step_f_copied_files + " skipped=" + $summary.step_f_skipped_files)
+# ============ STEP G: Fetch + Parse HKJC Live Odds (即時賠率/退出馬/騎師變動) ============
+Append-Log "[Step G] Fetch HKJC live odds page (HKJC/racing.hkjc.com)"
+$oddsDir = Join-Path $dataDir "odds"
+$publicOddsDir = Join-Path $publicDataDir "odds"
+if (-not (Test-Path $oddsDir)) { New-Item -ItemType Directory -Path $oddsDir -Force | Out-Null }
+if (-not (Test-Path $publicOddsDir)) { New-Item -ItemType Directory -Path $publicOddsDir -Force | Out-Null }
 
+$todayHK = (Get-Date).ToString("yyyy-MM-dd")
+$oddsUrl = "https://racing.hkjc.com/racing/information/chinese/Racing/Odds.aspx?racedate=$($todayHK -replace '-','/')"
+$oddsRawFile = Join-Path $oddsDir "$todayHK.html"
+$oddsJsonFile = Join-Path $oddsDir "$todayHK.json"
+$summary.step_g_odds_ok = $false
+try {
+    $resp = Invoke-WebRequest -Uri $oddsUrl -UseBasicParsing -TimeoutSec 45 -ErrorAction Stop
+    [IO.File]::WriteAllText($oddsRawFile, $resp.Content, $utf8NoBom)
+    $summary.step_g_odds_raw_saved = $true
+    Append-Log ("  [G] Raw HTML saved: " + (Get-Item $oddsRawFile).Length + " bytes")
+
+    # 簡單解析獨贏賠率 + 退出馬名單（HTML regex 快速提取，唔洗載入 HTML Agility）
+    $html = $resp.Content
+    $oddsOut = [ordered]@{
+        generated_at = (Get-Date -Format "yyyy-MM-dd HH:mm:ss")
+        racedate = $todayHK
+        win_odds = @{}
+        scratched = @()
+        jockey_changes = @()
+    }
+    try {
+        # 提取所有 <a ... title="馬號: XX, 馬名: XXX"> <span ...>賠率</span>
+        $oddsCells = [regex]::Matches($html, 'RaceNo=(\d+).*?HorseNo=(\d+).*?class="win".*?>(\d+(?:\.\d+)?)', [System.Text.RegularExpressions.RegexOptions]::Singleline)
+        foreach ($m in $oddsCells) {
+            $rn = "R" + $m.Groups[1].Value
+            $hn = [int]$m.Groups[2].Value
+            $odds = [double]$m.Groups[3].Value
+            if (-not $oddsOut.win_odds.Contains($rn)) { $oddsOut.win_odds[$rn] = @{} }
+            $oddsOut.win_odds[$rn][$hn.ToString()] = $odds
+        }
+        # 退出馬：搵 "退出" 字樣 + 馬號/馬名
+        $scratched = [regex]::Matches($html, '退出.*?No\.?\s*(\d+)', [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
+        foreach ($sm in $scratched) { $oddsOut.scratched += [int]$sm.Groups[1].Value }
+        $summary.step_g_odds_parsed = $true
+    } catch {
+        Append-Log ("  [G] Parse odds WARN: " + $_.Exception.Message) "WARN"
+        $summary.step_g_odds_parsed = $false
+    }
+
+    $json = $oddsOut | ConvertTo-Json -Depth 10 -Compress
+    [IO.File]::WriteAllText($oddsJsonFile, $json, $utf8NoBom)
+    Append-Log ("  [G] Parsed odds JSON saved: " + (Get-Item $oddsJsonFile).Length + " bytes")
+
+    # 自動同步去 public/data/odds（Vercel UI 用）
+    Copy-Item $oddsRawFile (Join-Path $publicOddsDir "$todayHK.html") -Force
+    Copy-Item $oddsJsonFile (Join-Path $publicOddsDir "$todayHK.json") -Force
+    $summary.step_g_odds_ok = $true
+    $summary.step_g_races = $oddsOut.win_odds.Keys.Count
+    $summary.step_g_scratched_count = $oddsOut.scratched.Count
+    Append-Log ("  [G] OK races=" + $summary.step_g_races + " scratched=" + $summary.step_g_scratched_count)
+} catch {
+    Append-Log ("  [G] Fetch FAIL (normal if no race today): " + $_.Exception.Message) "WARN"
+    $summary.step_g_odds_ok = $false
+}
 $raceFilesArray = @()
 $seenRaceId = @{}
 if (Test-Path $publicHistDir) {
@@ -341,6 +401,9 @@ $outObj = [ordered]@{
     skipped_files = $summary.step_f_skipped_files
     new_races = $summary.new_races
     total_races = $summary.total_races
+        odds_ok = $summary.step_g_odds_ok
+    odds_races = $summary.step_g_races
+    scratched_count = $summary.step_g_scratched_count
     locked = $summary.locked
     errors = @($summary.errors)
 }
