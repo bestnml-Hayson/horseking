@@ -1,15 +1,15 @@
-name: Auto Sync Racing Data (15-min schedule)
+name: Auto Sync Racing Data (Optimized)
 
 on:
   schedule:
-    # 星期一：抓星期三夜賽 acceptances（香港 08:00-18:00）
-    - cron: '*/30 0-10 * * 1'
-    # 星期三：賽事日 08:00-23:00 每 15 分鐘
-    - cron: '*/15 0-15 * * 3'
-    # 星期五：抓星期日日賽 acceptances（香港 08:00-18:00）
-    - cron: '*/30 0-10 * * 5'
-    # 星期日：賽事日 08:00-23:00 每 15 分鐘
-    - cron: '*/15 0-15 * * 0'
+    # 星期一：抓星期三夜賽 acceptances（香港 08:00-18:00，每 60 分鐘）
+    - cron: '0 0-10 * * 1'
+    # 星期三：賽事日 08:00-23:00 每 20 分鐘
+    - cron: '*/20 0-15 * * 3'
+    # 星期五：抓星期日日賽 acceptances（香港 08:00-18:00，每 60 分鐘）
+    - cron: '0 0-10 * * 5'
+    # 星期日：賽事日 08:00-23:00 每 20 分鐘
+    - cron: '*/20 0-15 * * 0'
   workflow_dispatch:
 
 permissions:
@@ -17,85 +17,43 @@ permissions:
 
 concurrency:
   group: racing-data-sync
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   sync:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 8
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      - name: Install Python deps (3 retries)
+      - name: Install Python deps (fast path)
         shell: bash
         run: |
-          for i in 1 2 3; do
-            echo "[pip-install] attempt $i"
-            python -m pip install --upgrade pip && \
-            pip install requests beautifulsoup4 lxml websocket-client pycryptodome && \
-            python -c "import bs4,lxml,requests,websocket; print('  [pip OK]')" && break || \
-            echo "  attempt $i failed, sleep 10s..." && sleep 10
-          done
+          pip install --quiet --upgrade pip
+          pip install --quiet requests beautifulsoup4 lxml
+          python -c "import bs4,lxml,requests; print('  [pip OK]')"
 
-      - name: Setup Chrome (live odds CDP port 9226)
-        uses: browser-actions/setup-chrome@latest
-        id: setup-chrome
-
-      - name: Start Chrome CDP headless (3 retries health check)
-        shell: bash
-        run: |
-          CHROME_BIN="${{ steps.setup-chrome.outputs.chrome-path }}"
-          echo "[CDP] chrome=$CHROME_BIN"
-          "$CHROME_BIN" --version
-          for attempt in 1 2 3; do
-            "$CHROME_BIN" \
-              --headless=new --disable-gpu --no-sandbox --disable-dev-shm-usage \
-              --remote-debugging-port=9226 --remote-debugging-address=127.0.0.1 \
-              --user-data-dir=/tmp/chrome-profile-$attempt \
-              --window-size=1600,1200 --disable-http2 --disable-web-security \
-              --allow-running-insecure-content about:blank &
-            CHROME_PID=$!
-            sleep 8
-            if curl -sS http://127.0.0.1:9226/json/version > /tmp/cdp_ok.json 2>&1; then
-              echo "[CDP READY] port 9226 pid=$CHROME_PID"
-              echo $CHROME_PID > /tmp/chrome_cdp.pid
-              break
-            else
-              echo "[CDP FAIL] $attempt, retry"
-              kill $CHROME_PID 2>/dev/null; pkill -f "9226" 2>/dev/null; sleep 3
-            fi
-          done
-          curl -sS http://127.0.0.1:9226/json/version || echo "[WARN] CDP will retry in script"
-
-      - name: Run sync_data.ps1 (6-step pipeline, 3 retries)
+      - name: Run sync_data.ps1 (pipeline)
         shell: pwsh
         run: |
           $ErrorActionPreference = "Continue"
           Set-Location $env:GITHUB_WORKSPACE
-          for ($i=1; $i -le 3; $i++) {
-            Write-Host "=== [sync RUN #$i] ==="
-            & ./sync_data.ps1
-            if ($LASTEXITCODE -eq 0) { Write-Host "  sync success"; break }
-            Write-Host "  sync fail, sleep 15s retry"; Start-Sleep -Seconds 15
-          }
+          Write-Host "=== [sync START] ==="
+          & ./sync_data.ps1
+          $EXIT=$LASTEXITCODE
+          Write-Host "=== [sync END exit=$EXIT] ==="
+          if ($EXIT -ne 0) { exit $EXIT }
 
-      - name: Verify outputs (stats DBs)
-        shell: pwsh
-        run: |
-          Set-Location $env:GITHUB_WORKSPACE
-          @('data/stats/jockeys_db.json','data/stats/trainers_db.json','data/profiles/horses_db.json',
-            'public/data/_last_sync.json','public/data/list.json') | ForEach-Object {
-            if (Test-Path $_) { $sz=(Get-Item $_).Length; Write-Host "[OK] $_ = $sz bytes" }
-            else { Write-Host "[WARN] $_ not exist yet (休季/未到賽馬日 normal)" }
-          }
-
-      - name: Git config + branch detect
+      - name: Git config (fix push)
         shell: bash
         run: |
           git config user.name "RacingAutoSync[bot]"
@@ -105,47 +63,28 @@ jobs:
           echo "Using branch: $BR"
           echo "BRANCH=$BR" >> $GITHUB_ENV
 
-            - name: Commit & push data changes (Vercel auto deploy trigger)
+      - name: Commit & push data changes (Vercel deploy)
         shell: bash
         run: |
           TARGET_BRANCH="${BRANCH:-main}"
-          if [ "$TARGET_BRANCH" = "HEAD" ]; then TARGET_BRANCH="main"; fi
-          echo "Target branch for push: $TARGET_BRANCH"
-          
-          # 強制加入所有 data/public 新檔（唔俾 .gitignore 阻止到）
+          echo "Target: $TARGET_BRANCH"
+
           git add -f -A data/ public/ 2>/dev/null || true
-          git add -f logs/ sync.log scheduler.log 2>/dev/null || true
-          
-          git status --short | head -100
-          
+
           if [ -n "$(git status --porcelain)" ]; then
-            echo "=== CHANGES DETECTED -> commit + push ==="
+            echo "=== CHANGES -> push ==="
             TS=$(date -u +%Y-%m-%dT%H:%MZ)
-            git commit --allow-empty -m "[auto] sync: ${TS} pipeline run"
+            git commit -m "[auto] sync: ${TS}"
             for i in 1 2 3; do
-              echo "[git push] attempt=$i -> HEAD:$TARGET_BRANCH"
               if git push --force "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" "HEAD:${TARGET_BRANCH}"; then
-                echo "[git push OK] Vercel auto deploy triggered!"
+                echo "[push OK] Vercel triggered"
                 break
               else
-                echo "[git push FAIL attempt=$i] pull rebase retry in 10s"
-                git pull --rebase "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" "$TARGET_BRANCH" 2>/dev/null || sleep 5
-                sleep 10
+                echo "[push FAIL $i] retry"
+                git pull --rebase "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" "$TARGET_BRANCH" 2>/dev/null || true
+                sleep 8
               fi
             done
           else
-            echo "=== NO DATA CHANGES THIS RUN -> skip push (normal) ==="
+            echo "=== NO CHANGES -> skip ==="
           fi
-      - name: Upload logs artifact (debug 7 days)
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: sync-logs-${{ github.run_id }}
-          path: |
-            sync.log
-            scheduler.log
-            logs/*.log
-            public/data/_last_sync.json
-            public/data/list.json
-            data/stats/*.json
-          retention-days: 7

@@ -618,6 +618,12 @@
         const id = r.race_info.race_id;
         if (seen[id]) continue;
         seen[id] = true;
+        if (!r.horses && r.entries) r.horses = r.entries.slice();
+        if (r.horses && r.horses.length && !r.horses[0].odds) {
+          r.horses.forEach(function (h) {
+            if (!h.odds) h.odds = { win: h.win_odds || 0, place: h.place_odds || 0 };
+          });
+        }
         DB.races[id] = r;
         DB.raceIndex.push(id);
       }

@@ -503,19 +503,36 @@
         const raceDist = raceInfo ? (raceInfo.distance_m || 0) : 0;
         const raceClass = raceInfo ? (raceInfo.class || '') : '';
         const horsesDB = global.RacingAugmented && global.RacingAugmented.horses ? global.RacingAugmented.horses : (global.window && window.DB ? window.DB.horsesDB : {});
-        const last3Scores = horses.map(function (h) { return analyzeLast3(h.last_3); });
-        const ratings = horses.map(function (h) { return h.rating || 0; });
-        const bestTimes = horses.map(function (h) { return h.best_time_sec || 999; });
-        const draws = horses.map(function (h) { return h.draw || 100; });
-        const weights = horses.map(function (h) { return h.weight || 0; });
-        const oddsList = horses.map(function (h) { return h.odds_win || 999; });
-        const twRaw = horses.map(function (h) { return analyzeTrackwork(h.code, raceId, h.jockey, raceVenue); });
+        const horsesSafe = (horses || []).map(function (h) {
+            if (!h) return h;
+            if (h.odds_win == null || typeof h.odds_win !== 'number' || !isFinite(h.odds_win) || h.odds_win <= 0) {
+                h.odds_win = 999;
+            }
+            if (h.odds_place == null || typeof h.odds_place !== 'number' || !isFinite(h.odds_place) || h.odds_place <= 0) {
+                h.odds_place = 999;
+            }
+            if (!h.code) {
+                h.code = '_X' + (h.number || Math.floor(Math.random() * 9000 + 1000));
+            }
+            if (typeof h.rating !== 'number' || !isFinite(h.rating)) h.rating = 30;
+            if (typeof h.best_time_sec !== 'number' || !isFinite(h.best_time_sec) || h.best_time_sec <= 0) h.best_time_sec = 999;
+            if (typeof h.draw !== 'number' || !isFinite(h.draw) || h.draw <= 0) h.draw = 100;
+            if (typeof h.weight !== 'number' || !isFinite(h.weight) || h.weight <= 0) h.weight = 127;
+            return h;
+        });
+        const last3Scores = horsesSafe.map(function (h) { return analyzeLast3(h.last_3); });
+        const ratings = horsesSafe.map(function (h) { return h.rating || 0; });
+        const bestTimes = horsesSafe.map(function (h) { return h.best_time_sec || 999; });
+        const draws = horsesSafe.map(function (h) { return h.draw || 100; });
+        const weights = horsesSafe.map(function (h) { return h.weight || 0; });
+        const oddsList = horsesSafe.map(function (h) { return h.odds_win || 999; });
+        const twRaw = horsesSafe.map(function (h) { return analyzeTrackwork(h.code, raceId, h.jockey, raceVenue); });
         const twScores = twRaw.map(function (x) { return x.score; });
-        const distRaw = horses.map(function (h) { return analyzeDistanceSpecialty(h.code, raceDist, raceVenue); });
+        const distRaw = horsesSafe.map(function (h) { return analyzeDistanceSpecialty(h.code, raceDist, raceVenue); });
         const distScores = distRaw.map(function (x) { return x.score; });
-        const synRaw = horses.map(function (h) { return analyzeJockeyHorseSynergy(h.code, h.jockey); });
+        const synRaw = horsesSafe.map(function (h) { return analyzeJockeyHorseSynergy(h.code, h.jockey); });
         const synScores = synRaw.map(function (x) { return x.score; });
-        const trendRaw = horses.map(function (h) { return analyzeRatingTrend(h.code, h.rating, raceClass, horsesDB ? horsesDB[h.code] : null); });
+        const trendRaw = horsesSafe.map(function (h) { return analyzeRatingTrend(h.code, h.rating, raceClass, horsesDB ? horsesDB[h.code] : null); });
         const trendScores = trendRaw.map(function (x) { return x.score; });
 
         const ratingMap = minMax(ratings);
@@ -525,7 +542,7 @@
         const invOdds = oddsList.map(function (o) { return 100 / (o > 0 ? o : 1); });
         const oddsMap = minMax(invOdds);
 
-        const scored = horses.map(function (h, idx) {
+        const scored = horsesSafe.map(function (h, idx) {
             const sLast3 = last3Scores[idx];
             const sRating = ratingMap[h.rating] || 0;
             const sTime = timeMap[h.best_time_sec] || 0;
@@ -580,7 +597,17 @@
     function generateBetting(top4, allRanked, raceInfo) {
         const mainPick = top4[0];
         const secondPick = top4[1];
-        const sortedByOdds = allRanked.slice().sort(function (a, b) { return a.odds_win - b.odds_win; });
+        const allClean = (allRanked || []).map(function (h) {
+            if (!h) return h;
+            if (h.odds_win == null || typeof h.odds_win !== 'number' || !isFinite(h.odds_win) || h.odds_win <= 0) {
+                h.odds_win = 999;
+            }
+            if (h.odds_place == null || typeof h.odds_place !== 'number' || !isFinite(h.odds_place) || h.odds_place <= 0) {
+                h.odds_place = 999;
+            }
+            return h;
+        });
+        const sortedByOdds = allClean.slice().sort(function (a, b) { return (a.odds_win || 999) - (b.odds_win || 999); });
         const hottest = sortedByOdds[0];
 
         const concerns = [];
