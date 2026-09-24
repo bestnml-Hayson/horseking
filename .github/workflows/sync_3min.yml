@@ -1,14 +1,14 @@
-name: Auto Sync Racing Data (3-min schedule)
+name: Auto Sync Racing Data (15-min schedule)
 
 on:
   schedule:
-    # 星期三賽（星期一 acceptances 公佈）- 香港星期一 08:00-18:00
+    # 星期一：抓星期三夜賽 acceptances（香港 08:00-18:00）
     - cron: '*/30 0-10 * * 1'
-    # 星期三賽事日
+    # 星期三：賽事日 08:00-23:00 每 15 分鐘
     - cron: '*/15 0-15 * * 3'
-    # 星期日賽（星期五 acceptances 公佈）- 香港星期五 08:00-18:00
+    # 星期五：抓星期日日賽 acceptances（香港 08:00-18:00）
     - cron: '*/30 0-10 * * 5'
-    # 星期日賽事日
+    # 星期日：賽事日 08:00-23:00 每 15 分鐘
     - cron: '*/15 0-15 * * 0'
   workflow_dispatch:
 
