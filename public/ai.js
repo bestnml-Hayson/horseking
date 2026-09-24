@@ -6,7 +6,20 @@
    ========================================================= */
 (function (global) {
     'use strict';
+    'use strict';
 
+    // ===== 加呢段：預先加載你手動輸入嘅專家貼士 expert_notes.json =====
+    let expertNotes = {};
+    try {
+        if (typeof fetch === 'function') {
+            fetch('./data/profiles/expert_notes.json')
+                .then(function (r) { return r.ok ? r.json() : {}; })
+                .then(function (d) { if (d) expertNotes = d; })
+                .catch(function () { expertNotes = {}; });
+        }
+    } catch (e) { expertNotes = {}; }
+
+    function minMax(values, reverse) {
     function minMax(values, reverse) {
         if (!values || values.length === 0) return {};
         const mn = Math.min.apply(null, values);
@@ -455,7 +468,27 @@
             const exps = Array.isArray(h.cc_experts) ? h.cc_experts.filter(Boolean).join('、') : '';
             lines.push('🔥 <b>東方馬經外部情報：</b>一共有 ' + h.cc_expert_count + ' 位名家最後來料推介' + (exps ? '（名單：' + exps + '）' : '') + '，外部情報同 AI 評分方向一致，信心再加。');
         }
-
+        const gRaceDateKey = (raceInfo && raceInfo.race_date) ? String(raceInfo.race_date).replace(/\//g, '-') : '';
+        const gVenueKey = (raceInfo && raceInfo.venue) ? raceInfo.venue : '';
+        const gTrackKey = gVenueKey ? (gVenueKey + '_草地') : '';
+        if (gRaceDateKey && expertNotes.global_tips && expertNotes.global_tips[gRaceDateKey + '_' + gVenueKey]) {
+            lines.push('🧠 <b>賽馬日重點提示：</b>' + expertNotes.global_tips[gRaceDateKey + '_' + gVenueKey]);
+        } else if (gRaceDateKey && expertNotes.global_tips && expertNotes.global_tips[gRaceDateKey]) {
+            lines.push('🧠 <b>賽馬日重點提示：</b>' + expertNotes.global_tips[gRaceDateKey]);
+        } else if (expertNotes.global_tips && expertNotes.global_tips.default) {
+            lines.push('🧠 <b>今場通用提示：</b>' + expertNotes.global_tips.default);
+        }
+        if (gTrackKey && expertNotes.track_bias && expertNotes.track_bias[gTrackKey]) {
+            lines.push('🏟️ <b>場地偏差情報：</b>' + expertNotes.track_bias[gTrackKey]);
+        } else if (expertNotes.track_bias && gVenueKey && expertNotes.track_bias[gVenueKey]) {
+            lines.push('🏟️ <b>場地偏差情報：</b>' + expertNotes.track_bias[gVenueKey]);
+        }
+        if (jockey && expertNotes.jockey_notes && expertNotes.jockey_notes[jockey]) {
+            lines.push('👤 <b>騎師情報：</b>' + expertNotes.jockey_notes[jockey]);
+        }
+        if (trainer && expertNotes.trainer_notes && expertNotes.trainer_notes[trainer]) {
+            lines.push('🏋️ <b>練馬師情報：</b>' + expertNotes.trainer_notes[trainer]);
+        }
         if (odds) {
             if (isCold) lines.push('🎯 <b>值博率評估：</b>現時獨贏賠率 ' + odds + 'x，市場明顯低估咗 AI 總分 ' + total.toFixed(1) + ' 分嘅質素，屬 8~20 倍冷馬值博區，值得投注。');
             else if (odds < 4) lines.push('🎯 <b>值博率評估：</b>現時 ' + odds + 'x 大熱門，市場同 AI 評分方向一致，雖然值博率唔高但勝在穩陣。');
