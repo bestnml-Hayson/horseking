@@ -26,14 +26,11 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        
 
-      
       - name: Setup Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-          
 
       - name: Install Python deps (3 retries)
         shell: bash
@@ -105,16 +102,13 @@ jobs:
           git config user.email "racingsync-bot@users.noreply.github.com"
           BR=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "main")
           if [ "$BR" = "HEAD" ]; then BR="main"; fi
-echo "Using branch: $BR"
+          echo "Using branch: $BR"
           echo "BRANCH=$BR" >> $GITHUB_ENV
 
       - name: Commit & push data changes (Vercel auto deploy trigger)
         shell: bash
-        run: 
-              - name: Commit & push data changes (Vercel auto deploy trigger)
-        shell: bash
         run: |
-          TARGET_BRANCH="${BRANCH:-main}"        # ✅ 正確：TARGET 唔係 TARGFT，有 = 冇空格
+          TARGET_BRANCH="${BRANCH:-main}"
           if [ "$TARGET_BRANCH" = "HEAD" ]; then TARGET_BRANCH="main"; fi
           echo "Target branch for push: $TARGET_BRANCH"
           git add -A data/ public/ logs/ sync.log scheduler.log 2>/dev/null || true
@@ -124,14 +118,14 @@ echo "Using branch: $BR"
             TS=$(date -u +%Y-%m-%dT%H:%MZ)
             git commit -m "[auto] sync: ${TS} pipeline run"
             for i in 1 2 3; do
-              echo "[git push] attempt=$i"
-                        if git push --force "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" "HEAD:${TARGET_BRANCH}"; then
+              echo "[git push] attempt=$i -> HEAD:$TARGET_BRANCH"
+              if git push --force "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" "HEAD:${TARGET_BRANCH}"; then
                 echo "[git push OK] Vercel auto deploy triggered!"
                 break
               else
-                            git pull --rebase "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" "$TARGET_BRANCH" 2>/dev/null || sleep 5
-              echo "[git push FAIL] retry in 10s"; sleep 10
-                
+                echo "[git push FAIL attempt=$i] pull rebase retry in 10s"
+                git pull --rebase "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" "$TARGET_BRANCH" 2>/dev/null || sleep 5
+                sleep 10
               fi
             done
           else
