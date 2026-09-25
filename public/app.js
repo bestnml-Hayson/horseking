@@ -970,6 +970,7 @@
 
     const todayAI = $('todayAI');
     if (todayAI) {
+      function _fmtOddsUI(o) { if (o == null || typeof o !== 'number' || !isFinite(o) || o >= 999 || o <= 0) return '--'; return (Math.round(o * 10) / 10).toFixed(1) + 'x'; }
       let pendingKey = null;
       let pendingIds = [];
       const byDate2 = {};
@@ -1036,13 +1037,13 @@
             const h = p && p.horse ? p.horse : null;
             if (!h) return '';
             const scr = h.scores && typeof h.scores.total === 'number' ? h.scores.total.toFixed(1) : '—';
-            const ow = h.odds_win > 0 ? h.odds_win : '?';
+            const ow = _fmtOddsUI(h.odds_win);
             const rankCls = ri === 0 ? 'top1' : (ri === 1 ? 'top2' : (ri === 2 ? 'top3' : 'top4'));
             const adv = (p.core_advantage && p.core_advantage.detail) ? p.core_advantage.detail.slice(0, 24) + (p.core_advantage.detail.length > 24 ? '…' : '') : '';
             return '<div class="horse-click ' + rankCls + '" data-number="' + (h.number || '') + '" data-name="' + (h.name || '') + '" style="cursor:pointer;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--bg-card2);transition:background .15s,transform .15s;" onclick="event.stopPropagation();DB.currentRaceId=\'' + id + '\';openHorseDetail(\'' + (h.number || h.name || '') + '\');">' +
               '<div style="display:flex;align-items:center;gap:6px;"><span style="display:inline-block;min-width:18px;height:18px;line-height:18px;border-radius:4px;background:linear-gradient(135deg,var(--gold),var(--gold-dark));color:#000;font-weight:900;font-size:10px;text-align:center;">#' + (h.number || '?') + '</span>' +
               '<b style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (h.name || '') + ccExpertBadge(h, true) + '</b>' +
-              '<span style="font-size:10px;color:var(--gold);white-space:nowrap;">' + ow + 'x</span></div>' +
+              '<span style="font-size:10px;color:var(--gold);white-space:nowrap;">' + ow + '</span></div>' +
               '<div style="display:flex;justify-content:space-between;margin-top:4px;"><span style="font-size:10px;color:var(--text-dim);">' + (h.jockey || '') + '/' + (h.trainer || '') + '</span>' +
               '<span style="font-size:10px;color:var(--green);">AI ' + scr + '</span></div>' +
               (adv ? '<div style="font-size:10px;color:var(--gold);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">💡 ' + adv + '</div>' : '') +
@@ -1065,7 +1066,7 @@
         const coreListHtml = coreHorses && coreHorses.length
           ? '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;">' + coreHorses.slice(0, 12).map(function (h) {
               const scr = h.scores && typeof h.scores.total === 'number' ? h.scores.total.toFixed(1) : '—';
-              const ow = h.odds_win > 0 ? h.odds_win + 'x' : '';
+              const ow = _fmtOddsUI(h.odds_win);
               const rd = h.draw ? (h.draw + '檔') : '';
               const rid = pendingIds.find(function (pid) {
                 return DB.races[pid].horses && DB.races[pid].horses.some(function (hh) { return hh.code === h.code; });
