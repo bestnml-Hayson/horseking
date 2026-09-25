@@ -345,6 +345,50 @@ if ($pythonOK -and (Test-Path $fetchAllScript) -and $nextDateDash -and $nextVenu
     }
 }
 
+# Step J: on.cc 東方日報 auto fetch（最後來料 / 排位差異 / 晨操摘要 / 名家心水 / 退馬表）
+# ⭐ 只覆蓋 cc_* 專屬欄；絕對唔碰靜態 core 12 欄 / odds / official_result / Step I supplement 8+ 新欄
+# ⭐ Safe skip：首頁 CF block 或任何頁 404 唔 kill pipeline
+$onccFetchScript = Join-Path $rootDir "_oncc_fetch_all.py"
+$summary.step_j_oncc_ok = $false
+$summary.step_j_expert_horses = 0
+$summary.step_j_errors = @()
+if ($pythonOK -and (Test-Path $onccFetchScript) -and $nextDateDash -and $nextVenue) {
+    Append-Log ("[Step J] Running _oncc_fetch_all.py --date " + $nextDateDash + " --venue " + $nextVenue + " (on.cc 東方日報 fetch)...")
+    try {
+        $jArgs = @("--date", $nextDateDash, "--venue", $nextVenue)
+        $rawJ = & $pythonExe -B $onccFetchScript @jArgs 2>&1
+        foreach ($l in ($rawJ | ForEach-Object { [string]$_ })) {
+            if ($l -and -not $l.StartsWith("{") -and $l -ne "==== STEP J (ON.CC) SUMMARY ====" -and $l -ne "================================") {
+                Append-Log ("  J> " + $l)
+            }
+        }
+        $outTextJ = ($rawJ | Out-String).Trim()
+        $jsonJ = ExtractJson $outTextJ
+        if ($jsonJ) {
+            $summary.step_j_expert_horses = Get-IntOr $jsonJ.expert_horses_total 0
+            $summary.step_j_tw_horses = Get-IntOr $jsonJ.tw_horses_total 0
+            $summary.step_j_barrier_horses = Get-IntOr $jsonJ.barrier_horses_total 0
+            if ($jsonJ.errors -and $jsonJ.errors.Count -gt 0) {
+                $summary.step_j_errors = @($jsonJ.errors | ForEach-Object { [string]$_ } | Select-Object -First 10)
+                foreach ($e in $summary.step_j_errors) { Append-Log ("  [J] WARN: " + $e) "WARN" }
+            }
+            $summary.step_j_oncc_ok = $true
+            Append-Log ("[Step J] OK: expert=" + $summary.step_j_expert_horses + " tw=" + $summary.step_j_tw_horses + " barrier=" + $summary.step_j_barrier_horses)
+        } else {
+            Append-Log "[Step J] WARN: no JSON summary (on.cc homepage 可能被 CF block → safe skip)" "WARN"
+        }
+    } catch {
+        Append-Log ("[Step J] SAFE SKIP (on.cc fetch fail 唔會 kill pipeline): " + $_.Exception.Message) "WARN"
+        $summary.step_j_oncc_ok = $false
+    }
+} else {
+    if (-not $nextDateDash -or -not $nextVenue) {
+        Append-Log "[Step J] SKIP: Step B 未 detect 到下一賽馬日（手動用 _oncc_fetch_all.py --date）" "WARN"
+    } else {
+        Append-Log "[Step J] SKIP: 腳本不存在或 python 不可用" "WARN"
+    }
+}
+
 Append-Log "[Step F] Syncing data/* -> public/data/*"
 $subDirs = @("history", "stats", "profiles", "references", "trackwork", "odds")
 $f_copied = 0
