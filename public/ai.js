@@ -377,7 +377,7 @@
         const isCold = odds >= 8 && odds <= 20 && total >= 58;
 
         const lines = [];
-        lines.push('<b style="color:var(--gold);font-size:13px;">📌 我分析咗 #' + number + ' ' + name + ' 嘅 8 大維度之後，綜合評級屬「' + tier + '」，AI 總分 ' + total.toFixed(1) + ' 分。</b>');
+        lines.push('<b style="color:var(--gold);font-size:13px;">📌 我分析咗 #' + number + ' ' + name + ' 嘅 13 維度之後，綜合評級屬「' + tier + '」，AI 總分 ' + total.toFixed(1) + ' 分。</b>');
 
         if (fins.length) {
             const good = fins.filter(function (r) { return r <= 3; }).length;
@@ -453,6 +453,35 @@
         if (h.cc_trackwork_summary) augLines.push('🌅 晨操摘要：' + String(h.cc_trackwork_summary).slice(0, 100) + '（評分 ' + twScore.toFixed(0) + ' 分）');
         else if (aug.trackwork && aug.trackwork.detail) augLines.push('🌅 晨操：' + aug.trackwork.detail + '（評分 ' + twScore.toFixed(0) + ' 分）');
         else augLines.push('🌅 晨操：暫無詳細數據（評分 ' + twScore.toFixed(0) + ' 分，屬中性）');
+        // === Step I 新增 5 項補充分析文字 ===
+        const fSc = typeof sc.form === 'number' ? sc.form : 50;
+        if (aug.form_detail && (aug.form_detail.note || aug.form_detail.trend || fSc)) {
+            const fl = aug.form_detail.flags || [];
+            const t = aug.form_detail.trend;
+            const tm = t === 1 ? '（上升走勢📈）' : (t === -1 ? '（回落走勢📉）' : '（平穩）');
+            augLines.push('🎯 近績形勢：' + fSc.toFixed(0) + ' 分' + tm + (aug.form_detail.note ? ' · ' + String(aug.form_detail.note).slice(0, 70) : ''));
+        } else {
+            augLines.push('🎯 近績形勢：暫無 formline 數據（中性 50 分）');
+        }
+        const xSc = typeof sc.except === 'number' ? sc.except : 80;
+        if (aug.except_detail && (aug.except_detail.flags && aug.except_detail.flags.length || aug.except_detail.note)) {
+            const fl = Array.isArray(aug.except_detail.flags) ? aug.except_detail.flags : [];
+            augLines.push('⚠️ 異常因素：' + xSc.toFixed(0) + ' 分' + (fl.length ? '（' + fl.join('、') + '）' : '（異常較少）') + (aug.except_detail.note ? ' · ' + String(aug.except_detail.note).slice(0, 60) : ''));
+        } else {
+            augLines.push('⚠️ 異常因素：' + xSc.toFixed(0) + ' 分（無明顯異常）');
+        }
+        const vSc = typeof sc.vet === 'number' ? sc.vet : 90;
+        if (aug.vet_detail && (aug.vet_detail.flags && aug.vet_detail.flags.length || aug.vet_detail.note)) {
+            const fl = Array.isArray(aug.vet_detail.flags) ? aug.vet_detail.flags : [];
+            augLines.push('🏥 獸醫狀態：' + vSc.toFixed(0) + ' 分' + (fl.length ? '（' + fl.join('、') + '）' : '（健康合格）') + (aug.vet_detail.note ? ' · ' + String(aug.vet_detail.note).slice(0, 60) : ''));
+        } else {
+            augLines.push('🏥 獸醫狀態：' + vSc.toFixed(0) + ' 分（無傷患記錄，假設合格）');
+        }
+        if (aug.report_detail && (aug.report_detail.last_run_rank || aug.report_detail.note)) {
+            const n = aug.report_detail.last_run_rank;
+            const s = n ? ('上仗名次 第' + n + '名') : '上仗名次待補';
+            augLines.push('📋 賽事報告：' + s + (aug.report_detail.note ? ' · ' + String(aug.report_detail.note).slice(0, 80) : ''));
+        }
         const dScore = sc.distance || 50;
         if (aug.distance && aug.distance.detail) augLines.push('🛣️ 路程適性：' + aug.distance.detail + '（評分 ' + dScore.toFixed(0) + ' 分）');
         else augLines.push('🛣️ 路程適性：評分 ' + dScore.toFixed(0) + ' 分' + (dScore >= 70 ? '，路程專家級，今場有利。' : (dScore >= 60 ? '，路程適性中上。' : '，路程適性中性，若步速合適有機會。')));
@@ -535,6 +564,20 @@
         const trendRaw = horsesSafe.map(function (h) { return analyzeRatingTrend(h.code, h.rating, raceClass, horsesDB ? horsesDB[h.code] : null); });
         const trendScores = trendRaw.map(function (x) { return x.score; });
 
+        // === NEW Step I fetch 5 項補充分數 (15 維度升級) ===
+        //   h.trackwork_score / h.form_score / h.except_score / h.vet_score 全部 0..100
+        //   若冇 (舊 JSON) → fallback twScores[] 同 50 中位數
+        function sNum0(v, fallback) { const n = typeof v === 'number' && isFinite(v) ? v : NaN; return (Number.isFinite(n) && n >= 0 && n <= 100) ? n : (Number.isFinite(fallback) ? fallback : 50); }
+        const formScores = horsesSafe.map(function (h) { return sNum0(h.form_score, 50); });
+        const exceptScores = horsesSafe.map(function (h) { return sNum0(h.except_score, 80); }); // 冇異常=80 分（除了 parser 唔 work 嗰陣 fallback）
+        const vetScores = horsesSafe.map(function (h) { return sNum0(h.vet_score, 90); }); // 冇 vet info → 假設健康 90
+        const twHorsesheetScores = horsesSafe.map(function (h) { return sNum0(h.trackwork_score, null); }); // null → 用返 analyzeTrackwork 真實分數
+        const twFinal = horsesSafe.map(function (_h, i) {
+            const a = twScores[i] || 0; const b = twHorsesheetScores[i];
+            if (b === null || !Number.isFinite(b)) return a;
+            return (a * 0.45 + b * 0.55); // 馬匹晨操紙比分量更重
+        });
+
         const ratingMap = minMax(ratings);
         const timeMap = minMax(bestTimes, true);
         const drawMap = minMax(draws, true);
@@ -550,13 +593,25 @@
             const sWeight = weightMap[h.weight] || 0;
             const invO = 100 / (h.odds_win > 0 ? h.odds_win : 1);
             const sOdds = oddsMap[invO] || 0;
-            const sTW = twScores[idx] || 0;
+            const sTW = twFinal[idx] || 0;
             const sDist = distScores[idx] || 0;
             const sSyn = synScores[idx] || 0;
             const sTrend = trendScores[idx] || 0;
-
+            // 新增 Step I 5 項補充分數 0..100 → minMax 去全距
+            const formAll = (formScores[idx] || 50) / 100 * 100;
+            const exceptAll = (exceptScores[idx] || 50) / 100 * 100;
+            const vetAll = (vetScores[idx] || 50) / 100 * 100;
+            const sForm = formAll;
+            const sExcept = exceptAll;
+            const sVet = vetAll;
+            // ==== Base 6 (58%) ← 不變 (近績30%/評分20%/步速15%/檔15%/體重10%/賠率10%)
             const base6 = sLast3 * 0.30 + sRating * 0.20 + sTime * 0.15 + sDraw * 0.15 + sWeight * 0.10 + sOdds * 0.10;
-            const baseTotal = base6 * 0.58 + sTW * 0.07 + sDist * 0.03 + sSyn * 0.03 + sTrend * 0.03;
+            // ==== Augment 42% = baseAug + newInfo
+            //   舊 Aug 原來 16% (0.07+0.03+0.03+0.03) → 壓縮到 10%；餘下 32% 俾新補充 5 項
+            //   晨操 12% (tw 新) + 形勢 form 10% + 異常 except 10% + 獸醫 vet 8% + distance/synergy/trend 壓縮後 4%
+            const baseAug = sTW * 0.12 + sForm * 0.10 + sExcept * 0.10 + sVet * 0.08 + sDist * 0.03 + sSyn * 0.03 + sTrend * 0.03;
+            // 加權總和 = base6 * 0.54 + aug * 0.46 = 1.00
+            const baseTotal = base6 * 0.54 + baseAug;
             const total = Math.round(baseTotal * 100) / 100;
             return {
                 number: h.number,
@@ -577,12 +632,17 @@
                     trackwork: twRaw[idx],
                     distance: distRaw[idx],
                     synergy: synRaw[idx],
-                    trend: trendRaw[idx]
+                    trend: trendRaw[idx],
+                    form_detail: { score: sForm, note: h.form_note, trend: h.form_trend },
+                    except_detail: { score: sExcept, flags: Array.isArray(h.except_flags) ? h.except_flags.slice(0, 4) : [], note: h.except_note },
+                    vet_detail: { score: sVet, flags: Array.isArray(h.vet_flags) ? h.vet_flags.slice(0, 4) : [], note: h.vet_note },
+                    report_detail: { note: h.report_note, last_run_rank: h.last_run_rank, last_run_note: h.last_run_note }
                 },
                 scores: {
                     last3: sLast3, rating: sRating, time: sTime,
                     draw: sDraw, weight: sWeight, odds: sOdds,
                     trackwork: sTW, distance: sDist, synergy: sSyn, trend: sTrend,
+                    form: Math.round(sForm * 100) / 100, except: Math.round(sExcept * 100) / 100, vet: Math.round(sVet * 100) / 100,
                     base6: Math.round(base6 * 100) / 100,
                     total: total
                 },

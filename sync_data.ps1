@@ -301,6 +301,50 @@ if ($pythonOK -and (Test-Path $populateScript) -and $nextDateDash -and $nextVenu
     }
 }
 
+# Step I: HKJC Fetch ALL 6 Data Sources（晨操/形勢/異常/獸醫/賽事報告）
+# 依賴 Step H 已經 populate 晒基礎 JSON（搵到 race JSON file 先 merge）
+# ⭐ 完全唔覆蓋靜態 12 欄 + odds/cc_*/official_result，只 merge 新動態補充欄（trackwork_score/form_score/except_score/vet_score/...）
+$fetchAllScript = Join-Path $rootDir "_hkjc_fetch_all_racedata.py"
+$summary.step_i_fetchall_ok = $false
+$summary.step_i_horses_with_supplement = 0
+$summary.step_i_errors = @()
+if ($pythonOK -and (Test-Path $fetchAllScript) -and $nextDateDash -and $nextVenue) {
+    Append-Log ("[Step I] Running _hkjc_fetch_all_racedata.py --date " + $nextDateDash + " --venue " + $nextVenue + " (fetch trackwork/formline/except/vet/report ALL races)...")
+    try {
+        $fiArgs = @("--date", $nextDateDash, "--venue", $nextVenue, "--skip-rebuild")
+        $rawFi = & $pythonExe -B $fetchAllScript @fiArgs 2>&1
+        foreach ($l in ($rawFi | ForEach-Object { [string]$_ })) {
+            if ($l -and -not $l.StartsWith("{") -and $l -ne "==== STEP I SUMMARY ====" -and $l -ne "========================") {
+                Append-Log ("  I> " + $l)
+            }
+        }
+        $outTextFi = ($rawFi | Out-String).Trim()
+        $jsonFi = ExtractJson $outTextFi
+        if ($jsonFi) {
+            $summary.step_i_races_processed = Get-IntOr $jsonFi.total_horses_with_supplement -1
+            $summary.step_i_horses_with_supplement = Get-IntOr ($jsonFi.total_horses_with_supplement -as [int]) 0
+            if ($jsonFi.errors -and $jsonFi.errors.Count -gt 0) {
+                $summary.step_i_errors = @($jsonFi.errors | ForEach-Object { [string]$_ } | Select-Object -First 10)
+                foreach ($e in $summary.step_i_errors) { Append-Log ("  [I] WARN: " + $e) "WARN" }
+            }
+            $summary.step_i_per_info_bytes = $jsonFi.per_info_fetch_bytes
+            $summary.step_i_fetchall_ok = $true
+            Append-Log ("[Step I] OK: horses_with_supplement=" + $summary.step_i_horses_with_supplement)
+        } else {
+            Append-Log "[Step I] WARN: no JSON summary (parser may be empty or HKJC page 404) → safe skip" "WARN"
+        }
+    } catch {
+        Append-Log ("[Step I] SAFE SKIP (HKJC fetch 失敗唔會令 pipeline fail): " + $_.Exception.Message) "WARN"
+        $summary.step_i_fetchall_ok = $false
+    }
+} else {
+    if (-not $nextDateDash -or -not $nextVenue) {
+        Append-Log "[Step I] SKIP: Step B 未 detect 到下一賽馬日（手動用 _hkjc_fetch_all_racedata.py --date）" "WARN"
+    } else {
+        Append-Log "[Step I] SKIP: 腳本不存在或 python 不可用" "WARN"
+    }
+}
+
 Append-Log "[Step F] Syncing data/* -> public/data/*"
 $subDirs = @("history", "stats", "profiles", "references", "trackwork", "odds")
 $f_copied = 0

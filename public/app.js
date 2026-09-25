@@ -1571,7 +1571,7 @@
 
     const horsesHtml = '<div class="table-scroll" style="margin-top:4px;">' +
       '<table class="data-table" style="min-width:1020px;"><thead><tr>' +
-      '<th>排名</th><th>馬號</th><th>馬匹</th><th>檔</th><th>評分</th><th>體重</th><th>近績6</th><th>獨贏</th>' +
+      '<th>排名</th><th>馬號</th><th>馬匹</th><th>檔</th><th>評分</th><th>體重</th><th>近績6</th><th>晨</th><th>醫</th><th>異</th><th>獨贏</th>' +
       '<th title="晨操狀態">操</th><th title="路程專長">路</th><th title="騎馬默契">契</th><th title="評分走勢/同班適應">勢</th>' +
       '<th>騎+</th><th>練+</th><th>AI總分</th>' +
       '</tr></thead><tbody>' +
@@ -1588,6 +1588,15 @@
         const twScore = s.trackwork || 0;
         const twTitle = aug.trackwork ? (aug.trackwork.detail || '') : '';
         const twCls = twScore >= 80 ? 'good' : (twScore >= 60 ? 'mid' : 'bad');
+        const formScore = (typeof s.form === 'number' && isFinite(s.form)) ? s.form : 50;
+        const formCls = formScore >= 75 ? 'good' : (formScore >= 55 ? 'mid' : 'bad');
+        const formTitle = (aug.form_detail && aug.form_detail.note) ? String(aug.form_detail.note).slice(0, 80) : '形勢評分（來源 Formline）';
+        const vetScore = (typeof s.vet === 'number' && isFinite(s.vet)) ? s.vet : 90;
+        const vetCls = vetScore >= 85 ? 'good' : (vetScore >= 65 ? 'mid' : 'bad');
+        const vetTitle = (aug.vet_detail && aug.vet_detail.note) ? (aug.vet_detail.flags && aug.vet_detail.flags.length ? aug.vet_detail.flags.join('、') + ' · ' : '') + String(aug.vet_detail.note).slice(0, 80) : '獸醫健康評分（來源 VeterinaryRecord）';
+        const exceptScore = (typeof s.except === 'number' && isFinite(s.except)) ? s.except : 80;
+        const exceptCls = exceptScore >= 80 ? 'good' : (exceptScore >= 60 ? 'mid' : 'bad');
+        const exceptTitle = (aug.except_detail && aug.except_detail.note) ? (aug.except_detail.flags && aug.except_detail.flags.length ? aug.except_detail.flags.join('、') + ' · ' : '') + String(aug.except_detail.note).slice(0, 80) : '異常因素評分（來源 ExceptionalFactors）';
         const distScore = s.distance || 0;
         const distTitle = aug.distance ? (aug.distance.detail || '') : '';
         const distCls = distScore >= 75 ? 'good' : (distScore >= 55 ? 'mid' : 'bad');
@@ -1606,6 +1615,9 @@
           '<td>' + h.rating + '</td>' +
           '<td>' + h.weight + '</td>' +
           '<td>' + l3 + '</td>' +
+          '<td title="' + formTitle.replace(/"/g, '&quot;') + '" style="cursor:help;"><span class="mini-pill ' + formCls + '">' + Math.round(formScore) + '</span></td>' +
+          '<td title="' + vetTitle.replace(/"/g, '&quot;') + '" style="cursor:help;"><span class="mini-pill ' + vetCls + '">' + Math.round(vetScore) + '</span></td>' +
+          '<td title="' + exceptTitle.replace(/"/g, '&quot;') + '" style="cursor:help;"><span class="mini-pill ' + exceptCls + '">' + Math.round(exceptScore) + '</span></td>' +
           '<td class="odds ' + oddsCls + '">' + fmtOddsUI(h.odds_win) + '</td>' +
           '<td title="' + twTitle + '" style="cursor:help;"><span class="mini-pill ' + twCls + '">' + Math.round(twScore) + '</span></td>' +
           '<td title="' + distTitle + '" style="cursor:help;"><span class="mini-pill ' + distCls + '">' + Math.round(distScore) + '</span></td>' +
