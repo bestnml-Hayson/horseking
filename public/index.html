@@ -238,8 +238,8 @@
   </div>
 </div>
 
-<script src="/ai.js?v=20260926-v2015-hard-reset-cache"></script>
-<script src="/app.js?v=20260926-v2015-hard-reset-cache"></script>
+<script src="/ai.js?v=20260926-v2016-horse-detail-fix"></script>
+<script src="/app.js?v=20260926-v2016-horse-detail-fix"></script>
 <script>
 (function () {
   var params = new URLSearchParams(window.location.search);
@@ -258,7 +258,7 @@
   }
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function () {
-      navigator.serviceWorker.register('/sw.js?v=20260926-v2015-hard-reset-cache', { scope: '/' })
+      navigator.serviceWorker.register('/sw.js?v=20260926-v2016-horse-detail-fix', { scope: '/' })
         .then(function () { /* ok */ })
         .catch(function () { /* fallback */ });
     });

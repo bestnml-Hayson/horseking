@@ -94,6 +94,7 @@
     return null;
   }
   function openHorseDetail(numberOrName) {
+    try {
     const h = findHorseByAny(numberOrName);
     if (!h) { toast('未找到該馬匹資料', 'warn'); return; }
     const race = DB.currentRaceId ? DB.races[DB.currentRaceId] : null;
@@ -144,18 +145,44 @@
     const jB = typeof window.jockeyBonus === 'function' ? window.jockeyBonus(h.jockey, dist, h.trainer) : 0;
     const tB = typeof window.trainerBonus === 'function' ? window.trainerBonus(h.trainer, dist) : 0;
     const _dashboardTotal = (h.scores && typeof h.scores.total === 'number' && h.scores.total > 0) ? h.scores.total : 0;
-    const _tmpForm = 50;
-    const _tmpExcept = 80;
-    const _tmpVet = 90;
+
+    const augTW = aug.trackwork || (window.RacingAI && window.RacingAI.analyzeTrackwork ? window.RacingAI.analyzeTrackwork(h.code, DB.currentRaceId || '', h.jockey, raceInfo.venue || '') : null);
+    const augDist = aug.distance || (window.RacingAI && window.RacingAI.analyzeDistanceSpecialty ? window.RacingAI.analyzeDistanceSpecialty(h.code, dist, raceInfo.venue || '') : null);
+    const augSyn = aug.synergy || (window.RacingAI && window.RacingAI.analyzeJockeyHorseSynergy ? window.RacingAI.analyzeJockeyHorseSynergy(h.code, h.jockey) : null);
+    const augTr = aug.trend || (window.RacingAI && window.RacingAI.analyzeRatingTrend && DB.horsesDB ? window.RacingAI.analyzeRatingTrend(h.code, h.rating, raceClass, DB.horsesDB[h.code] || null) : null);
+
+    const twScore = (typeof baseScores.trackwork === 'number' && baseScores.trackwork > 0 && baseScores.trackwork !== 50) ? baseScores.trackwork : (augTW && typeof augTW.score === 'number' ? augTW.score : 50);
+    const distScore = (typeof baseScores.distance === 'number' && baseScores.distance > 0 && baseScores.distance !== 50) ? baseScores.distance : (augDist && typeof augDist.score === 'number' ? augDist.score : 50);
+    const synScore = (typeof baseScores.synergy === 'number' && baseScores.synergy > 0 && baseScores.synergy !== 50) ? baseScores.synergy : (augSyn && typeof augSyn.score === 'number' ? augSyn.score : 50);
+    const trScore = (typeof baseScores.trend === 'number' && baseScores.trend > 0 && baseScores.trend !== 50) ? baseScores.trend : (augTr && typeof augTr.score === 'number' ? augTr.score : 50);
+    const formScore = (typeof h.scores === 'object' && typeof h.scores.form === 'number' && isFinite(h.scores.form)) ? h.scores.form : 50;
+    const vetScore = (typeof h.scores === 'object' && typeof h.scores.vet === 'number' && isFinite(h.scores.vet)) ? h.scores.vet : 90;
+    const exceptScore = (typeof h.scores === 'object' && typeof h.scores.except === 'number' && isFinite(h.scores.except)) ? h.scores.except : 80;
+
     const _base6 = baseScores.last3 * 0.30 + baseScores.rating * 0.20 + baseScores.time * 0.15 + baseScores.draw * 0.15 + baseScores.weight * 0.10 + baseScores.odds * 0.10;
-    const _baseAug = twScore * 0.12 + _tmpForm * 0.10 + _tmpExcept * 0.10 + _tmpVet * 0.08 + distScore * 0.03 + synScore * 0.03 + trScore * 0.03;
+    const _baseAug = twScore * 0.12 + formScore * 0.10 + exceptScore * 0.10 + vetScore * 0.08 + distScore * 0.03 + synScore * 0.03 + trScore * 0.03;
     const _popupCalcTotal = Math.round((_base6 * 0.54 + _baseAug) * 10) / 10;
     const s = Object.assign({}, baseScores, {
       jockey_bonus: (typeof baseScores.jockey_bonus === 'number' && baseScores.jockey_bonus > 0) ? baseScores.jockey_bonus : (isNaN(jB) ? 0 : jB),
       trainer_bonus: (typeof baseScores.trainer_bonus === 'number' && baseScores.trainer_bonus > 0) ? baseScores.trainer_bonus : (isNaN(tB) ? 0 : tB),
+      form: formScore,
+      vet: vetScore,
+      except: exceptScore,
+      trackwork: twScore,
+      distance: distScore,
+      synergy: synScore,
+      trend: trScore,
       base6: _base6,
       total: _dashboardTotal > 0 ? _dashboardTotal : _popupCalcTotal
     });
+
+    if (!(_dashboardTotal > 0)) {
+      const _base6Revised = s.last3 * 0.30 + s.rating * 0.20 + s.time * 0.15 + s.draw * 0.15 + s.weight * 0.10 + s.odds * 0.10;
+      const _baseAugRevised = twScore * 0.12 + formScore * 0.10 + exceptScore * 0.10 + vetScore * 0.08 + distScore * 0.03 + synScore * 0.03 + trScore * 0.03;
+      s.total = Math.round((_base6Revised * 0.54 + _baseAugRevised) * 10) / 10;
+      s.base6 = _base6Revised;
+    }
+
     $('hdName').textContent = h.name || '';
     $('hdMeta').textContent = '#' + (h.number || '?') + ' · ' + (h.draw || '?') + '檔 · ' + (raceInfo.venue || '') + ' ' + (raceInfo.distance_m || '') + 'm · ' + raceClass;
 
@@ -173,26 +200,6 @@
       return '<div class="cell"><span class="k">' + c.k + '</span><span class="v">' + c.v + '</span></div>';
     }).join('') + '</div>';
 
-    const augTW = aug.trackwork || (window.RacingAI && window.RacingAI.analyzeTrackwork ? window.RacingAI.analyzeTrackwork(h.code, DB.currentRaceId || '', h.jockey, raceInfo.venue || '') : null);
-    const augDist = aug.distance || (window.RacingAI && window.RacingAI.analyzeDistanceSpecialty ? window.RacingAI.analyzeDistanceSpecialty(h.code, dist, raceInfo.venue || '') : null);
-    const augSyn = aug.synergy || (window.RacingAI && window.RacingAI.analyzeJockeyHorseSynergy ? window.RacingAI.analyzeJockeyHorseSynergy(h.code, h.jockey) : null);
-    const augTr = aug.trend || (window.RacingAI && window.RacingAI.analyzeRatingTrend && DB.horsesDB ? window.RacingAI.analyzeRatingTrend(h.code, h.rating, raceClass, DB.horsesDB[h.code] || null) : null);
-    const twScore = typeof s.trackwork === 'number' && s.trackwork > 0 ? s.trackwork : (augTW && typeof augTW.score === 'number' ? augTW.score : 50);
-    const distScore = typeof s.distance === 'number' && s.distance > 0 ? s.distance : (augDist && typeof augDist.score === 'number' ? augDist.score : 50);
-    const synScore = typeof s.synergy === 'number' && s.synergy > 0 ? s.synergy : (augSyn && typeof augSyn.score === 'number' ? augSyn.score : 50);
-    const trScore = typeof s.trend === 'number' && s.trend > 0 ? s.trend : (augTr && typeof augTr.score === 'number' ? augTr.score : 50);
-    const formScore = (typeof s.form === 'number' && isFinite(s.form)) ? s.form : 50;
-    const vetScore = (typeof s.vet === 'number' && isFinite(s.vet)) ? s.vet : 90;
-    const exceptScore = (typeof s.except === 'number' && isFinite(s.except)) ? s.except : 80;
-    if (!(s.form > 0)) s.form = formScore;
-    if (!(s.vet > 0)) s.vet = vetScore;
-    if (!(s.except > 0)) s.except = exceptScore;
-    if (!(_dashboardTotal > 0)) {
-      const _base6Revised = s.last3 * 0.30 + s.rating * 0.20 + s.time * 0.15 + s.draw * 0.15 + s.weight * 0.10 + s.odds * 0.10;
-      const _baseAugRevised = twScore * 0.12 + formScore * 0.10 + exceptScore * 0.10 + vetScore * 0.08 + distScore * 0.03 + synScore * 0.03 + trScore * 0.03;
-      s.total = Math.round((_base6Revised * 0.54 + _baseAugRevised) * 10) / 10;
-      s.base6 = _base6Revised;
-    }
     const formTitle = (aug.form_detail && aug.form_detail.note) ? String(aug.form_detail.note).slice(0, 80) : '近績形勢線分析';
     const vetFlags = (aug.vet_detail && Array.isArray(aug.vet_detail.flags)) ? aug.vet_detail.flags : [];
     const vetNote = (aug.vet_detail && aug.vet_detail.note) ? String(aug.vet_detail.note).slice(0, 80) : '獸醫健康檢查';
@@ -332,6 +339,10 @@
 
     $('horseDetailModal').style.display = 'flex';
     document.body.style.overflow = 'hidden';
+    } catch (e) {
+      console.error('openHorseDetail crash:', e);
+      toast('顯示詳細分析失敗，請重試', 'warn');
+    }
   }
   function closeHorseDetail() {
     $('horseDetailModal').style.display = 'none';
