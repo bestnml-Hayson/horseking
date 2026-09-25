@@ -1,141 +1,15 @@
 {
   "meta": {
-    "generated_at": "2026-09-25 09:16:05",
+    "generated_at": "2026-09-25 10:15:38",
     "source_races": 134
   },
   "jockeys": {
-    "袁幸堯": {
-      "starts": 46,
-      "wins": 6,
-      "q_count": 18,
-      "win_rate": 0.130435,
-      "q_rate": 0.391304
-    },
-    "鍾易禮": {
-      "starts": 83,
-      "wins": 1,
-      "q_count": 16,
-      "win_rate": 0.012048,
-      "q_rate": 0.192771
-    },
-    "楊明綸": {
-      "starts": 78,
-      "wins": 0,
-      "q_count": 14,
-      "win_rate": 0.0,
-      "q_rate": 0.179487
-    },
-    "潘頓": {
-      "starts": 97,
-      "wins": 23,
-      "q_count": 53,
-      "win_rate": 0.237113,
-      "q_rate": 0.546392
-    },
-    "黃寶妮": {
-      "starts": 57,
-      "wins": 2,
-      "q_count": 10,
-      "win_rate": 0.035088,
-      "q_rate": 0.175439
-    },
-    "潘明輝": {
-      "starts": 75,
-      "wins": 2,
-      "q_count": 14,
-      "win_rate": 0.026667,
-      "q_rate": 0.186667
-    },
-    "奧爾民": {
-      "starts": 69,
-      "wins": 4,
-      "q_count": 20,
-      "win_rate": 0.057971,
-      "q_rate": 0.289855
-    },
-    "莫雷拉": {
-      "starts": 48,
-      "wins": 9,
-      "q_count": 18,
-      "win_rate": 0.1875,
-      "q_rate": 0.375
-    },
-    "布文": {
-      "starts": 59,
-      "wins": 5,
-      "q_count": 15,
-      "win_rate": 0.084746,
-      "q_rate": 0.254237
-    },
-    "巴度": {
-      "starts": 84,
-      "wins": 5,
-      "q_count": 30,
-      "win_rate": 0.059524,
-      "q_rate": 0.357143
-    },
-    "艾道拿": {
-      "starts": 65,
-      "wins": 3,
-      "q_count": 13,
-      "win_rate": 0.046154,
-      "q_rate": 0.2
-    },
-    "蔡明紹": {
-      "starts": 54,
-      "wins": 1,
-      "q_count": 12,
-      "win_rate": 0.018519,
-      "q_rate": 0.222222
-    },
-    "梁家俊": {
-      "starts": 76,
-      "wins": 12,
-      "q_count": 20,
-      "win_rate": 0.157895,
-      "q_rate": 0.263158
-    },
-    "黃智弘": {
-      "starts": 41,
-      "wins": 4,
-      "q_count": 9,
-      "win_rate": 0.097561,
-      "q_rate": 0.219512
-    },
     "巫顯東": {
       "starts": 38,
       "wins": 0,
       "q_count": 3,
       "win_rate": 0.0,
       "q_rate": 0.078947
-    },
-    "金誠剛": {
-      "starts": 57,
-      "wins": 1,
-      "q_count": 5,
-      "win_rate": 0.017544,
-      "q_rate": 0.087719
-    },
-    "希威森": {
-      "starts": 79,
-      "wins": 2,
-      "q_count": 19,
-      "win_rate": 0.025316,
-      "q_rate": 0.240506
-    },
-    "班德禮": {
-      "starts": 32,
-      "wins": 0,
-      "q_count": 9,
-      "win_rate": 0.0,
-      "q_rate": 0.28125
-    },
-    "霍宏聲": {
-      "starts": 49,
-      "wins": 6,
-      "q_count": 17,
-      "win_rate": 0.122449,
-      "q_rate": 0.346939
     },
     "艾兆禮": {
       "starts": 82,
@@ -144,19 +18,19 @@
       "win_rate": 0.109756,
       "q_rate": 0.414634
     },
-    "田泰安": {
-      "starts": 110,
-      "wins": 16,
-      "q_count": 38,
-      "win_rate": 0.145455,
-      "q_rate": 0.345455
+    "楊明綸": {
+      "starts": 78,
+      "wins": 0,
+      "q_count": 14,
+      "win_rate": 0.0,
+      "q_rate": 0.179487
     },
-    "何澤堯": {
-      "starts": 86,
-      "wins": 14,
-      "q_count": 24,
-      "win_rate": 0.162791,
-      "q_rate": 0.27907
+    "梁家俊": {
+      "starts": 76,
+      "wins": 12,
+      "q_count": 20,
+      "win_rate": 0.157895,
+      "q_rate": 0.263158
     },
     "周俊樂": {
       "starts": 86,
@@ -165,12 +39,138 @@
       "win_rate": 0.05814,
       "q_rate": 0.255814
     },
+    "莫雷拉": {
+      "starts": 48,
+      "wins": 9,
+      "q_count": 18,
+      "win_rate": 0.1875,
+      "q_rate": 0.375
+    },
+    "袁幸堯": {
+      "starts": 46,
+      "wins": 6,
+      "q_count": 18,
+      "win_rate": 0.130435,
+      "q_rate": 0.391304
+    },
+    "潘頓": {
+      "starts": 97,
+      "wins": 23,
+      "q_count": 53,
+      "win_rate": 0.237113,
+      "q_rate": 0.546392
+    },
+    "黃智弘": {
+      "starts": 41,
+      "wins": 4,
+      "q_count": 9,
+      "win_rate": 0.097561,
+      "q_rate": 0.219512
+    },
+    "蔡明紹": {
+      "starts": 54,
+      "wins": 1,
+      "q_count": 12,
+      "win_rate": 0.018519,
+      "q_rate": 0.222222
+    },
+    "班德禮": {
+      "starts": 32,
+      "wins": 0,
+      "q_count": 9,
+      "win_rate": 0.0,
+      "q_rate": 0.28125
+    },
+    "希威森": {
+      "starts": 79,
+      "wins": 2,
+      "q_count": 19,
+      "win_rate": 0.025316,
+      "q_rate": 0.240506
+    },
+    "巴度": {
+      "starts": 84,
+      "wins": 5,
+      "q_count": 30,
+      "win_rate": 0.059524,
+      "q_rate": 0.357143
+    },
     "布浩榮": {
       "starts": 41,
       "wins": 4,
       "q_count": 12,
       "win_rate": 0.097561,
       "q_rate": 0.292683
+    },
+    "黃寶妮": {
+      "starts": 57,
+      "wins": 2,
+      "q_count": 10,
+      "win_rate": 0.035088,
+      "q_rate": 0.175439
+    },
+    "金誠剛": {
+      "starts": 57,
+      "wins": 1,
+      "q_count": 5,
+      "win_rate": 0.017544,
+      "q_rate": 0.087719
+    },
+    "奧爾民": {
+      "starts": 69,
+      "wins": 4,
+      "q_count": 20,
+      "win_rate": 0.057971,
+      "q_rate": 0.289855
+    },
+    "鍾易禮": {
+      "starts": 83,
+      "wins": 1,
+      "q_count": 16,
+      "win_rate": 0.012048,
+      "q_rate": 0.192771
+    },
+    "何澤堯": {
+      "starts": 86,
+      "wins": 14,
+      "q_count": 24,
+      "win_rate": 0.162791,
+      "q_rate": 0.27907
+    },
+    "田泰安": {
+      "starts": 110,
+      "wins": 16,
+      "q_count": 38,
+      "win_rate": 0.145455,
+      "q_rate": 0.345455
+    },
+    "霍宏聲": {
+      "starts": 49,
+      "wins": 6,
+      "q_count": 17,
+      "win_rate": 0.122449,
+      "q_rate": 0.346939
+    },
+    "潘明輝": {
+      "starts": 75,
+      "wins": 2,
+      "q_count": 14,
+      "win_rate": 0.026667,
+      "q_rate": 0.186667
+    },
+    "布文": {
+      "starts": 59,
+      "wins": 5,
+      "q_count": 15,
+      "win_rate": 0.084746,
+      "q_rate": 0.254237
+    },
+    "艾道拿": {
+      "starts": 65,
+      "wins": 3,
+      "q_count": 13,
+      "win_rate": 0.046154,
+      "q_rate": 0.2
     }
   }
 }
