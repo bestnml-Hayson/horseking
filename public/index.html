@@ -2,7 +2,7 @@
 <html lang="zh-HK">
 <head>
 <meta charset="UTF-8" />
-<meta name="version" content="20260925-fix-entries-last6" />
+<meta name="version" content="20260926-autofix-last3-besttime-sentinel" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 <meta name="theme-color" content="#0a0a0a" media="(prefers-color-scheme: dark)" />
 <meta name="theme-color" content="#d4af37" media="(prefers-color-scheme: light)" />
@@ -30,7 +30,7 @@
 <meta property="og:image" content="/data/icons/icon-512.png" />
 <meta property="og:site_name" content="賽馬AI Live" />
 <title>🐎 賽馬 AI Live · 綜合分析系統</title>
-<link rel="stylesheet" href="/style.css" />
+<link rel="stylesheet" href="/style.css?v=20260926-autofix-last3" />
 </head>
 <body>
 
@@ -223,8 +223,8 @@
   </div>
 </div>
 
-<script src="/ai.js?v=27sep-fix-entries-last6-d4e5f6"></script>
-<script src="/app.js?v=27sep-fix-entries-last6-d4e5f6"></script>
+<script src="/ai.js?v=20260926-autofix-last3-besttime-a1b2c3"></script>
+<script src="/app.js?v=20260926-autofix-last3-besttime-a1b2c3"></script>
 <script>
 (function () {
   var params = new URLSearchParams(window.location.search);
@@ -243,7 +243,7 @@
   }
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function () {
-      navigator.serviceWorker.register('/sw.js?v=27sep-fix-entries-last6-d4e5f6', { scope: '/' })
+      navigator.serviceWorker.register('/sw.js?v=20260926-autofix-last3-besttime-a1b2c3', { scope: '/' })
         .then(function () { /* ok */ })
         .catch(function () { /* fallback */ });
     });

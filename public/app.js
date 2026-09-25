@@ -624,6 +624,50 @@
             if (!h.odds) h.odds = { win: h.win_odds || 0, place: h.place_odds || 0 };
           });
         }
+        // Runtime post-fix: 人手 parse JSON 或舊版可能缺 last_3 (只係 last_6 填咗)
+        // 自動 split last_6 尾3段 → last_3，令 last3Badge 顯示 + AI scoring 有近績評分
+        // 同時修復 best_time_sec type/missing → 非 number/<=0 強制 sentinel 999
+        if (r.horses && r.horses.length) {
+          r.horses.forEach(function (h) {
+            const hasL3 = Array.isArray(h.last_3) && h.last_3.length === 3;
+            const noL6 = !h.last_6 || typeof h.last_6 !== 'string';
+            if (!hasL3 && !noL6) {
+              const m = h.last_6.match(/^(\d{1,2})\/(\d{1,2})\/(\d{1,2})\/(\d{1,2})\/(\d{1,2})\/(\d{1,2})$/);
+              if (m) {
+                h.last_3 = [Math.max(1, Math.min(14, parseInt(m[4], 10) || 14)),
+                            Math.max(1, Math.min(14, parseInt(m[5], 10) || 14)),
+                            Math.max(1, Math.min(14, parseInt(m[6], 10) || 14))];
+              } else {
+                const parts = h.last_6.split('/').map(function (p) { return parseInt(p, 10); }).filter(function (v) { return Number.isFinite(v) && v >= 1 && v <= 20; });
+                if (parts.length >= 3) {
+                  h.last_3 = parts.slice(-3).map(function (v) { return Math.max(1, Math.min(14, v)); });
+                }
+              }
+            }
+            const bt = h.best_time_sec;
+            if (typeof bt !== 'number' || !isFinite(bt) || bt <= 0 || bt > 900) {
+              h.best_time_sec = 999;
+            }
+            // Ensure type of draw/rating/weight are 數字，避免前端 NaN
+            ['draw', 'rating', 'weight', 'number'].forEach(function (k) {
+              if (typeof h[k] !== 'number' || !isFinite(h[k])) {
+                h[k] = parseInt(h[k], 10) || 0;
+              }
+            });
+            if (!Array.isArray(h.last_3)) h.last_3 = [];
+          });
+          // sync back entries alias
+          if (r.entries && r.entries.length === r.horses.length) {
+            r.horses.forEach(function (h, i) {
+              if (r.entries[i]) {
+                r.entries[i].last_3 = h.last_3;
+                r.entries[i].best_time_sec = h.best_time_sec;
+              }
+            });
+          } else {
+            r.entries = r.horses.map(function (h) { return Object.assign({}, h); });
+          }
+        }
         DB.races[id] = r;
         DB.raceIndex.push(id);
       }
