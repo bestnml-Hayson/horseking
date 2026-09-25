@@ -1,15 +1,29 @@
 {
   "meta": {
-    "generated_at": "2026-09-24 21:24:25",
+    "generated_at": "2026-09-25 00:22:11",
     "source_races": 134
   },
   "trainers": {
-    "羅富全": {
-      "starts": 69,
-      "wins": 1,
+    "韋達": {
+      "starts": 72,
+      "wins": 2,
       "q_count": 18,
-      "win_rate": 0.014493,
-      "q_rate": 0.26087
+      "win_rate": 0.027778,
+      "q_rate": 0.25
+    },
+    "文家良": {
+      "starts": 81,
+      "wins": 11,
+      "q_count": 22,
+      "win_rate": 0.135802,
+      "q_rate": 0.271605
+    },
+    "呂健威": {
+      "starts": 82,
+      "wins": 5,
+      "q_count": 32,
+      "win_rate": 0.060976,
+      "q_rate": 0.390244
     },
     "蘇偉賢": {
       "starts": 62,
@@ -25,6 +39,69 @@
       "win_rate": 0.083333,
       "q_rate": 0.3
     },
+    "游達榮": {
+      "starts": 72,
+      "wins": 9,
+      "q_count": 26,
+      "win_rate": 0.125,
+      "q_rate": 0.361111
+    },
+    "羅富全": {
+      "starts": 69,
+      "wins": 1,
+      "q_count": 18,
+      "win_rate": 0.014493,
+      "q_rate": 0.26087
+    },
+    "葉楚航": {
+      "starts": 68,
+      "wins": 3,
+      "q_count": 9,
+      "win_rate": 0.044118,
+      "q_rate": 0.132353
+    },
+    "桂福特": {
+      "starts": 67,
+      "wins": 7,
+      "q_count": 26,
+      "win_rate": 0.104478,
+      "q_rate": 0.38806
+    },
+    "大衛希斯": {
+      "starts": 89,
+      "wins": 8,
+      "q_count": 27,
+      "win_rate": 0.089888,
+      "q_rate": 0.303371
+    },
+    "徐雨石": {
+      "starts": 64,
+      "wins": 5,
+      "q_count": 17,
+      "win_rate": 0.078125,
+      "q_rate": 0.265625
+    },
+    "鄭俊偉": {
+      "starts": 59,
+      "wins": 2,
+      "q_count": 9,
+      "win_rate": 0.033898,
+      "q_rate": 0.152542
+    },
+    "巫偉傑": {
+      "starts": 90,
+      "wins": 13,
+      "q_count": 33,
+      "win_rate": 0.144444,
+      "q_rate": 0.366667
+    },
+    "黎昭昇": {
+      "starts": 68,
+      "wins": 4,
+      "q_count": 16,
+      "win_rate": 0.058824,
+      "q_rate": 0.235294
+    },
     "沈集成": {
       "starts": 88,
       "wins": 12,
@@ -39,33 +116,12 @@
       "win_rate": 0.049505,
       "q_rate": 0.267327
     },
-    "廖康銘": {
-      "starts": 79,
-      "wins": 5,
-      "q_count": 23,
-      "win_rate": 0.063291,
-      "q_rate": 0.291139
-    },
-    "桂福特": {
-      "starts": 67,
-      "wins": 7,
-      "q_count": 26,
-      "win_rate": 0.104478,
-      "q_rate": 0.38806
-    },
-    "呂健威": {
-      "starts": 82,
-      "wins": 5,
-      "q_count": 32,
-      "win_rate": 0.060976,
-      "q_rate": 0.390244
-    },
-    "文家良": {
-      "starts": 81,
-      "wins": 11,
-      "q_count": 22,
-      "win_rate": 0.135802,
-      "q_rate": 0.271605
+    "丁冠豪": {
+      "starts": 43,
+      "wins": 2,
+      "q_count": 11,
+      "win_rate": 0.046512,
+      "q_rate": 0.255814
     },
     "賀賢": {
       "starts": 55,
@@ -74,20 +130,6 @@
       "win_rate": 0.109091,
       "q_rate": 0.272727
     },
-    "大衛希斯": {
-      "starts": 89,
-      "wins": 8,
-      "q_count": 27,
-      "win_rate": 0.089888,
-      "q_rate": 0.303371
-    },
-    "韋達": {
-      "starts": 72,
-      "wins": 2,
-      "q_count": 18,
-      "win_rate": 0.027778,
-      "q_rate": 0.25
-    },
     "蔡約翰": {
       "starts": 57,
       "wins": 6,
@@ -95,12 +137,12 @@
       "win_rate": 0.105263,
       "q_rate": 0.350877
     },
-    "徐雨石": {
-      "starts": 64,
+    "廖康銘": {
+      "starts": 79,
       "wins": 5,
-      "q_count": 17,
-      "win_rate": 0.078125,
-      "q_rate": 0.265625
+      "q_count": 23,
+      "win_rate": 0.063291,
+      "q_rate": 0.291139
     },
     "甘敏斯": {
       "starts": 2,
@@ -116,54 +158,12 @@
       "win_rate": 0.139535,
       "q_rate": 0.337209
     },
-    "鄭俊偉": {
-      "starts": 59,
-      "wins": 2,
-      "q_count": 9,
-      "win_rate": 0.033898,
-      "q_rate": 0.152542
-    },
-    "黎昭昇": {
-      "starts": 68,
-      "wins": 4,
-      "q_count": 16,
-      "win_rate": 0.058824,
-      "q_rate": 0.235294
-    },
-    "丁冠豪": {
-      "starts": 43,
-      "wins": 2,
-      "q_count": 11,
-      "win_rate": 0.046512,
-      "q_rate": 0.255814
-    },
-    "葉楚航": {
-      "starts": 68,
-      "wins": 3,
-      "q_count": 9,
-      "win_rate": 0.044118,
-      "q_rate": 0.132353
-    },
-    "游達榮": {
-      "starts": 72,
-      "wins": 9,
-      "q_count": 26,
-      "win_rate": 0.125,
-      "q_rate": 0.361111
-    },
     "伍鵬志": {
       "starts": 78,
       "wins": 9,
       "q_count": 15,
       "win_rate": 0.115385,
       "q_rate": 0.192308
-    },
-    "巫偉傑": {
-      "starts": 90,
-      "wins": 13,
-      "q_count": 33,
-      "win_rate": 0.144444,
-      "q_rate": 0.366667
     }
   }
 }
