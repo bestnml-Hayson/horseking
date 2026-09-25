@@ -119,10 +119,13 @@ _debug*
 *.bat
 *.cmd
 
-# === 原始 data/ 都唔好傳 (Vercel outputDirectory = public 其實自動 filter，double safety) ===
-data/
+# === 原始 root/data 都唔好傳 (只係 repo root /data/，唔包括 public/data/ 下面嘅 files) ===
+/data/
 scraper/
 pdf/
+
+# === 白名單：public/data/ 內所有 races/profiles/stats 一定要 deploy (PWA 靜態資料來源) ===
+!public/data/**
 
 # === PDF 原始排位卡 (太大，冇需要 deploy) ===
 public/data/references/*.pdf
