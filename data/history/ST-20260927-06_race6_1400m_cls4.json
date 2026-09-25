@@ -1,10 +1,10 @@
 {
   "meta": {
     "import_from": "https://racing.hkjc.com/zh-hk/local/information/racecard?racedate=2026/09/27&Racecourse=ST&RaceNo=6",
-    "import_time": "2026-09-25 03:42:50",
-    "race_name_full": "荷花讓賽",
-    "update_time": "2026-09-25 03:42:50",
-    "note": "CURRENT 未賽賽事 skeleton built by _tmp_build_2709.py workaround；sync_data 下次 run 會自動覆蓋馬匹名/騎師/真實距離班次",
+    "import_time": "2026-09-26 02:05:09",
+    "race_name_full": "縫葉鶯讓賽",
+    "update_time": "2026-09-26 02:05:10",
+    "note": "distance/surface/track/class/rating_range/prize/post_time re-parsed & corrected from HKJC zh-hk racecard @ 2026-09-26 02:05:10; horses / odds / cc_* / payouts untouched.",
     "odds_update_time": "",
     "odds_source": "",
     "result_update_time": ""
@@ -14,16 +14,16 @@
     "race_date": "2026-09-27",
     "race_number": 6,
     "venue": "沙田",
-    "track": "草地",
+    "track": "C+3賽道",
     "surface": "草地",
     "distance_m": 1400,
     "class": "第四班",
     "rating_range": "60-40",
-    "prize": "HK$1,025,000",
+    "prize": "HK$1,170,000",
     "going": "好地",
-    "post_time": "15:30",
+    "post_time": "15:35",
     "result_available": false,
-    "num_horses": 12,
+    "num_horses": 14,
     "official_result": [],
     "last_3_winners": [
       {

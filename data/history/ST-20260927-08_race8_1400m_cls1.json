@@ -1,49 +1,49 @@
 {
   "meta": {
-    "import_from": "https://racing.hkjc.com/zh-hk/local/information/racecard?racedate=2026/09/27&Racecourse=ST&RaceNo=10",
-    "import_time": "2026-09-25 03:42:50",
-    "race_name_full": "楓葉讓賽",
-    "update_time": "2026-09-25 03:42:50",
-    "note": "CURRENT 未賽賽事 skeleton built by _tmp_build_2709.py workaround；sync_data 下次 run 會自動覆蓋馬匹名/騎師/真實距離班次",
+    "import_from": "https://racing.hkjc.com/zh-hk/local/information/racecard?racedate=2026/09/27&Racecourse=ST&RaceNo=8",
+    "import_time": "2026-09-26 02:05:09",
+    "race_name_full": "慶典盃（讓賽）",
+    "update_time": "2026-09-26 02:05:10",
+    "note": "distance/surface/track/class/rating_range/prize/post_time re-parsed & corrected from HKJC zh-hk racecard @ 2026-09-26 02:05:10; horses / odds / cc_* / payouts untouched.",
     "odds_update_time": "",
     "odds_source": "",
     "result_update_time": ""
   },
   "race_info": {
-    "race_id": "ST-20260927-10",
+    "race_id": "ST-20260927-08",
     "race_date": "2026-09-27",
-    "race_number": 10,
+    "race_number": 8,
     "venue": "沙田",
-    "track": "草地",
+    "track": "C+3賽道",
     "surface": "草地",
     "distance_m": 1400,
-    "class": "第三班",
-    "rating_range": "80-60",
-    "prize": "HK$1,330,000",
+    "class": "三級賽",
+    "rating_range": "",
+    "prize": "HK$4,200,000",
     "going": "好地",
-    "post_time": "17:30",
+    "post_time": "16:35",
     "result_available": false,
-    "num_horses": 12,
+    "num_horses": 9,
     "official_result": [],
     "last_3_winners": [
       {
         "date": "2026-09-13",
         "venue": "ST",
-        "race": 10,
+        "race": 8,
         "winner": "",
         "win_time": ""
       },
       {
         "date": "2026-09-06",
         "venue": "ST",
-        "race": 10,
+        "race": 8,
         "winner": "",
         "win_time": ""
       },
       {
         "date": "2026-07-12",
         "venue": "ST",
-        "race": 10,
+        "race": 8,
         "winner": "",
         "win_time": ""
       }

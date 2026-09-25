@@ -113,18 +113,18 @@ def _parse_last6_cell(v):
 
 def _cls_num_suffix(cn_cls):
     mapping = {"第一班": "cls1", "第二班": "cls2", "第三班": "cls3", "第四班": "cls4", "第五班": "cls5"}
+    cn_table = {"一": 1, "二": 2, "三": 3, "四": 4, "五": 5}
     if cn_cls in mapping:
-        return mapping[cn_cls], int(cn_cls[1])
+        return mapping[cn_cls], cn_table.get(cn_cls[1], 1)
     mm = re.search(r"第\s*([一二三四五])\s*班", cn_cls or "")
     if mm:
-        table = {"一": 1, "二": 2, "三": 3, "四": 4, "五": 5}
-        n = table[mm.group(1)]
+        n = cn_table[mm.group(1)]
         return f"cls{n}", n
     mm2 = re.search(r"(\d)\s*班", cn_cls or "")
     if mm2:
         n = int(mm2.group(1))
         return f"cls{n}", n
-    # 國際賽 / 二級賽 / 錦標 預設 cls1
+    # 國際賽 / 一/二/三級賽 / 錦標 預設 cls1
     return "cls1", 1
 
 
@@ -224,34 +224,65 @@ def _parse_racecard_page(html, date_slash, venue_code, race_number, import_url):
     ])
     ri = result["race_info"]
 
-    class_dist = re.search(r'(第[一二三四五]班)[^|]*\s-\s*(\d+)\s*米\s*-\s*\(([^\)]+)\)', html)
-    if not class_dist:
-        class_dist = re.search(r'(第[一二三四五]班)[^<|]*\s*-\s*(\d+)\s*米', html)
-        if class_dist:
+    # New format (HKJC zh-hk React racecard, 2026+):
+    #   第 2 場 - 孔雀讓賽</span><br>2026年9月27日, 星期日, 沙田, 13:15<br>草地, "C+3" 賽道, 1200米<br>獎金: $1,170,000, 評分: 60-40, 第四班
+    # Graded race variant (评分 empty, class 三級賽):
+    #   第 8 場 - 慶典盃（讓賽）</span><br>2026年9月27日, 星期日, 沙田, 16:35<br>草地, "C+3" 賽道, 1400米<br>獎金: $4,200,000, -, 三級賽
+    new_fmt = re.search(
+        r'第\s*' + str(int(race_number)) + r'\s*場\s*-\s*([^<\n]+?)\s*</span>\s*<br\s*/?>\s*'
+        r'\d{4}年\d{1,2}月\d{1,2}日\s*,\s*[^,]+,\s*(?:沙田|跑馬地)\s*,\s*(\d{1,2}:\d{2})\s*<br\s*/?>\s*'
+        r'([^,]+?)\s*(?:,\s*"([^"]+)"\s*賽道)?\s*,\s*(\d+)\s*米\s*<br\s*/?>\s*'
+        r'獎金\s*[:：]\s*(\$[\d,]+)\s*,\s*(?:評分\s*[:：]\s*)?([^,]*?)\s*,\s*([^<\n,]+?)\s*</div>',
+        html
+    )
+    if new_fmt:
+        result["meta"]["race_name_full"] = new_fmt.group(1).strip()
+        ri["post_time"] = new_fmt.group(2).strip()
+        surf = new_fmt.group(3).strip()
+        ri["surface"] = surf if surf else "草地"
+        if new_fmt.group(4):
+            ri["track"] = new_fmt.group(4).strip() + "賽道"
+        try:
+            ri["distance_m"] = int(new_fmt.group(5))
+        except:
+            pass
+        ri["prize"] = "HK" + new_fmt.group(6).strip()
+        rating_val = (new_fmt.group(7) or "").strip()
+        ri["rating_range"] = "" if rating_val in ("-", "--", "") else rating_val
+        cls_val = (new_fmt.group(8) or "").strip()
+        ri["class"] = cls_val if cls_val else ""
+    else:
+        # Legacy patterns (Racecard.aspx / older format):
+        #   第五班 - 1650米 - (60-40)
+        #   第五班 - 1650米
+        class_dist = re.search(r'(第[一二三四五]班)[^|]*\s-\s*(\d+)\s*米\s*-\s*\(([^\)]+)\)', html)
+        if not class_dist:
+            class_dist = re.search(r'(第[一二三四五]班)[^<|]*\s*-\s*(\d+)\s*米', html)
+            if class_dist:
+                ri["class"] = class_dist.group(1)
+                try:
+                    ri["distance_m"] = int(class_dist.group(2))
+                except:
+                    pass
+                ri["rating_range"] = ""
+        else:
             ri["class"] = class_dist.group(1)
             try:
                 ri["distance_m"] = int(class_dist.group(2))
             except:
                 pass
-            ri["rating_range"] = ""
-    else:
-        ri["class"] = class_dist.group(1)
-        try:
-            ri["distance_m"] = int(class_dist.group(2))
-        except:
-            pass
-        ri["rating_range"] = class_dist.group(3).strip()
+            ri["rating_range"] = class_dist.group(3).strip()
 
     going = re.search(r'場地狀況\s*[:：]\s*([^\n<|]+)', html)
     if going:
         ri["going"] = going.group(1).strip() or "好地"
 
+    # Legacy track/surface from 賽道： label (keep for backward-compat)
     track_match = re.search(r'賽道\s*[:：]\s*([^<\n|]+)', html)
-    if track_match:
+    if track_match and not ri["track"]:
         t = track_match.group(1).strip()
-        if '全天候' in t:
+        if '全天候' in t and not ri["surface"]:
             ri["surface"] = "全天候跑道"
-        # track letter
         ml = re.search(r'"([A-Z])"\s*賽道', t)
         if ml:
             ri["track"] = f"{ml.group(1)}跑道"
@@ -262,19 +293,23 @@ def _parse_racecard_page(html, date_slash, venue_code, race_number, import_url):
             elif t:
                 ri["track"] = t[:20]
 
-    prize = re.search(r'HK\$[\s,]*[\d,]+', html)
-    if prize:
-        ri["prize"] = prize.group(0).replace(' ', '')
+    if not ri["surface"]:
+        ri["surface"] = "草地"
+
+    prize2 = re.search(r'HK\$[\s,]*[\d,]+', html)
+    if prize2 and not ri["prize"]:
+        ri["prize"] = prize2.group(0).replace(' ', '')
 
     lines = html.split('\n')
-    race_name = ""
-    for i, line in enumerate(lines):
-        if '賽道' in line and 'HK$' not in line:
-            prev = lines[i - 1] if i > 0 else ''
-            nm = re.search(r'([^|\n<]{2,30}?(?:讓賽|錦標|賽|盃|杯|短途錦標))', prev)
-            if nm:
-                race_name = nm.group(0).strip()
-                break
+    race_name = result["meta"].get("race_name_full", "") or ""
+    if not race_name:
+        for i, line in enumerate(lines):
+            if '賽道' in line and 'HK$' not in line:
+                prev = lines[i - 1] if i > 0 else ''
+                nm = re.search(r'([^|\n<]{2,30}?(?:讓賽|錦標|賽|盃|杯|短途錦標))', prev)
+                if nm:
+                    race_name = nm.group(0).strip()
+                    break
     if not race_name:
         for line in lines:
             if '讓賽' in line or '錦標' in line or '盃' in line:
