@@ -136,8 +136,8 @@ $bootstrapScript = Join-Path $rootDir "_auto_bootstrap_next_raceday.py"
 $nextDateDash = $null
 $nextVenue = $null
 if ($pythonOK -and (Test-Path $bootstrapScript)) {
-    Append-Log "[Step B] Running _auto_bootstrap_next_raceday.py ..."
-    $bArgs = @("--force-date", "2026-09-27", "--venue", "ST")
+    Append-Log "[Step B] Running _auto_bootstrap_next_raceday.py (AUTO next raceday detection) ..."
+    $bArgs = @("--min-days", "0")
     try {
         $raw = & $pythonExe -B $bootstrapScript @bArgs 2>&1
         $outText = ($raw | Out-String).Trim()
@@ -262,6 +262,43 @@ if (Test-Path $rebuildScript) {
     }
 } else {
     Append-Log "[Step E] SKIP (rebuild_aggregate.ps1 not found)" "WARN"
+}
+
+# Step H: 用 HKJC racecard 全覆蓋靜態排位欄位（last_6/gear/post_time/name/jockey/...）
+# 自動用 Step B detect 出嘅 next date + venue；若 Step B 冇 detect 則 skip
+$populateScript = Join-Path $rootDir "_auto_populate_full_entries.py"
+$summary.step_h_populate_ok = $false
+if ($pythonOK -and (Test-Path $populateScript) -and $nextDateDash -and $nextVenue) {
+    Append-Log ("[Step H] Running _auto_populate_full_entries.py --date " + $nextDateDash + " --venue " + $nextVenue + " (ALL races, preserve odds/cc_* fields) ...")
+    try {
+        $popArgs = @("--date", $nextDateDash, "--venue", $nextVenue, "--skip-rebuild")
+        $rawPop = & $pythonExe -B $populateScript @popArgs 2>&1
+        foreach ($l in ($rawPop | ForEach-Object { [string]$_ })) {
+            if ($l -and -not $l.StartsWith("{")) { Append-Log ("  H> " + $l) }
+        }
+        $outTextPop = ($rawPop | Out-String).Trim()
+        $jsonPop = ExtractJson $outTextPop
+        if ($jsonPop) {
+            $summary.step_h_races_updated = Get-IntOr $jsonPop.races_updated 0
+            $summary.step_h_last6_populated = Get-IntOr $jsonPop.last6_total_populated 0
+            $summary.step_h_total_horses = Get-IntOr $jsonPop.total_horses 0
+            if ($jsonPop.errors -and $jsonPop.errors.Count -gt 0) {
+                foreach ($he in $jsonPop.errors) { Append-Log ("  [H] WARN: " + [string]$he) "WARN" }
+            }
+            $summary.step_h_populate_ok = $true
+            Append-Log ("[Step H] OK: races=" + $summary.step_h_races_updated + " last6=" + $summary.step_h_last6_populated + "/" + $summary.step_h_total_horses)
+        } else {
+            Append-Log "[Step H] WARN: no JSON summary (script may have failed)" "WARN"
+        }
+    } catch {
+        Append-Log ("[Step H] WARN: " + $_.Exception.Message) "WARN"
+    }
+} else {
+    if (-not $nextDateDash -or -not $nextVenue) {
+        Append-Log "[Step H] SKIP: Step B 未 detect 到下一賽馬日（如果要手動指定日期/俾 URL，直接跑 _auto_populate_full_entries.py）" "WARN"
+    } else {
+        Append-Log "[Step H] SKIP: 腳本不存在或 python 不可用" "WARN"
+    }
 }
 
 Append-Log "[Step F] Syncing data/* -> public/data/*"

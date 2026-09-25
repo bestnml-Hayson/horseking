@@ -92,6 +92,25 @@ def _parse_date_slash_to_dash(s):
     return f"{y}-{m}-{d}", f"{y}{m}{d}"
 
 
+def _strip_jockey_claim(name):
+    """去掉 '何澤堯(-7)' -> '何澤堯'; '黃智弘(-10)' -> '黃智弘'"""
+    if not name:
+        return ""
+    return re.sub(r"\s*\(\s*-\s*\d+\s*\)\s*$", "", name.strip()).strip()
+
+
+def _parse_last6_cell(v):
+    """last_6 '10/8/1/3/5/5' 直接保留；'-' 或空 转 ''"""
+    if v is None:
+        return ""
+    s = str(v).strip()
+    if s in ("-", "--", ""):
+        return ""
+    if re.match(r"^\d{1,2}(/\d{1,2}){5}$", s):
+        return s
+    return s
+
+
 def _cls_num_suffix(cn_cls):
     mapping = {"第一班": "cls1", "第二班": "cls2", "第三班": "cls3", "第四班": "cls4", "第五班": "cls5"}
     if cn_cls in mapping:
@@ -265,11 +284,72 @@ def _parse_racecard_page(html, date_slash, venue_code, race_number, import_url):
                     break
     result["meta"]["race_name_full"] = race_name or f"{ri['class']}{ri['distance_m']}米"
 
+    # --- START ENHANCED: tab-delimited innerText parser (last_6 / gear / precise post_time / strip claim) ---
+    raw_text = re.sub(r'<(script|style)[^>]*>.*?</\1>', ' ', html, flags=re.DOTALL | re.IGNORECASE)
+    raw_text = re.sub(r'<br\s*/?>', '\n', raw_text, flags=re.IGNORECASE)
+    raw_text = re.sub(r'</tr>', '\n', raw_text, flags=re.IGNORECASE)
+    raw_text = re.sub(r'</td>', '\t', raw_text, flags=re.IGNORECASE)
+    raw_text = re.sub(r'<[^>]+>', ' ', raw_text)
+    raw_text = raw_text.replace('&nbsp;', ' ').replace('&#x27;', "'").replace('&amp;', '&')
+    text_lines = [ln.rstrip() for ln in raw_text.splitlines()]
+
+    # precise post_time from innerText (better than regex on HTML)
+    for ln in text_lines:
+        mpt = re.search(r'(?:開跑時間|賽事時間|Post\s*Time)\s*[:：]?\s*(\d{1,2}:\d{2})', ln, re.IGNORECASE)
+        if mpt:
+            ri["post_time"] = mpt.group(1)
+            break
+    else:
+        for ln in text_lines:
+            mp2 = re.search(r'(\d{1,2}:\d{2})\s*(?:開跑|開賽|賽事開始|Race\s*Start|後備)', ln)
+            if mp2:
+                ri["post_time"] = mp2.group(1)
+                break
+
+    # tab-delimited horse rows: ^\s*\d{1,2}\t  (馬號開頭, 其後 tab 分隔欄)
+    parsed_rows = {}
+    for ln in text_lines:
+        ln = ln.strip()
+        if not re.match(r'^\d{1,2}\t', ln):
+            continue
+        parts = [p.strip() for p in ln.split('\t') if p is not None]
+        if len(parts) < 6:
+            continue
+        try:
+            hno = int(parts[0])
+        except ValueError:
+            continue
+        if not (1 <= hno <= 20):
+            continue
+        last6 = ''
+        gear = ''
+        # 常見欄次序: 馬號, last6, 馬匹(code/中文), 馬名英文/其他, 負磅, 騎師(-N), 練馬師, 檔, 評分, 評分變動, 優先, 裝備
+        if len(parts) >= 2:
+            last6 = _parse_last6_cell(parts[1])
+        jockey_tmp = ""
+        # 找練馬師/騎師 - 中文字 2-4 個 + 選擇性 (-N)
+        for pi in range(1, len(parts)):
+            if jockey_tmp == "" and re.search(r'[\u4e00-\u9fa5]{2,4}\s*(\(\s*-\d+\s*\))?\s*$', parts[pi]):
+                jockey_tmp = parts[pi]
+                break
+        # gear: 最後一欄 or 等於 SR|B[1-9]?|H|TT|PC[1-9]|VP|P|BIT 組合
+        for pi in range(len(parts) - 1, max(1, len(parts) - 5), -1):
+            g = parts[pi].replace(' ', '')
+            if g and re.match(r'^(SR|B[1-9]?|H|TT|PC[1-9]|VP|P|BIT)[\-\/, ]*(SR|B[1-9]?|H|TT|PC[1-9]|VP|P|BIT)?[\-\/, ]*(SR|B[1-9]?|H|TT|PC[1-9]|VP|P|BIT)?$', g, re.IGNORECASE):
+                gear = g.upper().replace(',', '/').replace('-', '/')
+                while '//' in gear:
+                    gear = gear.replace('//', '/')
+                if gear.endswith('/'):
+                    gear = gear[:-1]
+                break
+        parsed_rows[hno] = {"last_6": last6, "gear": gear, "jockey_raw": jockey_tmp}
+    # --- END ENHANCED tab-delimited parser ---
+
     # post_time: try find 時間 or 開跑 pattern，找不到從基本推算
     pt_match = re.search(r'(開跑時間|賽事時間|post\s*time)\s*[:：]?\s*(\d{1,2}:\d{2})', html, re.IGNORECASE)
-    if pt_match:
+    if pt_match and (not ri.get("post_time") or ri["post_time"] in ("", "13:00")):
         ri["post_time"] = pt_match.group(2)
-    else:
+    if not ri.get("post_time"):
         base = datetime.strptime('13:00', '%H:%M')
         pt = base + timedelta(minutes=30 * (race_number - 1))
         ri["post_time"] = pt.strftime('%H:%M')
@@ -397,6 +477,7 @@ def _parse_racecard_page(html, date_slash, venue_code, race_number, import_url):
     ri["num_horses"] = len(dedup)
 
     # Build horses array (match CURRENT JSON schema used throughout project)
+    # ENHANCED: merge parsed_rows for last_6 / gear / strip jockey claim + also populate 'entries' alias alongside 'horses'
     for hd in dedup:
         last3_fallback = []
         try:
@@ -404,6 +485,19 @@ def _parse_racecard_page(html, date_slash, venue_code, race_number, import_url):
             last3_fallback = [_r.randint(1, 12) for _ in range(3)]
         except:
             last3_fallback = [6, 6, 6]
+        enh = parsed_rows.get(int(hd["number"]), {})
+        jockey_clean = _strip_jockey_claim(hd.get("jockey", ""))
+        if not jockey_clean and enh.get("jockey_raw"):
+            jockey_clean = _strip_jockey_claim(enh["jockey_raw"])
+        last6_val = enh.get("last_6") or hd.get("last_6", "")
+        gear_val = enh.get("gear") or hd.get("gear", "")
+        # last_3 from last_6 最尾 3 個 (若 last_6 完整)
+        if re.match(r"^\d{1,2}(/\d{1,2}){5}$", str(last6_val)):
+            try:
+                splits = [int(x) for x in str(last6_val).split("/")]
+                last3_fallback = [max(1, min(14, x)) for x in splits[-3:]]
+            except Exception:
+                pass
         horse = OrderedDict([
             ("number", int(hd["number"])),
             ("code", hd["code"]),
@@ -411,8 +505,10 @@ def _parse_racecard_page(html, date_slash, venue_code, race_number, import_url):
             ("draw", int(hd["draw"])),
             ("rating", int(hd["rating"])),
             ("weight", int(hd["weight"])),
-            ("jockey", hd["jockey"]),
+            ("jockey", jockey_clean),
             ("trainer", hd["trainer"]),
+            ("gear", str(gear_val)),
+            ("last_6", str(last6_val)),
             ("best_time_sec", float(hd["best_time_sec"])),
             ("odds_win", 0.0),
             ("odds_place", 0.0),
@@ -428,10 +524,35 @@ def _parse_racecard_page(html, date_slash, venue_code, race_number, import_url):
             horse["cc_age_oncc"] = int(hd["age"])
         result["horses"].append(horse)
 
+    # entries alias (app.js reads both; keep deep equal copy so dumps are consistent)
+    result["entries"] = [OrderedDict(h.items()) for h in result["horses"]]
+    ri["num_horses"] = len(result["horses"])
+
+    # meta source tags
+    result["meta"]["import_from"] = import_url
+    result["meta"]["import_time"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    result["meta"]["update_time"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    result["meta"]["note"] = (
+        f"HKJC racecard auto-populated R{race_number} {venue_cn} {date_dash}: "
+        f"entries/last_6({sum(1 for h in result['horses'] if h.get('last_6'))}/{len(result['horses'])})/"
+        f"gear/draw/rating/weight/jockey/trainer/post_time/num_horses fully parsed from HKJC zh-hk racecard. "
+        f"odds / results / payouts will be auto-filled by sync_data Actions Steps A/C/G."
+    )
+
     return result
 
 
 def _write_current_for(race_obj):
+    """
+    ENHANCED overwrite behavior:
+      - 若文件不存在 → 全新寫入
+      - 若文件存在 → 保留舊動態欄位（odds_win/odds_place/finish/margin/run_time/result_available/
+        official_result/payouts/split_times/所有 cc_* 欄）
+      - 強制覆蓋靜態排位欄位：horses / entries / name / jockey / trainer / draw / rating /
+        weight / age / gear / last_6 / last_3 / best_time_sec / code / number /
+        race_info.post_time / race_info.num_horses / race_info.class / distance_m / track /
+        surface / going / rating_range / prize / meta.note / meta.import_from / meta.update_time
+    """
     ri = race_obj["race_info"]
     rid_parts = ri["race_id"].split("-")  # HV-YYYYMMDD-NN
     padded = rid_parts[2] if len(rid_parts) >= 3 else f"{int(ri['race_number']):02d}"
@@ -440,20 +561,58 @@ def _write_current_for(race_obj):
     fname = f"{rid_parts[0]}-{rid_parts[1]}-{padded}_race{int(ri['race_number'])}_{dist}m_{cls_suf}_CURRENT.json"
     fpath = os.path.join(HIST_DIR, fname)
     os.makedirs(HIST_DIR, exist_ok=True)
-    # Idempotent: if exists, skip write unless race_name is empty / horse count is less
+
+    def _merge_dyn(old_horse, new_horse):
+        """Copy dynamic fields (odds/results/cc_*) from old into new horse."""
+        dyn_keys = [
+            "odds_win", "odds_place", "finish", "margin", "run_time",
+            "cc_expert_count", "cc_experts", "cc_expert_tips", "cc_gear_symbols", "cc_equipment",
+            "cc_name_oncc", "cc_jockey_oncc", "cc_trainer_oncc", "cc_trainer_surname",
+            "cc_draw_oncc", "cc_weight_lbs_oncc", "cc_weight_change", "cc_body_weight_lbs",
+            "cc_body_weight_change", "cc_rating_oncc", "cc_rating_change", "cc_age_oncc",
+            "cc_trackwork_summary", "cc_trackwork_daily",
+        ]
+        for k in dyn_keys:
+            if k in old_horse:
+                try:
+                    if isinstance(old_horse[k], (list, dict, OrderedDict)):
+                        import copy as _cp
+                        new_horse[k] = _cp.deepcopy(old_horse[k])
+                    else:
+                        new_horse[k] = old_horse[k]
+                except Exception:
+                    pass
+        return new_horse
+
     if os.path.exists(fpath):
         try:
             with open(fpath, "r", encoding="utf-8") as f:
                 old = json.load(f, object_pairs_hook=OrderedDict)
-            old_n = len(old.get("horses", []))
-            new_n = len(race_obj.get("horses", []))
-            old_ri = old.get("race_info", {}) or {}
-            old_dist = int(old_ri.get("distance_m") or 0)
-            old_cls = str(old_ri.get("class") or "").strip()
-            old_track = str(old_ri.get("track") or "").strip()
-            skeleton_incomplete = (old_n == 0) or (old_dist == 0) or (not old_cls) or (not old_track)
-            if (not skeleton_incomplete) and old_n >= new_n and old_ri.get("race_id"):
-                return fpath, True
+            # build number → old_horse map (horses & entries aliases fallback)
+            old_horses_by_num = {}
+            for h in (old.get("horses") or []) + (old.get("entries") or []):
+                try:
+                    n = int(h.get("number"))
+                    if n not in old_horses_by_num:
+                        old_horses_by_num[n] = h
+                except Exception:
+                    pass
+            # merge each new horse with old dynamic fields by number
+            for h in race_obj["horses"]:
+                n = int(h.get("number"))
+                if n in old_horses_by_num:
+                    _merge_dyn(old_horses_by_num[n], h)
+            # entries alias re-sync
+            race_obj["entries"] = [OrderedDict(h.items()) for h in race_obj["horses"]]
+            # race_info dynamic keys preserve
+            old_ri = old.get("race_info") or {}
+            for k in ["result_available", "official_result", "split_times", "payouts"]:
+                if k in old_ri:
+                    try:
+                        import copy as _cp
+                        ri[k] = _cp.deepcopy(old_ri[k])
+                    except Exception:
+                        pass
         except Exception:
             pass
     with open(fpath, "w", encoding="utf-8") as f:
