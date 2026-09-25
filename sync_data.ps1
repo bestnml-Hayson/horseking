@@ -475,26 +475,34 @@ try {
 }
 
 $raceFilesArray = @()
-$seenRaceId = @{}
+$seenRidGroups = @{}
 if (Test-Path $publicHistDir) {
     $allJson = Get-ChildItem $publicHistDir -Filter "*.json" | Where-Object { $_.Name -notlike "_*" } | Sort-Object Name
     foreach ($jf in $allJson) {
-        $skip = $false
         try {
             $raw = [IO.File]::ReadAllText($jf.FullName, $utf8NoBom)
             $mj = [regex]::Match($raw, '"race_id"\s*:\s*"([^"]+)"')
             if ($mj.Success) {
                 $rid = $mj.Groups[1].Value
-                if ($seenRaceId.ContainsKey($rid)) { $skip = $true } else { $seenRaceId[$rid] = $jf.Name }
+                if (-not $seenRidGroups.ContainsKey($rid)) { $seenRidGroups[$rid] = New-Object System.Collections.Generic.List[string] }
+                $seenRidGroups[$rid].Add($jf.Name)
             }
         } catch {}
-        if (-not $skip) { $raceFilesArray += $jf.Name }
+    }
+    foreach ($rid in $seenRidGroups.Keys) {
+        $cands = $seenRidGroups[$rid]
+        $picked = $null
+        foreach ($c in $cands) {
+            if ($c -match '_CURRENT\.json$') { $picked = $c; break }
+        }
+        if (-not $picked) { $picked = $cands[0] }
+        $raceFilesArray += $picked
     }
 }
 $summary.total_races = $raceFilesArray.Count
 
 try {
-    $summary.new_races = $seenRaceId.Count
+    $summary.new_races = $seenRidGroups.Count
     $summary.locked = $false
     $outObj = [ordered]@{
         ok = ($summary.errors.Count -eq 0)

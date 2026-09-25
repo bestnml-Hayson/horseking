@@ -223,8 +223,23 @@
   </div>
 </div>
 
-<script src="/ai.js?v=20260926-stepJ-oncc-4631km"></script>
-<script src="/app.js?v=20260926-stepJ-oncc-4631km"></script>
+<!-- 騎師詳細資料 Modal -->
+<div id="jockeyDetailModal" class="modal-mask" style="display:none;">
+  <div class="modal-card">
+    <div class="modal-header">
+      <div class="modal-title">
+        <span class="logo-emoji">🏇</span>
+        <span id="jdName">騎師</span>
+        <span class="header-subtitle" style="margin-left:6px;" id="jdSub"></span>
+      </div>
+      <div class="header-icon" onclick="closeJockeyDetail()" style="cursor:pointer;">✕</div>
+    </div>
+    <div class="modal-body" id="jdBody"></div>
+  </div>
+</div>
+
+<script src="/ai.js?v=20260926-v2020-jockey-rides-modal"></script>
+<script src="/app.js?v=20260926-v2020-jockey-rides-modal"></script>
 <script>
 (function () {
   var params = new URLSearchParams(window.location.search);
@@ -243,7 +258,7 @@
   }
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function () {
-      navigator.serviceWorker.register('/sw.js?v=20260926-stepJ-oncc-4631km', { scope: '/' })
+      navigator.serviceWorker.register('/sw.js?v=20260926-v2020-jockey-rides-modal', { scope: '/' })
         .then(function () { /* ok */ })
         .catch(function () { /* fallback */ });
     });

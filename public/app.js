@@ -354,14 +354,111 @@
         if (e.target === mask) closeHorseDetail();
       });
     }
+    const jmask = $('jockeyDetailModal');
+    if (jmask) {
+      jmask.addEventListener('click', function (e) {
+        if (e.target === jmask) closeJockeyDetail();
+      });
+    }
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape') {
         if (mask && mask.style.display === 'flex') closeHorseDetail();
+        if (jmask && jmask.style.display === 'flex') closeJockeyDetail();
         const rp = $('racePickerModal');
         if (rp && rp.style.display === 'flex') closeRacePicker();
       }
     });
   }
+
+  /* ========== 騎師詳細 Modal ========== */
+  function finishBadge(finish) {
+    if (!finish || finish === 0 || finish === '0') return '<span style="color:var(--text-dim);font-weight:600;">—</span>';
+    const n = Number(finish);
+    if (!Number.isFinite(n)) return '<span style="color:var(--text-dim);">' + finish + '</span>';
+    if (n === 1) return '<span style="color:#fde68a;background:rgba(212,175,55,0.15);padding:2px 8px;border-radius:10px;font-weight:800;">🥇 第1</span>';
+    if (n === 2) return '<span style="color:#cbd5e1;background:rgba(203,213,225,0.12);padding:2px 8px;border-radius:10px;font-weight:800;">🥈 第2</span>';
+    if (n === 3) return '<span style="color:#fcd34d;background:rgba(180,83,9,0.15);padding:2px 8px;border-radius:10px;font-weight:800;">🥉 第3</span>';
+    if (n <= 4) return '<span style="color:#60a5fa;background:rgba(59,130,246,0.12);padding:2px 8px;border-radius:10px;font-weight:700;">💎 第' + n + '</span>';
+    if (n <= 6) return '<span style="color:#86efac;background:rgba(34,197,94,0.10);padding:2px 8px;border-radius:10px;font-weight:600;">第' + n + '</span>';
+    return '<span style="color:var(--text-dim);font-weight:600;">第' + n + '</span>';
+  }
+  function openJockeyDetail(name) {
+    if (!name) { toast('未指定騎師', 'warn'); return; }
+    const j = (DB.jockeysDB && DB.jockeysDB[name]) || null;
+    if (!j) { toast('騎師數據未備份，請稍後重試', 'warn'); return; }
+    $('jdName').textContent = name + ' 騎師';
+    const upcoming = (typeof getUpcomingCounts === 'function') ? getUpcomingCounts() : { jockeyRides: {} };
+    const tonight = (upcoming.jockeyRides && upcoming.jockeyRides[name]) || 0;
+    const wrPct = Math.round((typeof j.win_rate === 'number' ? j.win_rate : (j.starts ? (j.wins || 0) / j.starts : 0)) * 100);
+    const prPct = Math.round((typeof j.q_rate === 'number' ? j.q_rate : (j.starts ? (j.q_count || 0) / j.starts : 0)) * 100);
+    $('jdSub').textContent = '今季出賽 ' + (j.starts || 0) + ' 場 · 勝出 ' + (j.wins || 0) + ' 場 · 入Q ' + (j.q_count || 0) + ' 場 · 今晚 ' + tonight + ' 場';
+    const rides = (j.rides && j.rides.length) ? j.rides : [];
+    const last10 = rides.slice(0, 50);
+    const recent10 = rides.slice(0, 10);
+    const recentWins = recent10.filter(function (r) { return r.won || (Number(r.finish) === 1); }).length;
+    const recentQ = recent10.filter(function (r) { return r.in_quinella || (Number(r.finish) >= 1 && Number(r.finish) <= 4); }).length;
+    const avgFinRecent = (function () {
+      var t = 0, cnt = 0;
+      recent10.forEach(function (r) { var f = Number(r.finish); if (f && f > 0) { t += f; cnt++; } });
+      return cnt ? (t / cnt).toFixed(1) : '—';
+    })();
+    const header = '<div class="score-grid" style="margin-bottom:14px;">' +
+      '<div class="score-item"><div class="score-label">今季勝率</div><div class="score-value" style="color:var(--gold);">' + wrPct + '%</div></div>' +
+      '<div class="score-item"><div class="score-label">今季入Q率</div><div class="score-value">' + prPct + '%</div></div>' +
+      '<div class="score-item"><div class="score-label">近10場 勝/入Q</div><div class="score-value">' + recentWins + '/' + recentQ + '</div></div>' +
+      '<div class="score-item"><div class="score-label">近10場 平均名次</div><div class="score-value">' + avgFinRecent + '</div></div>' +
+      '</div>';
+    let tbl = '';
+    if (!last10.length) {
+      tbl = '<div style="padding:40px;text-align:center;color:var(--text-dim);">暫無已完賽往績（剛剛加入數據）</div>';
+    } else {
+      tbl = '<h3 style="margin:18px 0 10px;font-size:14px;color:var(--gold);">📋 已完賽往績（最新 ' + last10.length + ' 場，共 ' + rides.length + ' 場）</h3>' +
+        '<div style="max-height:55vh;overflow:auto;border:1px solid var(--border);border-radius:10px;">' +
+        '<table class="data-table" style="border:none;">' +
+        '<thead><tr>' +
+        '<th>日期</th><th>場地/場次</th><th>距離/班次</th><th>馬匹</th><th>檔</th><th>負磅</th><th>評分</th><th>名次</th><th>獨贏賠率</th>' +
+        '</tr></thead><tbody>' +
+        last10.map(function (r) {
+          var rd = (r.race_date || '').slice(5);
+          var ven = r.venue || (r.venue_code === 'ST' ? '沙田' : (r.venue_code === 'HV' ? '跑馬地' : r.venue_code));
+          var venueShort = (ven === '沙田' ? '沙' : (ven === '跑馬地' ? '谷' : ven));
+          var r2 = r.distance_m + 'm';
+          if (r.track) r2 += ' · ' + r.track;
+          if (r.class) r2 += ' · ' + r.class;
+          var hName = (r.horse_name || r.horse_code || '—');
+          var clickable = r.race_id && (r.horse_code || r.horse_name)
+            ? '<span style="cursor:pointer;text-decoration:underline dotted;text-decoration-color:rgba(212,175,55,0.45);text-underline-offset:3px;" ' +
+              'onclick="closeJockeyDetail();setTimeout(function(){selectRaceId(\'' + r.race_id + '\');setTimeout(function(){openHorseDetail(\'' + (r.horse_name || r.horse_code || '').replace(/'/g,"\\'") + '\');}, 400);}, 120);">' + hName + '</span>'
+            : hName;
+          var dr = r.draw || '—';
+          var wt = r.weight || '—';
+          var rtg = r.rating || '—';
+          var ow = (r.odds_win && Number(r.odds_win) > 0) ? ('$' + Number(r.odds_win).toFixed(1)) : '—';
+          return '<tr>' +
+            '<td>' + rd + '</td>' +
+            '<td><b>' + venueShort + ' R' + (r.race_number || '?') + '</b></td>' +
+            '<td style="font-size:12px;">' + r2 + '</td>' +
+            '<td><b>' + clickable + '</b></td>' +
+            '<td>' + dr + '</td>' +
+            '<td>' + wt + '</td>' +
+            '<td>' + rtg + '</td>' +
+            '<td>' + finishBadge(r.finish) + '</td>' +
+            '<td style="color:var(--gold);font-weight:700;">' + ow + '</td>' +
+            '</tr>';
+        }).join('') +
+        '</tbody></table></div>';
+    }
+    $('jdBody').innerHTML = header + tbl;
+    $('jockeyDetailModal').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+  }
+  function closeJockeyDetail() {
+    const m = $('jockeyDetailModal');
+    if (m) m.style.display = 'none';
+    document.body.style.overflow = '';
+  }
+  window.openJockeyDetail = openJockeyDetail;
+  window.closeJockeyDetail = closeJockeyDetail;
 
   /* ========== 賽事選擇器 Modal ========== */
   let racePickerDate = null;
@@ -670,12 +767,13 @@
         // 同時修復 best_time_sec type/missing → 非 number/<=0 強制 sentinel 999
         if (r.horses && r.horses.length) {
           r.horses.forEach(function (h) {
+            if (typeof h.win_odds === 'number' && !(typeof h.odds_win === 'number' && h.odds_win > 0)) h.odds_win = h.win_odds;
+            if (typeof h.place_odds === 'number' && !(typeof h.odds_place === 'number' && h.odds_place > 0)) h.odds_place = h.place_odds;
             var hasL3 = Array.isArray(h.last_3) && h.last_3.length === 3;
             var noL6 = !h.last_6 || typeof h.last_6 !== 'string';
             if (!hasL3 && !noL6) {
               var m = h.last_6.match(/^(\d{1,2})\/(\d{1,2})\/(\d{1,2})\/(\d{1,2})\/(\d{1,2})\/(\d{1,2})$/);
               if (m) {
-                // ★ 左邊=最近：m[1]=最近第1仗, m[2]=第2仗, m[3]=第3仗 (last_3 取最近 3 仗)
                 h.last_3 = [Math.max(1, Math.min(14, parseInt(m[1], 10) || 14)),
                             Math.max(1, Math.min(14, parseInt(m[2], 10) || 14)),
                             Math.max(1, Math.min(14, parseInt(m[3], 10) || 14))];
@@ -690,7 +788,14 @@
             if (typeof bt !== 'number' || !isFinite(bt) || bt <= 0 || bt > 900) {
               h.best_time_sec = 999;
             }
-            // Ensure type of draw/rating/weight are 數字，避免前端 NaN
+            const ow = h.odds_win;
+            if (typeof ow !== 'number' || !isFinite(ow) || ow <= 0 || ow >= 999) {
+              h.odds_win = 999;
+            }
+            const op = h.odds_place;
+            if (typeof op !== 'number' || !isFinite(op) || op <= 0 || op >= 999) {
+              h.odds_place = 999;
+            }
             ['draw', 'rating', 'weight', 'number'].forEach(function (k) {
               if (typeof h[k] !== 'number' || !isFinite(h[k])) {
                 h[k] = parseInt(h[k], 10) || 0;
@@ -698,12 +803,13 @@
             });
             if (!Array.isArray(h.last_3)) h.last_3 = [];
           });
-          // sync back entries alias
           if (r.entries && r.entries.length === r.horses.length) {
             r.horses.forEach(function (h, i) {
               if (r.entries[i]) {
                 r.entries[i].last_3 = h.last_3;
                 r.entries[i].best_time_sec = h.best_time_sec;
+                r.entries[i].odds_win = h.odds_win;
+                r.entries[i].odds_place = h.odds_place;
               }
             });
           } else {
@@ -721,7 +827,26 @@
     });
 
     let horsesDB = await api('/api/profiles/horses') || await api('/data/profiles/horses_db.json');
-    if (horsesDB && horsesDB.horses) DB.horsesDB = horsesDB.horses;
+    if (horsesDB && horsesDB.horses) {
+      DB.horsesDB = horsesDB.horses;
+      DB.raceIndex.forEach(function (rid) {
+        const r = DB.races[rid];
+        if (!r || !r.horses) return;
+        r.horses.forEach(function (h) {
+          if (!h.code) return;
+          const pr = DB.horsesDB[h.code];
+          if (!pr) return;
+          if ((!h.best_time_sec || h.best_time_sec >= 999) && typeof pr.best_time === 'number' && pr.best_time > 0 && pr.best_time < 900) {
+            h.best_time_sec = pr.best_time;
+            if (r.entries && r.entries.length === r.horses.length) {
+              const idx = r.horses.indexOf(h);
+              if (idx >= 0 && r.entries[idx]) r.entries[idx].best_time_sec = pr.best_time;
+            }
+          }
+          if (!h.name && pr.name) h.name = pr.name;
+        });
+      });
+    }
     let jocks = await api('/api/stats/jockeys') || await api('/data/stats/jockeys_db.json');
     if (jocks && jocks.jockeys) DB.jockeysDB = jocks.jockeys;
     let trains = await api('/api/stats/trainers') || await api('/data/stats/trainers_db.json');
@@ -1836,9 +1961,10 @@
       const prPct = Math.round(j.place_rate * 100);
       const formCls = j.current_form >= 85 ? 'good' : (j.current_form >= 70 ? 'mid' : 'bad');
       const w = Math.min(100, wrPct * 5);
+      const nameSafe = (j.name || '').replace(/'/g, "\\'");
       return '<tr>' +
         '<td><span class="rank-pill">' + (i + 1) + '</span></td>' +
-        '<td><b>' + j.name + '</b><div style="font-size:11px;color:var(--text-dim);">今晚 ' + j.upcoming + '</div></td>' +
+        '<td><span class="jockey-click" data-name="' + nameSafe + '" style="cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px;text-decoration-color:rgba(212,175,55,0.45);" onclick="event.stopPropagation();openJockeyDetail(\'' + nameSafe + '\');"><b>' + j.name + '</b></span><div style="font-size:11px;color:var(--text-dim);">今晚 ' + j.upcoming + '</div></td>' +
         '<td>' + j.starts + '</td>' +
         '<td>' + j.wins + '/' + j.places + '</td>' +
         '<td><div style="display:flex;align-items:center;gap:6px;"><div class="mini-score"><div class="fill" style="width:' + w + '%;"></div></div><b style="color:var(--gold);">' + wrPct + '%</b></div></td>' +

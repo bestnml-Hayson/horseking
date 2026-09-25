@@ -32,6 +32,7 @@ Write-Host ("Valid finished races with results: {0}" -f $finished.Count)
 
 # Aggregate dictionaries
 $jockeys = @{}
+$jockeyRides = @{}
 $trainers = @{}
 $horses = @{}
 $horseDist = @{}
@@ -106,6 +107,32 @@ foreach ($race in $finished) {
             $j.starts++
             if ($won) { $j.wins++ }
             if ($inq) { $j.q_count++ }
+            $jrList = GetOrAdd $jockeyRides $jok { [System.Collections.ArrayList]@() }
+            $venueFull = if ([string]$ri.venue -eq "ST") { "沙田" } elseif ([string]$ri.venue -eq "HV") { "跑馬地" } else { [string]$ri.venue }
+            $rideObj = [PSCustomObject]@{
+                race_date = [string]$date
+                race_number = $rn
+                venue = $venueFull
+                venue_code = [string]$ri.venue
+                race_id = [string]$ri.race_id
+                distance_m = $dist
+                track = [string]$ri.track
+                surface = [string]$ri.surface
+                class = [string]$ri.class
+                rating_range = [string]$ri.rating_range
+                horse_code = $hc
+                horse_name = $hname
+                draw = $(if ($h.PSObject.Properties["draw"] -and $h.draw) { [int]$h.draw } else { 0 })
+                weight = $(if ($h.PSObject.Properties["weight"] -and $h.weight) { [int]$h.weight } else { 0 })
+                rating = $(if ($h.PSObject.Properties["rating"] -and $h.rating) { [int]$h.rating } else { 0 })
+                finish = $(if ($finish -lt 99) { $finish } else { 0 })
+                won = [bool]$won
+                in_quinella = [bool]$inq
+                best_time_sec = $(if ($h.PSObject.Properties["best_time_sec"] -and $h.best_time_sec) { [double]$h.best_time_sec } else { 0.0 })
+                odds_win = $(if ($h.PSObject.Properties["odds_win"] -and $h.odds_win) { [double]$h.odds_win } else { 0.0 })
+                odds_place = $(if ($h.PSObject.Properties["odds_place"] -and $h.odds_place) { [double]$h.odds_place } else { 0.0 })
+            }
+            [void]$jrList.Add($rideObj)
         }
 
         # Trainer
@@ -152,7 +179,8 @@ foreach ($k in $jkeys) {
     $j = $jockeys[$k]
     $wr = if ($j.starts -gt 0) { [double]$j.wins / $j.starts } else { 0.0 }
     $qr = if ($j.starts -gt 0) { [double]$j.q_count / $j.starts } else { 0.0 }
-    $jockeys[$k] = [PSCustomObject]@{ starts=$j.starts; wins=$j.wins; q_count=$j.q_count; win_rate=[math]::Round($wr,6); q_rate=[math]::Round($qr,6) }
+    $jr = if ($jockeyRides.ContainsKey($k)) { @($jockeyRides[$k] | Sort-Object { $_.race_date }, { [int]$_.race_number } -Descending) } else { @() }
+    $jockeys[$k] = [PSCustomObject]@{ starts=$j.starts; wins=$j.wins; q_count=$j.q_count; win_rate=[math]::Round($wr,6); q_rate=[math]::Round($qr,6); rides=$jr }
 }
 
 $tkeys = @($trainers.Keys)

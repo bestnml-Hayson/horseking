@@ -13,17 +13,26 @@ $seenRid = @{}
 $files = Get-ChildItem $histDir -Filter "*.json" -ErrorAction SilentlyContinue |
     Where-Object { $_.Name -notlike "_*" } |
     Sort-Object Name
+$allRidGroups = @{}
 foreach ($f in $files) {
-    $skip = $false
     try {
         $raw = [IO.File]::ReadAllText($f.FullName, [Text.UTF8Encoding]::new($false))
         $m = [regex]::Match($raw, '"race_id"\s*:\s*"([^"]+)"')
         if ($m.Success) {
             $rid = $m.Groups[1].Value
-            if ($seenRid.ContainsKey($rid)) { $skip = $true } else { $seenRid[$rid] = $f.Name }
+            if (-not $allRidGroups.ContainsKey($rid)) { $allRidGroups[$rid] = @() }
+            $allRidGroups[$rid] += $f.Name
         }
     } catch {}
-    if (-not $skip) { $list.race_files += $f.Name }
+}
+foreach ($rid in $allRidGroups.Keys) {
+    $candidates = $allRidGroups[$rid]
+    $picked = $null
+    foreach ($c in $candidates) {
+        if ($c -match '_CURRENT\.json$') { $picked = $c; break }
+    }
+    if (-not $picked) { $picked = $candidates[0] }
+    $list.race_files += $picked
 }
 $list.total = $list.race_files.Count
 $json = $list | ConvertTo-Json -Depth 10

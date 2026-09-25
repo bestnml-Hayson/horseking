@@ -1,0 +1,25 @@
+# === Secrets 鍚?config 姘搁仩鍞斿ソ deploy ===
+_ngrok_token.txt
+_ngrok_basicauth.txt
+.env
+
+# === Logs + temp ===
+*.log
+*.tmp
+_tmp*
+_debug*
+
+# === 鍘熷 scraper / scheduler ps1锛孷ercel 鍙?deploy public/ 鍏跺鍞旀渻鐢ㄥ埌锛屼絾闃叉 ===
+*.ps1
+*.bat
+*.cmd
+
+# === 鍘熷 data/ 閮藉敂濂藉偝 (Vercel outputDirectory = public 鍏跺鑷嫊 filter锛宒ouble safety) ===
+data/
+scraper/
+pdf/
+
+# === PDF 鍘熷鎺掍綅鍗?(澶ぇ锛屽唶闇€瑕?deploy) ===
+public/data/references/*.pdf
+public/data/references/_debug*.html
+public/data/璩戒簨鏃ユ湡*.csv
