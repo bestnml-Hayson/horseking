@@ -403,7 +403,7 @@
         const venue = first.venue === 'HV' ? '跑馬地' : '沙田';
         const finishedN = ids.filter(function (id) { return DB.races[id].race_info.result_available; }).length;
         const pendingN = ids.length - finishedN;
-        const isToday = d === today || (ids.length && ids[0].indexOf('20260923') >= 0);
+        const isToday = d === today;
         const statusBadge = pendingN > 0
           ? '<span class="badge">⏳ ' + pendingN + ' 場待賽</span>'
           : '<span class="badge" style="background:rgba(59,130,246,0.15);color:#93c5fd;">✓ ' + finishedN + ' 場已完賽</span>';
@@ -625,22 +625,23 @@
           });
         }
         // Runtime post-fix: 人手 parse JSON 或舊版可能缺 last_3 (只係 last_6 填咗)
-        // 自動 split last_6 尾3段 → last_3，令 last3Badge 顯示 + AI scoring 有近績評分
+        // HKJC 近績方向：左邊=最近 1 仗，右邊=最舊第 6 仗。last_3 = 最近 3 仗 (last_6 前三段)
         // 同時修復 best_time_sec type/missing → 非 number/<=0 強制 sentinel 999
         if (r.horses && r.horses.length) {
           r.horses.forEach(function (h) {
-            const hasL3 = Array.isArray(h.last_3) && h.last_3.length === 3;
-            const noL6 = !h.last_6 || typeof h.last_6 !== 'string';
+            var hasL3 = Array.isArray(h.last_3) && h.last_3.length === 3;
+            var noL6 = !h.last_6 || typeof h.last_6 !== 'string';
             if (!hasL3 && !noL6) {
-              const m = h.last_6.match(/^(\d{1,2})\/(\d{1,2})\/(\d{1,2})\/(\d{1,2})\/(\d{1,2})\/(\d{1,2})$/);
+              var m = h.last_6.match(/^(\d{1,2})\/(\d{1,2})\/(\d{1,2})\/(\d{1,2})\/(\d{1,2})\/(\d{1,2})$/);
               if (m) {
-                h.last_3 = [Math.max(1, Math.min(14, parseInt(m[4], 10) || 14)),
-                            Math.max(1, Math.min(14, parseInt(m[5], 10) || 14)),
-                            Math.max(1, Math.min(14, parseInt(m[6], 10) || 14))];
+                // ★ 左邊=最近：m[1]=最近第1仗, m[2]=第2仗, m[3]=第3仗 (last_3 取最近 3 仗)
+                h.last_3 = [Math.max(1, Math.min(14, parseInt(m[1], 10) || 14)),
+                            Math.max(1, Math.min(14, parseInt(m[2], 10) || 14)),
+                            Math.max(1, Math.min(14, parseInt(m[3], 10) || 14))];
               } else {
-                const parts = h.last_6.split('/').map(function (p) { return parseInt(p, 10); }).filter(function (v) { return Number.isFinite(v) && v >= 1 && v <= 20; });
+                var parts = h.last_6.split('/').map(function (p) { return parseInt(p, 10); }).filter(function (v) { return Number.isFinite(v) && v >= 1 && v <= 20; });
                 if (parts.length >= 3) {
-                  h.last_3 = parts.slice(-3).map(function (v) { return Math.max(1, Math.min(14, v)); });
+                  h.last_3 = parts.slice(0, 3).map(function (v) { return Math.max(1, Math.min(14, v)); });
                 }
               }
             }
@@ -878,6 +879,35 @@
       const cls = (finish <= 3) ? 'good' : (finish <= 6 ? 'mid' : 'bad');
       return '<span class="' + cls + '">' + finish + '</span>';
     }).join('') + '</span>';
+  }
+  function last6Badge(h) {
+    // 完整 6 段近績徽章：左邊=最近 1 仗 (色深權重高)，右邊=最舊第 6 仗 (色淺)。h.last_6 優先，否則 h.last_3[] 放左邊
+    var segs = [];
+    var srcRaw = (h && typeof h.last_6 === 'string') ? h.last_6 : '';
+    if (srcRaw && /^\d{1,2}(\/\d{1,2}){5}$/.test(srcRaw)) {
+      segs = srcRaw.split('/').map(function (x) { return parseInt(x, 10) || 14; });
+    } else if (h && Array.isArray(h.last_3) && h.last_3.length) {
+      // 只有 last_3，pad 右邊 3 格空
+      segs = h.last_3.slice(0, 3).map(function (r) { return typeof r === 'number' ? r || 99 : (r && typeof r.finish === 'number' ? r.finish : 99); });
+      while (segs.length < 6) segs.push(null);
+    }
+    if (!segs.length) return '<span style="padding:2px 6px;border-radius:5px;background:var(--bg-card3);color:var(--text-dim);font-size:11px;">--</span>';
+    // 每格透明度 alpha 左 1.0 → 右 0.48 (最近最重視)
+    function clsFor(f, idx) {
+      if (f === null || f === undefined || f >= 99) return 'background:var(--bg-card3);color:var(--text-dim);';
+      var base = (f <= 3) ? '#22c55e' : (f <= 6 ? '#eab308' : (f <= 10 ? '#f97316' : '#ef4444'));
+      var textC = (f <= 10) ? '#0a0a0a' : '#fff7e0';
+      var alpha = Math.max(0.42, 1.0 - idx * 0.11);
+      return 'background:' + base + ';opacity:' + alpha.toFixed(2) + ';color:' + textC + ';font-weight:' + (idx === 0 ? '900' : (idx <= 2 ? '800' : '700')) + ';';
+    }
+    function lbl(f) {
+      if (f === null || f === undefined || f >= 99) return '·';
+      return '' + f;
+    }
+    return '<span class="last6" title="近績 6 仗：左邊=最近，右邊=最舊 (HKJC 排位慣例)">' +
+      segs.slice(0, 6).map(function (f, i) {
+        return '<span style="display:inline-block;min-width:20px;text-align:center;padding:1px 4px;margin:0 1px;border-radius:4px;font-size:11px;border:1px solid rgba(255,255,255,0.05);' + clsFor(f, i) + '">' + lbl(f) + '</span>';
+      }).join('') + '</span>';
   }
   function ccExpertBadge(h, small) {
     if (!h || typeof h.cc_expert_count !== 'number' || h.cc_expert_count < 3) return '';
@@ -1357,7 +1387,7 @@
     }
     const top4Html = analysis.top4_predictions.map(function (p) {
       const h = p.horse, s = h.scores, rank = p.rank;
-      const l3 = last3Badge(h.last_3);
+      const l3 = last6Badge(h);
       return '<div class="rank-card rank-' + rank + ' horse-click" data-number="' + h.number + '" data-name="' + h.name + '">' +
         '<div class="rank-medal">' + rank + '</div>' +
         '<div class="horse-num">#' + h.number + ' · ' + h.draw + '檔</div>' +
@@ -1541,7 +1571,7 @@
 
     const horsesHtml = '<div class="table-scroll" style="margin-top:4px;">' +
       '<table class="data-table" style="min-width:1020px;"><thead><tr>' +
-      '<th>排名</th><th>馬號</th><th>馬匹</th><th>檔</th><th>評分</th><th>體重</th><th>近績</th><th>獨贏</th>' +
+      '<th>排名</th><th>馬號</th><th>馬匹</th><th>檔</th><th>評分</th><th>體重</th><th>近績6</th><th>獨贏</th>' +
       '<th title="晨操狀態">操</th><th title="路程專長">路</th><th title="騎馬默契">契</th><th title="評分走勢/同班適應">勢</th>' +
       '<th>騎+</th><th>練+</th><th>AI總分</th>' +
       '</tr></thead><tbody>' +
@@ -1554,7 +1584,7 @@
         else if (h.ai_rank === 2) rpCls = 'top2';
         else if (h.ai_rank === 3) rpCls = 'top3';
         else if (h.ai_rank === 4) rpCls = 'top4';
-        const l3 = last3Badge(h.last_3);
+        const l3 = last6Badge(h);
         const twScore = s.trackwork || 0;
         const twTitle = aug.trackwork ? (aug.trackwork.detail || '') : '';
         const twCls = twScore >= 80 ? 'good' : (twScore >= 60 ? 'mid' : 'bad');
@@ -1824,7 +1854,7 @@
       const name = h.name || meta.name || code;
       const trainer = h.trainer || meta.trainer || '—';
       const classTag = h.class || meta.class || '—';
-      const last3Html = last3Badge(meta.last_3 || h.last_3);
+      const last3Html = last6Badge(h);
       let lastInfo = '';
       if (h.last_run && h.last_place) lastInfo = h.last_run + ' 第' + h.last_place + '名';
       else if (h.last_place != null && h.last_place !== '') lastInfo = '近第' + h.last_place + '名';

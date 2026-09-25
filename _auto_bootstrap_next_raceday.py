@@ -676,11 +676,11 @@ def _parse_racecard_page(html, date_slash, venue_code, race_number, import_url):
             jockey_clean = _strip_jockey_claim(enh["jockey_raw"])
         last6_val = enh.get("last_6") or hd.get("last_6", "")
         gear_val = enh.get("gear") or hd.get("gear", "")
-        # last_3 from last_6 最尾 3 個 (若 last_6 完整)
+        # last_3 from last_6 前 3 個 (左邊=最近 3 仗，符合 HKJC 近績閱讀方向：左新右舊)
         if re.match(r"^\d{1,2}(/\d{1,2}){5}$", str(last6_val)):
             try:
                 splits = [int(x) for x in str(last6_val).split("/")]
-                last3_fallback = [max(1, min(14, x)) for x in splits[-3:]]
+                last3_fallback = [max(1, min(14, x)) for x in splits[:3]]
             except Exception:
                 pass
         horse = OrderedDict([
