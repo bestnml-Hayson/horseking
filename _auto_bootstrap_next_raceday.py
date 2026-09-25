@@ -765,25 +765,48 @@ def _parse_racecard_page(html, date_slash, venue_code, race_number, import_url):
 def _write_current_for(race_obj):
     """
     ENHANCED overwrite behavior:
-      - 若文件不存在 → 全新寫入
-      - 若文件存在 → 保留舊動態欄位（odds_win/odds_place/finish/margin/run_time/result_available/
-        official_result/payouts/split_times/所有 cc_* 欄）
+      - 若有任何已存在文件與 race_id 匹配（不論文件名是否有 _CURRENT）→ 合併動態欄位 + 覆蓋原文件路徑
+      - 若文件不存在 → 全新寫入（用 _CURRENT.json 後綴）
+      - 保留舊動態欄位（odds_win/odds_place/finish/margin/run_time/result_available/
+        official_result/payouts/split_times/所有 cc_* 欄/trackwork_score/form_score/except_score/vet_score/...）
       - 強制覆蓋靜態排位欄位：horses / entries / name / jockey / trainer / draw / rating /
         weight / age / gear / last_6 / last_3 / best_time_sec / code / number /
         race_info.post_time / race_info.num_horses / race_info.class / distance_m / track /
         surface / going / rating_range / prize / meta.note / meta.import_from / meta.update_time
     """
     ri = race_obj["race_info"]
-    rid_parts = ri["race_id"].split("-")  # HV-YYYYMMDD-NN
+    rid = ri.get("race_id", "")
+    rid_parts = rid.split("-")  # HV-YYYYMMDD-NN
     padded = rid_parts[2] if len(rid_parts) >= 3 else f"{int(ri['race_number']):02d}"
     dist = int(ri.get("distance_m") or 0)
     cls_suf, _ = _cls_num_suffix(ri.get("class") or "")
-    fname = f"{rid_parts[0]}-{rid_parts[1]}-{padded}_race{int(ri['race_number'])}_{dist}m_{cls_suf}_CURRENT.json"
-    fpath = os.path.join(HIST_DIR, fname)
+    default_fname = f"{rid_parts[0]}-{rid_parts[1]}-{padded}_race{int(ri['race_number'])}_{dist}m_{cls_suf}_CURRENT.json"
     os.makedirs(HIST_DIR, exist_ok=True)
 
+    existing_path = None
+    try:
+        for fn in os.listdir(HIST_DIR):
+            if not fn.lower().endswith(".json") or fn.startswith("_"):
+                continue
+            fp = os.path.join(HIST_DIR, fn)
+            try:
+                with open(fp, "r", encoding="utf-8") as _ff:
+                    _tmp = json.load(_ff)
+                _ri = _tmp.get("race_info") or {}
+                if _ri.get("race_id") == rid:
+                    existing_path = fp
+                    break
+            except Exception:
+                continue
+    except Exception:
+        pass
+    fpath = existing_path if existing_path else os.path.join(HIST_DIR, default_fname)
+
     def _merge_dyn(old_horse, new_horse):
-        """Copy dynamic fields (odds/results/cc_*) from old into new horse."""
+        """Copy dynamic fields (odds/results/cc_*/supplement scores) from old into new horse.
+        Also PROTECT old core 16 static fields (code/draw/rating/weight/name/jockey/trainer/odds...) 
+        from being overwritten by bad parser output. Only accept new last_6/last_3/gear/best_time_sec.
+        """
         dyn_keys = [
             "odds_win", "odds_place", "finish", "margin", "run_time",
             "cc_expert_count", "cc_experts", "cc_expert_tips", "cc_gear_symbols", "cc_equipment",
@@ -791,6 +814,11 @@ def _write_current_for(race_obj):
             "cc_draw_oncc", "cc_weight_lbs_oncc", "cc_weight_change", "cc_body_weight_lbs",
             "cc_body_weight_change", "cc_rating_oncc", "cc_rating_change", "cc_age_oncc",
             "cc_trackwork_summary", "cc_trackwork_daily",
+            "trackwork_score", "trackwork_note",
+            "form_score", "form_note",
+            "except_score", "except_note",
+            "vet_score", "vet_note",
+            "report_score", "report_note",
         ]
         for k in dyn_keys:
             if k in old_horse:
@@ -802,13 +830,32 @@ def _write_current_for(race_obj):
                         new_horse[k] = old_horse[k]
                 except Exception:
                     pass
+        protect_keys = [
+            "code", "number", "name", "jockey", "trainer", "draw", "rating", "weight",
+            "odds_win", "odds_place",
+        ]
+        for k in protect_keys:
+            old_v = old_horse.get(k)
+            if old_v is None:
+                continue
+            if isinstance(old_v, str) and old_v == "":
+                continue
+            if isinstance(old_v, (int, float)) and not isinstance(old_v, bool) and old_v <= 0 and k not in ("number",):
+                continue
+            try:
+                new_horse[k] = old_v
+            except Exception:
+                pass
+        old_bt = old_horse.get("best_time_sec")
+        new_bt = new_horse.get("best_time_sec")
+        if (isinstance(old_bt, (int, float)) and 0 < old_bt < 900) and not (isinstance(new_bt, (int, float)) and 0 < new_bt < 900):
+            new_horse["best_time_sec"] = old_bt
         return new_horse
 
     if os.path.exists(fpath):
         try:
             with open(fpath, "r", encoding="utf-8") as f:
                 old = json.load(f, object_pairs_hook=OrderedDict)
-            # build number → old_horse map (horses & entries aliases fallback)
             old_horses_by_num = {}
             for h in (old.get("horses") or []) + (old.get("entries") or []):
                 try:
@@ -817,14 +864,11 @@ def _write_current_for(race_obj):
                         old_horses_by_num[n] = h
                 except Exception:
                     pass
-            # merge each new horse with old dynamic fields by number
             for h in race_obj["horses"]:
                 n = int(h.get("number"))
                 if n in old_horses_by_num:
                     _merge_dyn(old_horses_by_num[n], h)
-            # entries alias re-sync
             race_obj["entries"] = [OrderedDict(h.items()) for h in race_obj["horses"]]
-            # race_info dynamic keys preserve
             old_ri = old.get("race_info") or {}
             for k in ["result_available", "official_result", "split_times", "payouts"]:
                 if k in old_ri:
