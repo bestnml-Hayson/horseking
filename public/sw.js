@@ -3,8 +3,8 @@
    Cache Strategy: Network First (HTML / Data), Cache First (CSS/JS/Img)
    ========================================================== */
 
-const CACHE_VERSION = 'horse-ai-v2.0.14-vercelignore-public-data-whitelist';
-const DATA_CACHE = 'horse-ai-data-v2.0.14-vercelignore-public-data-whitelist';
+const CACHE_VERSION = 'horse-ai-v2.0.15-hard-reset-button';
+const DATA_CACHE = 'horse-ai-data-v2.0.15-hard-reset-button';
 const APP_SHELL = [
   '/',
   '/index.html',

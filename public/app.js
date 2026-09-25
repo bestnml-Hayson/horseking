@@ -1862,7 +1862,38 @@
     if ($('lastUpdate')) $('lastUpdate').textContent = new Date().toLocaleString();
     toast('✅ 完成', 'success');
   }
+  async function hardResetCacheAndReload() {
+    toast('🔄 強制重置快取…', 'warn');
+    try {
+      if (window.caches && typeof caches.keys === 'function') {
+        try {
+          const ks = await caches.keys();
+          for (let i = 0; i < ks.length; i++) { try { await caches.delete(ks[i]); } catch (_) {} }
+        } catch (_) {}
+      }
+      if ('serviceWorker' in navigator) {
+        try {
+          const regs = await navigator.serviceWorker.getRegistrations();
+          for (let i = 0; i < regs.length; i++) { try { await regs[i].unregister(); } catch (_) {} }
+        } catch (_) {}
+      }
+    } finally {
+      setTimeout(function () {
+        try {
+          if (window.location && typeof window.location.reload === 'function') {
+            window.location.reload(true);
+            return;
+          }
+        } catch (_) {}
+        window.location.href = window.location.pathname + '?_=' + Date.now();
+      }, 400);
+    }
+  }
+  window.hardResetCacheAndReload = hardResetCacheAndReload;
   function manualRefresh() {
+    if (window.location.search.indexOf('hardreset=1') >= 0) {
+      return hardResetCacheAndReload();
+    }
     loadAll();
   }
   async function triggerDataRefresh() {

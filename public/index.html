@@ -44,7 +44,7 @@
   </div>
   <button class="btn primary" onclick="openRacePicker()" style="margin-right:6px;padding:8px 16px;font-size:14px;font-weight:700;white-space:nowrap;margin-top:4px;display:inline-flex;align-items:center;gap:6px;"><span style="font-size:16px;">🎯</span> 選擇賽事</button>
   <div class="header-icon" onclick="triggerDataRefresh()" title="立即更新數據">🧹</div>
-  <div class="header-icon" onclick="manualRefresh()">🔄</div>
+  <div class="header-icon" onclick="if (typeof hardResetCacheAndReload === 'function'){ hardResetCacheAndReload(); } else if (typeof manualRefresh === 'function'){ manualRefresh(); }" title="一鍵強刷新：刪舊 SW + 清快取 + 重載（解決「0 場」）">🔄</div>
 </header>
 
 <!-- ========== 狀態列 ========== -->
@@ -238,8 +238,8 @@
   </div>
 </div>
 
-<script src="/ai.js?v=20260926-v2014-vercelignore-fix"></script>
-<script src="/app.js?v=20260926-v2014-vercelignore-fix"></script>
+<script src="/ai.js?v=20260926-v2015-hard-reset-cache"></script>
+<script src="/app.js?v=20260926-v2015-hard-reset-cache"></script>
 <script>
 (function () {
   var params = new URLSearchParams(window.location.search);
@@ -258,7 +258,7 @@
   }
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function () {
-      navigator.serviceWorker.register('/sw.js?v=20260926-v2014-vercelignore-fix', { scope: '/' })
+      navigator.serviceWorker.register('/sw.js?v=20260926-v2015-hard-reset-cache', { scope: '/' })
         .then(function () { /* ok */ })
         .catch(function () { /* fallback */ });
     });
