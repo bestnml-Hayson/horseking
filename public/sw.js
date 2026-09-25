@@ -3,8 +3,8 @@
    Cache Strategy: Network First (HTML / Data), Cache First (CSS/JS/Img)
    ========================================================== */
 
-const CACHE_VERSION = 'horse-ai-v2.0.2-skeleton-fix';
-const DATA_CACHE = 'horse-ai-data-v2.0.2-skeleton-fix';
+const CACHE_VERSION = 'horse-ai-v2.0.3-fmt999';
+const DATA_CACHE = 'horse-ai-data-v2.0.3-fmt999';
 const APP_SHELL = [
   '/',
   '/index.html',

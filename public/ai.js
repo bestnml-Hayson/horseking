@@ -607,11 +607,26 @@
             }
             return h;
         });
+        const realOddsList = allClean.filter(function (h) { return h && h.odds_win < 999; });
         const sortedByOdds = allClean.slice().sort(function (a, b) { return (a.odds_win || 999) - (b.odds_win || 999); });
-        const hottest = sortedByOdds[0];
+        const hottest = realOddsList.length > 0 ? realOddsList.sort(function (a, b) { return a.odds_win - b.odds_win; })[0] : null;
+        const hasRealOdds = realOddsList.length > 0;
+
+        function fmtOdds(o) {
+            if (o == null || typeof o !== 'number' || o >= 999 || o <= 0) return '--';
+            return (Math.round(o * 10) / 10).toFixed(1) + 'x';
+        }
+        function fmtTimeSec(t) {
+            if (t == null || typeof t !== 'number' || !isFinite(t) || t >= 999 || t <= 0) return '--';
+            var m = Math.floor(t / 60);
+            var s = (t - m * 60).toFixed(2);
+            if (m > 0) return m + 'm' + (s.length < 5 ? '0' : '') + s + 's';
+            return parseFloat(s).toFixed(2) + 's';
+        }
+        function fmtWinName(h) { if (!h) return ''; return '#' + (h.number || '?') + ' ' + (h.name || ''); }
 
         const concerns = [];
-        if (hottest && hottest.code !== (mainPick && mainPick.code)) {
+        if (hottest && hasRealOdds && hottest.code !== (mainPick && mainPick.code)) {
             const last3 = hottest.last_3 || [];
             function l3Finish(r) {
                 if (typeof r === 'number') return r || 99;
@@ -619,50 +634,50 @@
                 return 99;
             }
             const good = last3.reduce(function (n, r) { return n + (l3Finish(r) <= 3 ? 1 : 0); }, 0);
-            if (good < 2) concerns.push('近績三仗僅 ' + good + ' 次入三甲，狀態不穩');
+            if (good < 2 && last3.length > 0) concerns.push('近績三仗僅 ' + good + ' 次入三甲，狀態不穩');
             if ((hottest.draw || 0) > 6) concerns.push('檔位 ' + hottest.draw + ' 偏外，短途賽疊罰較重');
-            if ((hottest.weight || 0) < 1100) concerns.push('體重 ' + hottest.weight + ' 磅偏輕，質素存疑');
-            if ((hottest.best_time_sec || 999) > 58.0) concerns.push('最佳時間 ' + hottest.best_time_sec + ' 秒僅屬中游，爆頭難度高');
-            if ((hottest.scores && hottest.scores.trackwork) < 60) concerns.push('晨操狀態一般');
-            if ((hottest.scores && hottest.scores.distance) < 55) concerns.push('路程並非專長');
+            if ((hottest.best_time_sec || 999) > 58.0 && (hottest.best_time_sec && hottest.best_time_sec < 999)) concerns.push('最佳時間 ' + fmtTimeSec(hottest.best_time_sec) + ' 僅屬中游，爆頭難度高');
+            if ((hottest.scores && hottest.scores.trackwork) < 60 && hottest.scores) concerns.push('晨操狀態一般');
+            if ((hottest.scores && hottest.scores.distance) < 55 && hottest.scores) concerns.push('路程並非專長');
         }
-        if (concerns.length === 0) concerns.push('大熱門整體條件不俗，但值博率因低賠率而下降');
+        if (hasRealOdds && concerns.length === 0 && hottest) concerns.push('大熱門整體條件不俗，但值博率因低賠率而下降');
 
         function winToPlaceOdds(w, placeRank) {
-            if (!w || w <= 1) return 1.1;
+            if (!w || w >= 999 || w <= 1) return null;
             const base = (placeRank === 1) ? 1.6 : (placeRank === 2 ? 2.2 : 2.8);
             return Math.max(1.1, Math.round((1 + (w - 1) / base) * 10) / 10);
         }
         function quinellaOdds(a, b) {
-            if (!a || !b || a <= 1 || b <= 1) return 3;
+            if (!a || !b || a >= 999 || b >= 999 || a <= 1 || b <= 1) return null;
             const raw = (a * b) / (a + b) * 1.35;
             return Math.max(3, Math.round(raw * 10) / 10);
         }
         function trioOdds(a, b, c) {
-            if (!a || !b || !c) return 30;
+            if (!a || !b || !c || a >= 999 || b >= 999 || c >= 999) return null;
             const raw = (a * b * c) / Math.max(6, (a + b + c)) * 2.6;
             return Math.max(15, Math.round(raw));
         }
         function first4Odds(a, b, c, d) {
-            if (!a || !b || !c || !d) return 200;
+            if (!a || !b || !c || !d || a >= 999 || b >= 999 || c >= 999 || d >= 999) return null;
             const raw = (a * b * c * d) / Math.max(24, (a + b + c + d)) * 6;
             return Math.max(60, Math.round(raw));
         }
         function formatReturn(mult, stake) {
-            if (!mult || mult <= 1) return '$' + stake + ' 注';
+            if (mult == null || typeof mult !== 'number' || mult >= 999 || mult <= 0) return '賠率待更新';
+            if (mult <= 1) return '$' + stake + ' 注';
             const profit = Math.round((mult - 1) * stake);
             return '回本 +$' + profit + '（' + mult.toFixed(1) + 'x）';
         }
 
         const winPicks = [{
-            code: mainPick.code, number: mainPick.number, name: mainPick.name, odds: mainPick.odds_win,
+            code: mainPick.code, number: mainPick.number, name: mainPick.name, odds: mainPick.odds_win, oddsDisplay: fmtOdds(mainPick.odds_win),
             reason: coreAdvantage(mainPick, raceInfo),
             detail: detailedAiBreakdown(mainPick, raceInfo),
             returnText: formatReturn(mainPick.odds_win, 100)
         }];
-        if (secondPick && secondPick.odds_win <= 15) {
+        if (secondPick && secondPick.odds_win < 999 && secondPick.odds_win <= 15) {
             winPicks.push({
-                code: secondPick.code, number: secondPick.number, name: secondPick.name, odds: secondPick.odds_win,
+                code: secondPick.code, number: secondPick.number, name: secondPick.name, odds: secondPick.odds_win, oddsDisplay: fmtOdds(secondPick.odds_win),
                 reason: coreAdvantage(secondPick, raceInfo),
                 detail: detailedAiBreakdown(secondPick, raceInfo),
                 returnText: formatReturn(secondPick.odds_win, 50)
@@ -675,7 +690,7 @@
             if (!h || !h.code) return;
             const po = winToPlaceOdds(h.odds_win, i + 1);
             placePicks.push({
-                code: h.code, number: h.number, name: h.name, odds: h.odds_win, odds_place: po, rank: (i + 1),
+                code: h.code, number: h.number, name: h.name, odds: h.odds_win, odds_place: po, oddsDisplay: fmtOdds(po), rank: (i + 1),
                 reason: coreAdvantage(h, raceInfo),
                 detail: detailedAiBreakdown(h, raceInfo),
                 returnText: formatReturn(po, 50)
@@ -687,18 +702,22 @@
                 a_code: mainPick.code, a_number: mainPick.number, a_name: mainPick.name, a_horse: mainPick,
                 b_code: secondPick.code, b_number: secondPick.number, b_name: secondPick.name, b_horse: secondPick,
                 type: '核心 Q 超值之選'
-            },
-            {
+            }
+        ];
+        if (hottest && hottest.code && hottest.code !== mainPick.code) {
+            qCombosInitial.push({
                 a_code: mainPick.code, a_number: mainPick.number, a_name: mainPick.name, a_horse: mainPick,
                 b_code: hottest.code, b_number: hottest.number, b_name: hottest.name, b_horse: hottest,
                 type: '穩健 Q 大熱保護'
-            },
-            {
-                a_code: secondPick && secondPick.code, a_number: secondPick && secondPick.number, a_name: secondPick && secondPick.name, a_horse: secondPick,
-                b_code: thirdPick && thirdPick.code, b_number: thirdPick && thirdPick.number, b_name: thirdPick && thirdPick.name, b_horse: thirdPick,
+            });
+        }
+        if (secondPick && thirdPick && secondPick.code && thirdPick.code) {
+            qCombosInitial.push({
+                a_code: secondPick.code, a_number: secondPick.number, a_name: secondPick.name, a_horse: secondPick,
+                b_code: thirdPick.code, b_number: thirdPick.number, b_name: thirdPick.name, b_horse: thirdPick,
                 type: '進取 Q 高回報'
-            }
-        ];
+            });
+        }
         const seenPairs = {};
         const qCombos = [];
         const pickBackups = [secondPick, thirdPick, fourthPick, sortedByOdds[1], sortedByOdds[2]].filter(function (x) { return x && x.code; });
@@ -717,8 +736,8 @@
                     seenPairs[key] = true;
                     const aH = q.a_horse || allRanked.find(function (x) { return x.code === q.a_code; });
                     const bH = b_horse || allRanked.find(function (x) { return x.code === b_code; });
-                    const ao = aH ? aH.odds_win : 5;
-                    const bo = bH ? bH.odds_win : 5;
+                    const ao = aH ? aH.odds_win : 999;
+                    const bo = bH ? bH.odds_win : 999;
                     const qo = quinellaOdds(ao, bo);
                     const a_reason = aH ? coreAdvantage(aH, raceInfo) : '';
                     const b_reason = bH ? coreAdvantage(bH, raceInfo) : '';
@@ -727,7 +746,7 @@
                     qCombos.push({
                         a: q.a_code, a_number: q.a_number, a_name: q.a_name, a_reason: a_reason, a_detail: a_detail,
                         b: b_code, b_number: b_number, b_name: b_name, b_reason: b_reason, b_detail: b_detail,
-                        type: q.type, odds_quinella: qo,
+                        type: q.type, odds_quinella: qo, oddsDisplay: fmtOdds(qo),
                         returnText: formatReturn(qo, 50)
                     });
                 }
@@ -742,12 +761,12 @@
             if (qpSeen[k]) return;
             qpSeen[k] = true;
             const qo = quinellaOdds(a.odds_win, b.odds_win);
-            const qpo = Math.max(2.5, Math.round(qo / 1.8 * 10) / 10);
+            const qpo = qo ? Math.max(2.5, Math.round(qo / 1.8 * 10) / 10) : null;
             qPlaceCombos.push({
                 a: a.code, a_number: a.number, a_name: a.name, a_reason: coreAdvantage(a, raceInfo), a_detail: detailedAiBreakdown(a, raceInfo),
                 b: b.code, b_number: b.number, b_name: b.name, b_reason: coreAdvantage(b, raceInfo), b_detail: detailedAiBreakdown(b, raceInfo),
                 type: typeTag,
-                odds_qplace: qpo,
+                odds_qplace: qpo, oddsDisplay: fmtOdds(qpo),
                 returnText: formatReturn(qpo, 40)
             });
         }
@@ -758,52 +777,59 @@
         const tripleLegs = [secondPick, thirdPick, fourthPick].filter(function (x) {
             return x && x.code && x.code !== mainPick.code;
         }).slice(0, 3);
+        const tripleEstOdds = trioOdds(mainPick.odds_win,
+            (tripleLegs[0] ? tripleLegs[0].odds_win : 999),
+            (tripleLegs[1] ? tripleLegs[1].odds_win : 999));
         const tripleChase = {
-            banker: { code: mainPick.code, number: mainPick.number, name: mainPick.name, odds: mainPick.odds_win,
+            banker: { code: mainPick.code, number: mainPick.number, name: mainPick.name, odds: mainPick.odds_win, oddsDisplay: fmtOdds(mainPick.odds_win),
                 reason: coreAdvantage(mainPick, raceInfo), detail: detailedAiBreakdown(mainPick, raceInfo) },
             legs: tripleLegs.map(function (x) { return {
-                code: x.code, number: x.number, name: x.name, odds: x.odds_win,
+                code: x.code, number: x.number, name: x.name, odds: x.odds_win, oddsDisplay: fmtOdds(x.odds_win),
                 reason: coreAdvantage(x, raceInfo), detail: detailedAiBreakdown(x, raceInfo)
             }; }),
-            estimated_odds: trioOdds(mainPick.odds_win,
-                (tripleLegs[0] ? tripleLegs[0].odds_win : 5),
-                (tripleLegs[1] ? tripleLegs[1].odds_win : 7)),
+            estimated_odds: tripleEstOdds,
+            oddsDisplay: fmtOdds(tripleEstOdds),
             returnText: ''
         };
         const trioStake = 10 * Math.max(1, tripleLegs.length);
         tripleChase.stake_text = '$10 × ' + tripleLegs.length + ' 組 = $' + trioStake;
-        tripleChase.returnText = formatReturn(tripleChase.estimated_odds, trioStake);
+        tripleChase.returnText = formatReturn(tripleEstOdds, trioStake);
 
         const fourLegs = [secondPick, thirdPick, fourthPick, sortedByOdds[2]].filter(function (x) {
             return x && x.code && x.code !== mainPick.code;
         }).slice(0, 4);
+        const fourEstOdds = first4Odds(mainPick.odds_win,
+            (fourLegs[0] ? fourLegs[0].odds_win : 999),
+            (fourLegs[1] ? fourLegs[1].odds_win : 999),
+            (fourLegs[2] ? fourLegs[2].odds_win : 999));
         const fourChase = {
-            banker: { code: mainPick.code, number: mainPick.number, name: mainPick.name,
+            banker: { code: mainPick.code, number: mainPick.number, name: mainPick.name, oddsDisplay: fmtOdds(mainPick.odds_win),
                 reason: coreAdvantage(mainPick, raceInfo), detail: detailedAiBreakdown(mainPick, raceInfo) },
             legs: fourLegs.map(function (x) { return {
-                code: x.code, number: x.number, name: x.name,
+                code: x.code, number: x.number, name: x.name, oddsDisplay: fmtOdds(x.odds_win),
                 reason: coreAdvantage(x, raceInfo), detail: detailedAiBreakdown(x, raceInfo)
             }; }),
-            estimated_odds: first4Odds(mainPick.odds_win,
-                (fourLegs[0] ? fourLegs[0].odds_win : 5),
-                (fourLegs[1] ? fourLegs[1].odds_win : 7),
-                (fourLegs[2] ? fourLegs[2].odds_win : 10))
+            estimated_odds: fourEstOdds,
+            oddsDisplay: fmtOdds(fourEstOdds)
         };
         const f4Stake = 5 * Math.max(1, (fourLegs.length * (fourLegs.length - 1)) / 2);
         fourChase.stake_text = '膽拖 ' + fourLegs.length + ' 腳 × $5 注，約 $' + Math.round(f4Stake);
-        fourChase.returnText = formatReturn(fourChase.estimated_odds, Math.round(f4Stake));
+        fourChase.returnText = formatReturn(fourEstOdds, Math.round(f4Stake));
 
         const coldBets = allRanked.filter(function (h) {
+            if (!h || h.odds_win >= 999) return false;
             const sc = h.scores || {};
-            return h.odds_win >= 15 && ((h.best_time_sec || 999) <= 58.0 || (sc.trackwork >= 75) || (sc.distance >= 75));
+            const goodBT = (h.best_time_sec && h.best_time_sec < 999 && h.best_time_sec <= 58.0);
+            return h.odds_win >= 15 && (goodBT || (sc.trackwork >= 75) || (sc.distance >= 75));
         }).slice(0, 2).map(function (c) {
             const sc = c.scores || {};
             let pot = '';
             if (sc.trackwork >= 75 && c.aug && c.aug.trackwork) pot = '晨操 ' + c.aug.trackwork.detail;
             else if (sc.distance >= 75 && c.aug && c.aug.distance) pot = c.aug.distance.detail;
-            else pot = '最佳時間 ' + c.best_time_sec + ' 秒屬頂尖水準';
+            else if (c.best_time_sec && c.best_time_sec < 999) pot = '最佳時間 ' + fmtTimeSec(c.best_time_sec) + ' 屬頂尖水準';
+            else pot = '晨操 + 路程評分不俗，值博率高';
             return {
-                code: c.code, number: c.number, name: c.name, odds: c.odds_win,
+                code: c.code, number: c.number, name: c.name, odds: c.odds_win, oddsDisplay: fmtOdds(c.odds_win),
                 odds_place_est: winToPlaceOdds(c.odds_win, 3),
                 reason: coreAdvantage(c, raceInfo),
                 detail: detailedAiBreakdown(c, raceInfo),
@@ -817,8 +843,18 @@
         const budgetPlan = [].filter(function (x) { return false; });
         const totalBudget = 0;
 
+        const hotObj = { code: null, number: null, name: null, odds: null, concerns: [], available: false };
+        if (hottest && hottest.code && hasRealOdds) {
+            hotObj.code = hottest.code;
+            hotObj.number = hottest.number;
+            hotObj.name = hottest.name;
+            hotObj.odds = hottest.odds_win;
+            hotObj.oddsDisplay = fmtOdds(hottest.odds_win);
+            hotObj.concerns = concerns;
+            hotObj.available = true;
+        }
         return {
-            overpriced_hot: { code: hottest.code, number: hottest.number, name: hottest.name, odds: hottest.odds_win, concerns: concerns },
+            overpriced_hot: hotObj,
             win_picks: winPicks,
             place_picks: placePicks,
             q_combos: qCombos,
@@ -827,7 +863,8 @@
             first4_chase: fourChase,
             cold_bets: coldBets,
             budget_plan: budgetPlan,
-            total_budget: totalBudget
+            total_budget: totalBudget,
+            has_real_odds: hasRealOdds
         };
     }
 

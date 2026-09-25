@@ -146,10 +146,10 @@
       { k: '體重', v: (h.weight || '-') + (h.weight ? ' 磅' : '') },
       { k: '騎師', v: h.jockey || '-' },
       { k: '練馬師', v: h.trainer || '-' },
-      { k: '最佳時間', v: (h.best_time_sec && h.best_time_sec > 0) ? (h.best_time_sec + 's') : '-' },
+      { k: '最佳時間', v: (h.best_time_sec && typeof h.best_time_sec === 'number' && h.best_time_sec < 999 && h.best_time_sec > 0) ? h.best_time_sec + 's' : '--' },
       { k: '檔位', v: (h.draw || '?') + ' 檔' },
-      { k: '獨贏賠率', v: (h.odds_win > 0 ? h.odds_win : '-') + 'x' },
-      { k: '位置賠率', v: (h.odds_place > 0 ? h.odds_place : '-') + 'x' }
+      { k: '獨贏賠率', v: (typeof h.odds_win === 'number' && h.odds_win > 0 && h.odds_win < 999) ? (Math.round(h.odds_win * 10) / 10).toFixed(1) + 'x' : '--' },
+      { k: '位置賠率', v: (typeof h.odds_place === 'number' && h.odds_place > 0 && h.odds_place < 999) ? (Math.round(h.odds_place * 10) / 10).toFixed(1) + 'x' : '--' }
     ];
     const basicHtml = '<div class="hd-grid">' + basic.map(function (c) {
       return '<div class="cell"><span class="k">' + c.k + '</span><span class="v">' + c.v + '</span></div>';
@@ -1295,6 +1295,21 @@
         '<span class="pace-score">' + b.score + '</span></div>';
     }).join('') || '<div class="pace-desc">—</div>';
 
+    function fmtOddsUI(o) {
+      if (o == null || typeof o !== 'number' || !isFinite(o) || o >= 999 || o <= 0) return '--';
+      return (Math.round(o * 10) / 10).toFixed(1) + 'x';
+    }
+    function fmtTimeUI(t) {
+      if (t == null || typeof t !== 'number' || !isFinite(t) || t >= 999 || t <= 0) return '--';
+      var m = Math.floor(t / 60);
+      var s = (t - m * 60).toFixed(2);
+      if (m > 0) return m + 'm' + (s.length < 5 ? '0' : '') + s + 's';
+      return parseFloat(s).toFixed(2) + 's';
+    }
+    function fmtOddsRawUI(o) {
+      if (o == null || typeof o !== 'number' || !isFinite(o) || o >= 999 || o <= 0) return '--';
+      return String(o);
+    }
     const top4Html = analysis.top4_predictions.map(function (p) {
       const h = p.horse, s = h.scores, rank = p.rank;
       const l3 = last3Badge(h.last_3);
@@ -1304,8 +1319,8 @@
         '<div class="horse-name">#' + h.number + ' ' + (h.name || '') + ccExpertBadge(h) + '</div>' +
         '<div class="rank-stats">' +
         '<div class="stat"><div class="label">評分</div><div class="val">' + h.rating + '</div></div>' +
-        '<div class="stat"><div class="label">最佳</div><div class="val">' + h.best_time_sec + 's</div></div>' +
-        '<div class="stat"><div class="label">獨贏</div><div class="val">' + h.odds_win + 'x</div></div>' +
+        '<div class="stat"><div class="label">最佳</div><div class="val">' + fmtTimeUI(h.best_time_sec) + '</div></div>' +
+        '<div class="stat"><div class="label">獨贏</div><div class="val">' + fmtOddsUI(h.odds_win) + '</div></div>' +
         '</div>' +
         '<div style="margin-bottom:6px;">' + l3 + '</div>' +
         '<div class="ai-score-label"><span>AI 分</span><b>' + s.total.toFixed(1) + '</b></div>' +
@@ -1317,9 +1332,9 @@
 
     const bet = analysis.betting_strategy;
     const hot = bet.overpriced_hot;
-    const hotWarnHtml = hot && hot.name ? (
+    const hotWarnHtml = (hot && hot.available === true && hot.code) ? (
       '<div class="hot-warn">' +
-        '<div class="warn-title">⚠️ 過熱：#' + (hot.number || '') + ' ' + hot.name + ' <small style="font-weight:400;">賠率 ' + hot.odds + 'x</small></div>' +
+        '<div class="warn-title">⚠️ 過熱：#' + (hot.number || '') + ' ' + hot.name + ' <small style="font-weight:400;">賠率 ' + (hot.oddsDisplay || fmtOddsUI(hot.odds)) + '</small></div>' +
         '<ul>' + (hot.concerns || []).map(function (c) { return '<li>' + c + '</li>'; }).join('') + '</ul>' +
       '</div>') : '';
 
@@ -1337,7 +1352,7 @@
     const winCard = '<div class="bet-card"><h4>🎯 獨贏</h4><div class="content">' +
       (bet.win_picks || []).map(function (w) {
         return '<div style="margin-bottom:10px;padding:6px 0;border-bottom:1px dashed rgba(255,255,255,0.06);">' +
-          '<div style="display:flex;align-items:center;gap:6px;"><b class="odds" style="font-size:16px;">' + w.odds + 'x</b> ' +
+          '<div style="display:flex;align-items:center;gap:6px;"><b class="odds" style="font-size:16px;">' + (w.oddsDisplay || fmtOddsUI(w.odds)) + '</b> ' +
           '<b style="font-size:14px;">#' + w.number + ' ' + w.name + '</b></div>' +
           '<div style="color:var(--text-dim);font-size:12px;margin-top:3px;">🧠 ' + w.reason + '</div>' +
           betReturnTag(w.returnText) +
@@ -1350,7 +1365,7 @@
           '<div style="display:flex;align-items:center;gap:6px;">' +
           '<span style="display:inline-block;min-width:22px;height:22px;line-height:22px;border-radius:50%;background:linear-gradient(135deg,#1e3a5f,#2f6fbf);color:#fff;font-weight:900;font-size:11px;text-align:center;">#' + p.rank + '</span>' +
           '<b style="font-size:14px;">#' + p.number + ' ' + p.name + '</b>' +
-          '<span style="margin-left:auto;color:#9ecbff;font-weight:800;">位置 ' + p.odds_place + 'x</span>' +
+          '<span style="margin-left:auto;color:#9ecbff;font-weight:800;">位置 ' + (p.oddsDisplay || fmtOddsUI(p.odds_place)) + '</span>' +
           '</div>' +
           '<div style="color:var(--text-dim);font-size:12px;margin-top:3px;">🧠 ' + p.reason + '</div>' +
           betReturnTag(p.returnText) +
@@ -1366,7 +1381,7 @@
           '<div style="margin-top:4px;display:flex;align-items:center;gap:6px;">' +
           '<b style="color:var(--gold);">Q</b>' +
           '<b style="flex:1;">#' + q.a_number + ' ' + (q.a_name || q.a) + ' × #' + q.b_number + ' ' + (q.b_name || q.b) + '</b>' +
-          (q.odds_quinella ? '<span style="color:#ffd27a;font-weight:800;">~' + q.odds_quinella + 'x</span>' : '') +
+          '<span style="color:#ffd27a;font-weight:800;">~' + (q.oddsDisplay || fmtOddsUI(q.odds_quinella)) + '</span>' +
           '</div>' +
           betReturnTag(q.returnText) +
           '<div style="margin-top:4px;padding:4px 0;border-left:2px solid rgba(255,210,122,0.35);padding-left:8px;">' +
@@ -1386,7 +1401,7 @@
           '<div style="margin-top:4px;display:flex;align-items:center;gap:6px;">' +
           '<b style="color:#7ee0a8;">QPl</b>' +
           '<b style="flex:1;">#' + q.a_number + ' ' + (q.a_name || q.a) + ' × #' + q.b_number + ' ' + (q.b_name || q.b) + '</b>' +
-          (q.odds_qplace ? '<span style="color:#a8f0c8;font-weight:800;">~' + q.odds_qplace + 'x</span>' : '') +
+          '<span style="color:#a8f0c8;font-weight:800;">~' + (q.oddsDisplay || fmtOddsUI(q.odds_qplace)) + '</span>' +
           '</div>' +
           betReturnTag(q.returnText) +
           '<div style="margin-top:4px;padding:4px 0;border-left:2px solid rgba(126,224,168,0.35);padding-left:8px;">' +
@@ -1409,7 +1424,7 @@
           '<div style="display:grid;grid-template-columns:22px 1fr auto;gap:6px;align-items:center;">' +
           '<span style="display:inline-block;width:22px;height:22px;line-height:22px;border-radius:5px;background:linear-gradient(135deg,#3a1e5f,#7a40d0);color:#fff;font-weight:900;font-size:11px;text-align:center;">T' + (i + 2) + '</span>' +
           '<b>#' + l.number + ' ' + l.name + '</b>' +
-          '<span style="font-size:11px;color:var(--text-dim);">' + l.odds + 'x</span>' +
+          '<span style="font-size:11px;color:var(--text-dim);">' + (l.oddsDisplay || fmtOddsUI(l.odds)) + '</span>' +
           '</div>' +
           aiDetailBlock(l.detail) +
           '</div>';
@@ -1427,7 +1442,7 @@
         '<div style="margin-top:8px;padding:5px 8px;border-radius:5px;background:rgba(255,255,255,0.03);font-size:11px;color:var(--text-dim);">' +
         '💡 玩法：膽 #1 拖 ' + legs.length + ' 腳，任 3 匹入三甲（順序不限）即中。<br>' +
         (t.stake_text ? ('注碼：' + t.stake_text + '<br>') : '') +
-        '預估賠率：<b style="color:var(--gold);">~' + t.estimated_odds + 'x</b>' +
+        '預估賠率：<b style="color:var(--gold);">~' + (t.oddsDisplay || fmtOddsUI(t.estimated_odds)) + '</b>' +
         betReturnTag(t.returnText).replace(/^<div/, '<div style="margin-left:0;margin-top:6px;') +
         '</div></div></div>';
     })();
@@ -1457,7 +1472,7 @@
         '<div style="padding:5px 8px;border-radius:5px;background:rgba(255,255,255,0.03);font-size:11px;color:var(--text-dim);margin-top:8px;">' +
         '💡 玩法：膽 #1 拖 ' + legs.length + ' 腳，須中前四名（位置不限）。<br>' +
         (f.stake_text ? ('注碼：' + f.stake_text + '<br>') : '') +
-        '預估賠率：<b style="color:#9ecbff;">~' + f.estimated_odds + 'x</b>' +
+        '預估賠率：<b style="color:#9ecbff;">~' + (f.oddsDisplay || fmtOddsUI(f.estimated_odds)) + '</b>' +
         betReturnTag(f.returnText).replace(/^<div/, '<div style="margin-left:0;margin-top:6px;') +
         '</div></div></div>';
     })();
@@ -1467,14 +1482,14 @@
         return '<div style="margin-bottom:10px;padding:6px 0;border-bottom:1px dashed rgba(255,255,255,0.06);">' +
           '<div style="display:flex;align-items:center;gap:6px;">' +
           '<span class="bet-tag cold">冷門</span>' +
-          '<b class="odds cold" style="font-size:16px;margin-left:4px;">' + c.odds + 'x</b> ' +
+          '<b class="odds cold" style="font-size:16px;margin-left:4px;">' + (c.oddsDisplay || fmtOddsUI(c.odds)) + '</b> ' +
           '<b style="font-size:14px;">#' + c.number + ' ' + c.name + '</b>' +
           '</div>' +
-          (c.odds_place_est ? '<div style="font-size:11px;color:#9ecbff;margin-top:2px;">位置 ~' + c.odds_place_est + 'x（保底玩法）</div>' : '') +
+          (c.odds_place_est && c.odds_place_est < 999 ? '<div style="font-size:11px;color:#9ecbff;margin-top:2px;">位置 ~' + c.odds_place_est + 'x（保底玩法）</div>' : '') +
           '<div style="color:var(--text-dim);font-size:12px;margin-top:3px;">🎯 ' + c.potential + '</div>' +
           aiDetailBlock(c.detail) +
           betReturnTag(c.returnText) + '</div>';
-      }).join('') : '<div style="color:var(--text-dim);font-size:12px;">暫無明顯冷馬</div>') +
+      }).join('') : '<div style="color:var(--text-dim);font-size:12px;">暫無明顯冷馬（需真實賠率數據）</div>') +
       '</div></div>';
 
     const budgetHtml = '';
@@ -1516,7 +1531,7 @@
           '<td>' + h.rating + '</td>' +
           '<td>' + h.weight + '</td>' +
           '<td>' + l3 + '</td>' +
-          '<td class="odds ' + oddsCls + '">' + h.odds_win + 'x</td>' +
+          '<td class="odds ' + oddsCls + '">' + fmtOddsUI(h.odds_win) + '</td>' +
           '<td title="' + twTitle + '" style="cursor:help;"><span class="mini-pill ' + twCls + '">' + Math.round(twScore) + '</span></td>' +
           '<td title="' + distTitle + '" style="cursor:help;"><span class="mini-pill ' + distCls + '">' + Math.round(distScore) + '</span></td>' +
           '<td title="' + synTitle + '" style="cursor:help;"><span class="mini-pill ' + synCls + '">' + Math.round(synScore) + '</span></td>' +
