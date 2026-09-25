@@ -1,4 +1,4 @@
-{
+﻿{
   "meta": {
     "import_from": "https://racing.hkjc.com/zh-hk/local/information/racecard?racedate=2026/09/27&Racecourse=ST&RaceNo=7",
     "import_time": "2026-09-25 03:42:50",
@@ -21,7 +21,7 @@
     "rating_range": "80-60",
     "prize": "HK$1,330,000",
     "going": "好地",
-    "post_time": "16:00",
+    "post_time": "15:45",
     "result_available": false,
     "num_horses": 12,
     "official_result": [],

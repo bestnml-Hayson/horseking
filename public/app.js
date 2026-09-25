@@ -937,7 +937,7 @@
         '<div class="count">總共 ' + dates.length + ' 個賽馬日 · ' + DB.raceIndex.length + ' 場賽事</div></div>' +
         '<div style="color:var(--gold);font-size:18px;">›</div></div>';
       const todayCard = '<div class="schedule-item">' +
-        '<div><div class="date">' + todayKey + ' ' + venue + ' · 今日</div>' +
+        '<div><div class="date">' + todayKey + ' ' + venue + (todayKey === today ? ' · 今日' : '') + '</div>' +
         '<div class="count">' + todayIds.length + ' 場 · 已完賽 ' + finishedN + ' / 待賽 ' + (todayIds.length - finishedN) + '</div></div>' +
         '<button class="btn primary" style="padding:6px 12px;font-size:12px;" onclick="selectRaceDate(\'' + todayKey + '\');openRacePicker();">選擇場次 ›</button>' +
         '</div>';
