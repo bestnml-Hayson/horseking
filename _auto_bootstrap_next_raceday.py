@@ -294,12 +294,34 @@ def _parse_racecard_page(html, date_slash, venue_code, race_number, import_url):
     text_lines = [ln.rstrip() for ln in raw_text.splitlines()]
 
     # precise post_time from innerText (better than regex on HTML)
+    ALL_POSTTIME_HITS = []
     for ln in text_lines:
-        mpt = re.search(r'(?:開跑時間|賽事時間|Post\s*Time)\s*[:：]?\s*(\d{1,2}:\d{2})', ln, re.IGNORECASE)
+        mpt = re.search(r'(?:開跑時間|賽事時間|Post\s*Time|賽事開跑|發閘|開賽時間|第一場)\s*[:：]?\s*(\d{1,2}:\d{2})', ln, re.IGNORECASE)
         if mpt:
-            ri["post_time"] = mpt.group(1)
-            break
-    else:
+            ALL_POSTTIME_HITS.append(mpt.group(1))
+        mp2 = re.search(r'(\d{1,2}:\d{2})\s*(?:開跑|開賽|賽事開始|Race\s*Start|後備|發閘|開賽時間)', ln)
+        if mp2:
+            ALL_POSTTIME_HITS.append(mp2.group(1))
+    # Wider pattern: 找 "R數字" 或 "第N場" 后面紧跟 HH:MM
+    for ln in text_lines:
+        mp3 = re.search(r'(?:第\s*\d{1,2}\s*場|R\s*\d{1,2})[^:：]{0,20}[:：]?\s*(\d{1,2}:\d{2})', ln)
+        if mp3:
+            ALL_POSTTIME_HITS.append(mp3.group(1))
+    # Deduplicate and keep order
+    _dedup_pt = []
+    _seen_pt = set()
+    for v in ALL_POSTTIME_HITS:
+        if v and v not in _seen_pt:
+            _seen_pt.add(v)
+            _dedup_pt.append(v)
+    # Pick: if race_number <= len(_dedup_pt) then exact match, else first (assume ordered by race)
+    if _dedup_pt:
+        if 1 <= race_number <= len(_dedup_pt):
+            ri["post_time"] = _dedup_pt[race_number - 1]
+        else:
+            ri["post_time"] = _dedup_pt[0]
+    if not ri.get("post_time"):
+        # Fallback: search HTML directly for 0-9 / 开跑 post time combo
         for ln in text_lines:
             mp2 = re.search(r'(\d{1,2}:\d{2})\s*(?:開跑|開賽|賽事開始|Race\s*Start|後備)', ln)
             if mp2:
@@ -342,8 +364,117 @@ def _parse_racecard_page(html, date_slash, venue_code, race_number, import_url):
                 if gear.endswith('/'):
                     gear = gear[:-1]
                 break
-        parsed_rows[hno] = {"last_6": last6, "gear": gear, "jockey_raw": jockey_tmp}
-    # --- END ENHANCED tab-delimited parser ---
+    GEAR_TOKEN_RE_STR = r'(?:SR|B[1-9]?|H|TT|PC[1-9]|VP|P|BIT|BL[1-9]?|CP|EO|F[1-9]?|G|HO|XB|O|PP|R[1-9]?|SH|NB|L[1-9]?)'
+    GEAR_FULL_RE = re.compile(r'^' + GEAR_TOKEN_RE_STR + r'(?:\s*[/\- ]\s*' + GEAR_TOKEN_RE_STR + r'){0,4}$', re.IGNORECASE)
+    LAST6_RE = re.compile(r'^\d{1,2}(?:/\d{1,2}){5}$')
+    CLAIM_RE = re.compile(r'\(\s*-\s*(\d+)\s*\)')
+    CN_NAME_RE = re.compile(r'^[\u4e00-\u9fa5A-Za-z ]{2,30}$')
+
+    def _normalize_gear(g):
+        g0 = str(g or '').strip().replace(' ', '')
+        if not g0:
+            return ''
+        for sep, repl in [('-', '/'), (',', '/'), ('，', '/')]:
+            g0 = g0.replace(sep, repl)
+        parts = [p for p in g0.split('/') if p]
+        seen = set()
+        clean = []
+        for p in parts:
+            if p.upper() not in seen:
+                seen.add(p.upper())
+                clean.append(p.upper())
+        out = '/'.join(clean)
+        while '//' in out:
+            out = out.replace('//', '/')
+        return out
+
+    # 額外 robust 方法：直接從 <tr> → <td> cells 提取 last_6 / gear / 裝備 / jockey claim
+    # 覆蓋 parsed_rows 中 missing 的 values（即使 parsed_rows tab-delim 冇 match 都仲抽得到）
+    td_enhance = {}  # number → {last_6, gear, jockey_raw, draw2, rating2, weight2}
+    try:
+        _all_tr_splits = re.split(r'</\s*tr\s*>', html, flags=re.IGNORECASE)
+        for _tr in _all_tr_splits:
+            _tds = re.findall(r'<td[^>]*>(.*?)</td>', _tr, flags=re.DOTALL | re.IGNORECASE)
+            if not _tds or len(_tds) < 6:
+                continue
+            clean = [re.sub(r'<[^>]+>', '', c).strip() for c in _tds]
+            last6_here = None
+            gear_here = None
+            jockey_raw_here = None
+            # Find last6 cell in this tr
+            for c in clean:
+                if LAST6_RE.match(c):
+                    last6_here = c
+                    break
+            if not last6_here:
+                continue
+            # Find gear in this tr (match GEAR_FULL_RE)
+            for c in clean:
+                if c and GEAR_FULL_RE.match(c):
+                    gear_here = _normalize_gear(c)
+                    break
+            # Find jockey_raw (含 claim 或 4字中文 + -/)
+            for c in clean:
+                if CLAIM_RE.search(c):
+                    jockey_raw_here = c.strip()
+                    break
+            # Find horse number (1-14): cell 本身是 1-14 数字
+            numbers_here = []
+            for c in clean:
+                if re.match(r'^(0?[1-9]|1[0-4])$', c):
+                    numbers_here.append(int(c))
+            # 如果有 last6 + numbers, 就 map 翻每個 horse
+            if numbers_here and len(numbers_here) >= 1:
+                # 27-cell 規則 (H04/H06 完整版): tds[0]=hno tds[1]=last6; or 10-cell 精簡 tds[5]=hno tds[6]=last6
+                _last6_idx = None
+                try:
+                    _last6_idx = clean.index(last6_here)
+                except ValueError:
+                    pass
+                if _last6_idx is not None and len(clean) >= _last6_idx + 2:
+                    # 嘗試搵 hno = clean[last6_idx - 1] 或 clean[last6_idx - 5]
+                    _hno = None
+                    for delta in (-1, -2, -3, -5, -6, 1, 2, 5, 6):
+                        idx = _last6_idx + delta
+                        if 0 <= idx < len(clean) and re.match(r'^(0?[1-9]|1[0-4])$', clean[idx]):
+                            _hno = int(clean[idx])
+                            break
+                    if not _hno and numbers_here:
+                        _hno = numbers_here[0]
+                    if _hno:
+                        td_enhance.setdefault(_hno, {})
+                        if last6_here and not td_enhance[_hno].get('last_6'):
+                            td_enhance[_hno]['last_6'] = last6_here
+                        if gear_here and not td_enhance[_hno].get('gear'):
+                            td_enhance[_hno]['gear'] = gear_here
+                        if jockey_raw_here and not td_enhance[_hno].get('jockey_raw'):
+                            td_enhance[_hno]['jockey_raw'] = jockey_raw_here
+                        # Extract draw (另外一個 1-14 不同於 hno 的数字)
+                        _other_nums = sorted(set(v for v in numbers_here if v != _hno))
+                        if _other_nums and not td_enhance[_hno].get('draw'):
+                            td_enhance[_hno]['draw'] = _other_nums[0]
+                        # rating / weight from numeric cells
+                        for c in clean:
+                            if re.match(r'^\d{1,3}$', c):
+                                n = int(c)
+                                if 100 <= n <= 150 and not td_enhance[_hno].get('weight'):
+                                    td_enhance[_hno]['weight'] = n
+                                elif 0 <= n <= 160 and n not in numbers_here and n != _other_nums[0] if _other_nums else True and not td_enhance[_hno].get('rating'):
+                                    try:
+                                        if 0 <= n <= 160:
+                                            td_enhance[_hno]['rating'] = n
+                                    except Exception:
+                                        pass
+        if td_enhance:
+            # merge parsed_rows <- td_enhance
+            for _hn, _enh in td_enhance.items():
+                pr = parsed_rows.setdefault(int(_hn), {})
+                for k, v in _enh.items():
+                    if v and not pr.get(k):
+                        pr[k] = v
+    except Exception as _e:
+        print(f'  [WARN] td_enhance fail: {_e}')
+    # --- END ENHANCED tab-delimited + td-cell parser ---
 
     # post_time: try find 時間 or 開跑 pattern，找不到從基本推算
     pt_match = re.search(r'(開跑時間|賽事時間|post\s*time)\s*[:：]?\s*(\d{1,2}:\d{2})', html, re.IGNORECASE)
@@ -359,6 +490,26 @@ def _parse_racecard_page(html, date_slash, venue_code, race_number, import_url):
         r'jockeyprofile\?jockeyid=[^>]*>([^<]+)<.*?trainerprofile\?trainerid=[^>]*>([^<]+)<',
         re.DOTALL)
     hname_pat = re.compile(r'horse\?horseid=[^>]*>([^<]+)<', re.DOTALL)
+    def _is_name_candidate(v, already_parsed_last6=None):
+        if not v or len(v) < 2 or len(v) > 30:
+            return False
+        if LAST6_RE.match(v):
+            return False
+        if re.match(r'^(\d+[.:]\d+|\d{1,3})$', v):
+            return False
+        if GEAR_FULL_RE.match(v):
+            return False
+        if CLAIM_RE.search(v):
+            return False  # jockey with claim 唔系 name
+        if already_parsed_last6 and v == already_parsed_last6:
+            return False
+        if not CN_NAME_RE.match(v):
+            return False
+        # 纯数字/纯符号排除
+        if re.fullmatch(r'[\d\W_]+', v):
+            return False
+        return True
+
     table_rows = re.findall(r'<tr[^>]*>(.*?)</tr>', html.replace('\n', ' '), re.DOTALL)
     horse_data_list = []
     for row in table_rows:
@@ -366,11 +517,17 @@ def _parse_racecard_page(html, date_slash, venue_code, race_number, import_url):
         if len(cells) < 8:
             continue
         clean = [re.sub(r'<[^>]+>', '', c).strip() for c in cells]
+        # Pre-determine last6 in this tr
+        tr_last6 = None
+        for c in clean:
+            if LAST6_RE.match(c):
+                tr_last6 = c
+                break
         # columns pattern for racecard: 馬號(1~14), 馬匹(內含 code), 騎師, 練馬師, 負磅, 評分, 檔, ...
         try:
             num_candidates = []
-            for idx_cell in range(min(5, len(clean))):
-                if clean[idx_cell].isdigit() and 1 <= int(clean[idx_cell]) <= 15:
+            for idx_cell in range(min(6, len(clean))):
+                if re.match(r'^(0?[1-9]|1[0-4])$', clean[idx_cell]):
                     num_candidates.append((idx_cell, int(clean[idx_cell])))
             if not num_candidates:
                 continue
@@ -379,22 +536,28 @@ def _parse_racecard_page(html, date_slash, venue_code, race_number, import_url):
             # name cell is right after number (usually idx_num+1) or contains horse link
             nm = None
             code = ""
-            search_start = idx_num + 1
-            search_end = min(len(cells), idx_num + 4)
-            for ci in range(search_start, search_end):
+            # FIRST: find any horse?horseid link in ANY cells => 100% name
+            for ci in range(len(cells)):
                 m2 = hname_pat.search(cells[ci])
                 if m2:
                     nm = m2.group(1).strip()
-                    cm = re.search(r'\(([A-Z]\d+)\)', cells[ci])
+                    cm = re.search(r'\(([A-Z]\d{2,4})\)', cells[ci])
                     if cm:
                         code = cm.group(1)
                     break
-                if clean[ci] and not clean[ci].isdigit() and len(clean[ci]) >= 2:
-                    nm = clean[ci].split('(')[0].strip()
-                    cm2 = re.search(r'\(([A-Z]\d+)\)', cells[ci])
-                    if cm2:
-                        code = cm2.group(1)
-                    break
+            # Fallback: search in reasonable range, skip known non-name patterns
+            if not nm:
+                search_start = idx_num + 1
+                search_end = min(len(cells), idx_num + 7)
+                for ci in range(search_start, search_end):
+                    cand = clean[ci]
+                    if _is_name_candidate(cand, already_parsed_last6=tr_last6):
+                        # Avoid picking jockey/trainer if both appear later? Just take first match.
+                        nm = cand.split('(')[0].strip()
+                        cm2 = re.search(r'\(([A-Z]\d{2,4})\)', cells[ci])
+                        if cm2:
+                            code = cm2.group(1)
+                        break
             if not nm:
                 continue
             # jockey / trainer
@@ -405,12 +568,25 @@ def _parse_racecard_page(html, date_slash, venue_code, race_number, import_url):
                 jockey = jm.group(1).strip()
                 trainer = jm.group(2).strip()
             else:
-                for ci in range(search_end, min(len(clean), search_end + 4)):
-                    if clean[ci] and not jockey:
-                        jockey = clean[ci]
-                    elif clean[ci] and jockey and not trainer:
-                        trainer = clean[ci]
-                        break
+                # 找 jockey_candidate: contains CLAIM_RE or 2-4 CN after name range
+                j_candidates = []
+                t_candidates = []
+                for ci in range(0, len(clean)):
+                    if clean[ci] == nm:
+                        continue
+                    if CLAIM_RE.search(clean[ci]) and not jockey:
+                        jockey = clean[ci].strip()
+                        continue
+                    if _is_name_candidate(clean[ci]) and 2 <= len(clean[ci]) <= 6:
+                        if clean[ci] not in (nm, jockey, trainer):
+                            if not jockey:
+                                j_candidates.append(clean[ci])
+                            elif not trainer:
+                                t_candidates.append(clean[ci])
+                if not jockey and j_candidates:
+                    jockey = j_candidates[0]
+                if not trainer and t_candidates:
+                    trainer = t_candidates[0]
             # weight / rating / draw
             weight = 0
             rating = 0
@@ -446,6 +622,15 @@ def _parse_racecard_page(html, date_slash, venue_code, race_number, import_url):
                                 best_time_sec = int(mm.group(1)) * 60 + float(mm.group(2))
                             else:
                                 best_time_sec = float(v)
+                        except:
+                            best_time_sec = 0.0
+                elif ':' in v and re.search(r'\d:\d', v):
+                    # 最佳時間 e.g. 1.08.74 (1分08.74秒)  or  58.26  or  1:21.5
+                    if not best_time_sec:
+                        try:
+                            mm = re.match(r'(\d+)[.:](\d+\.?\d*)', v.strip())
+                            if mm:
+                                best_time_sec = int(mm.group(1)) * 60 + float(mm.group(2))
                         except:
                             best_time_sec = 0.0
             if not jockey or not trainer:

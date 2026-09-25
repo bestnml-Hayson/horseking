@@ -64,12 +64,61 @@ def _parse_url_targets(url):
     return date_slash, date_dash, vc, race_nums
 
 
-def _resolve_venue_races(date_slash, vc=None):
-    """若 URL / CLI 冇俾 venue 或 race_nums，自動偵測。"""
-    venue_cn, vc2, nums = _boot._get_num_races_and_venue(date_slash)
-    if vc and vc2 and vc.upper() != vc2:
-        print(f"[WARN] CLI --venue={vc.upper()} 與 HKJC 官網={vc2} 唔同，以官網為準")
-    return venue_cn, vc2, nums
+def _resolve_venue_races(date_slash, vc=None, default_nums=None):
+    """CLI 有 --venue 就優先；冇嘅話先 detect， detect 失敗就用 default_nums (1..11)。"""
+    import sys as _s
+    nums = None
+    venue_cn = None
+    vc2 = None
+    try:
+        venue_cn, vc2, nums = _boot._get_num_races_and_venue(date_slash)
+    except Exception as _e:
+        print(f"[WARN] venue detect fail: {_e}")
+    # CLI 有指定就用 CLI（覆蓋 detect 錯）
+    if vc and vc.upper() in ("HV", "ST"):
+        vc2 = vc.upper()
+        venue_cn = "沙田" if vc2 == "ST" else "跑馬地"
+    if not nums and default_nums:
+        nums = list(default_nums)
+    if not nums:
+        # 仍冇場次，fallback 1..11（沙田日賽）
+        nums = list(range(1, 12))
+        print(f"[WARN] 仍無法確定場次數 → fallback R1..R{nums[-1]}")
+    return venue_cn or ("沙田" if vc2 == "ST" else "跑馬地"), vc2 or ("ST" if not vc else vc.upper()), nums
+
+
+def _build_racecard_urls(date_slash, vc, rn):
+    """同時試 zh-hk 新版 URL + 舊 Racecard.aspx URL（邊個有內容用邊個）"""
+    urls = [
+        (f"https://racing.hkjc.com/zh-hk/local/information/racecard?"
+         f"racedate={date_slash}&Racecourse={vc}&RaceNo={rn}"),
+        (f"https://racing.hkjc.com/racing/information/chinese/Racing/Racecard.aspx?"
+         f"racedate={date_slash}&Racecourse={vc}&RaceNo={rn}"),
+    ]
+    return urls
+
+
+def _fetch_best_html(date_slash, vc, rn, retries=2):
+    """逐條 URL 試 fetch，return 最大 bytes 個 + 對應 import_url。"""
+    best = (b"", None)
+    for u in _build_racecard_urls(date_slash, vc, rn):
+        try:
+            h = _boot._scraper_mod.fetch_url(u, retries=retries, delay=2)
+        except Exception as e:
+            print(f"  fetch {u} -> {e}")
+            continue
+        if isinstance(h, str):
+            try:
+                hb = h.encode("utf-8", "replace")
+            except Exception:
+                hb = str(h).encode("utf-8", "replace")
+        else:
+            hb = bytes(h or b"")
+        if len(hb) > len(best[0]):
+            best = (hb, u)
+        if len(hb) > 20000:
+            break
+    return (best[0].decode("utf-8", "replace") if isinstance(best[0], (bytes, bytearray)) else best[0]), best[1]
 
 
 def _main():
@@ -111,10 +160,13 @@ def _main():
         else:
             raise RuntimeError("必須提供 --url 或 --date 其中一個")
 
-        venue_cn, vc2, all_nums = _resolve_venue_races(date_slash, vc=vc)
-        vc = vc2
+        venue_cn, vc_final, all_nums = _resolve_venue_races(date_slash, vc=vc, default_nums=list(range(1, 12)))
+        vc = vc_final
         target_rns = [args.race_no] if args.race_no else (rns or all_nums)
         target_rns = [r for r in target_rns if r in set(all_nums)]
+        if not target_rns:
+            target_rns = rns or list(range(1, 12))
+            print(f"[WARN] 場次 detect 後集合唔匹配，fallback 用 target={target_rns}")
         if not target_rns:
             raise RuntimeError(f"無有效場次（all={all_nums}, target={[args.race_no] if args.race_no else rns}）")
 
@@ -127,17 +179,9 @@ def _main():
         total_horses = 0
         last6_count = 0
         for rn in target_rns:
-            import_url = (
-                f"https://racing.hkjc.com/racing/information/chinese/Racing/Racecard.aspx?"
-                f"racedate={date_slash}&Racecourse={vc}&RaceNo={rn}"
-            )
-            try:
-                html = _boot._scraper_mod.fetch_url(import_url, retries=3, delay=2)
-            except Exception as e:
-                summary["errors"].append(f"R{rn} fetch fail: {e}")
-                continue
-            if not html or len(html) < 3000:
-                summary["errors"].append(f"R{rn} empty ({len(html or '')} bytes)")
+            html, import_url = _fetch_best_html(date_slash, vc, rn, retries=2)
+            if not html:
+                summary["errors"].append(f"R{rn} fetch empty (all URLs)")
                 continue
             try:
                 obj = _boot._parse_racecard_page(html, date_slash, vc, rn, import_url)
@@ -147,7 +191,7 @@ def _main():
                 l6c = sum(1 for h in obj.get("horses", []) if h.get("last_6"))
                 total_horses += nh
                 last6_count += l6c
-                print(f"  [OK] R{rn}: {os.path.basename(path)} horses={nh} last6_populated={l6c}/{nh} post_time={obj['race_info']['post_time']}")
+                print(f"  [OK] R{rn}: {os.path.basename(path)} horses={nh} last6={l6c}/{nh} bytes={len(html)} post_time={obj['race_info']['post_time']}")
             except Exception as e:
                 import traceback
                 traceback.print_exc()
