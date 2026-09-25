@@ -579,20 +579,29 @@
         });
 
         const ratingMap = minMax(ratings);
-        const timeMap = minMax(bestTimes, true);
+        const _btCandidates = bestTimes.filter(function (t) { return Number.isFinite(t) && t > 0 && t < 900; });
+        const _btNeutral = _btCandidates.length ? _btCandidates.slice().sort(function (a, b) { return a - b; })[Math.max(0, Math.floor(_btCandidates.length / 2))] : 90;
+        const bestTimesNeutral = bestTimes.map(function (t) { return Number.isFinite(t) && t > 0 && t < 900 ? t : _btNeutral; });
+        const timeMap = minMax(bestTimesNeutral, true);
         const drawMap = minMax(draws, true);
         const weightMap = minMax(weights);
-        const invOdds = oddsList.map(function (o) { return 100 / (o > 0 ? o : 1); });
+        const _oddsCandidates = oddsList.filter(function (o) { return Number.isFinite(o) && o > 0 && o < 900; });
+        const _invOddsNeutral = _oddsCandidates.length ? (function () {
+            const arr = _oddsCandidates.map(function (o) { return 100 / (o > 0 ? o : 1); }).sort(function (a, b) { return a - b; });
+            return arr[Math.max(0, Math.floor(arr.length / 2))];
+        })() : 4;
+        const invOdds = oddsList.map(function (o) { return (Number.isFinite(o) && o > 0 && o < 900) ? (100 / o) : _invOddsNeutral; });
         const oddsMap = minMax(invOdds);
 
         const scored = horsesSafe.map(function (h, idx) {
             const sLast3 = last3Scores[idx];
             const sRating = ratingMap[h.rating] || 0;
-            const sTime = timeMap[h.best_time_sec] || 0;
+            const _bt = (Number.isFinite(h.best_time_sec) && h.best_time_sec > 0 && h.best_time_sec < 900) ? h.best_time_sec : _btNeutral;
+            const sTime = timeMap[_bt] || 0;
             const sDraw = drawMap[h.draw] || 0;
             const sWeight = weightMap[h.weight] || 0;
-            const invO = 100 / (h.odds_win > 0 ? h.odds_win : 1);
-            const sOdds = oddsMap[invO] || 0;
+            const _invO = (Number.isFinite(h.odds_win) && h.odds_win > 0 && h.odds_win < 900) ? (100 / h.odds_win) : _invOddsNeutral;
+            const sOdds = oddsMap[_invO] || 0;
             const sTW = twFinal[idx] || 0;
             const sDist = distScores[idx] || 0;
             const sSyn = synScores[idx] || 0;

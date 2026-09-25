@@ -115,17 +115,26 @@
         return map;
       }
       const ratings = rHorses.map(function (x) { return x.rating || 0; });
-      const times = rHorses.map(function (x) { return x.best_time_sec || 999; });
+      const timesRaw = rHorses.map(function (x) { return x.best_time_sec || 999; });
+      const _tReal = timesRaw.filter(function (t) { return Number.isFinite(t) && t > 0 && t < 900; });
+      const _tMed = _tReal.length ? _tReal.slice().sort(function (a, b) { return a - b; })[Math.max(0, Math.floor(_tReal.length / 2))] : 90;
+      const times = timesRaw.map(function (t) { return Number.isFinite(t) && t > 0 && t < 900 ? t : _tMed; });
       const draws = rHorses.map(function (x) { return x.draw || 100; });
       const weights = rHorses.map(function (x) { return x.weight || 0; });
-      const oddsL = rHorses.map(function (x) { return x.odds_win || 999; });
-      const invO = oddsL.map(function (o) { return 100 / (o > 0 ? o : 1); });
+      const oddsRaw = rHorses.map(function (x) { return x.odds_win || 999; });
+      const _oReal = oddsRaw.filter(function (o) { return Number.isFinite(o) && o > 0 && o < 900; });
+      const _invMed = _oReal.length ? (function () {
+        const arr = _oReal.map(function (o) { return 100 / (o > 0 ? o : 1); }).sort(function (a, b) { return a - b; });
+        return arr[Math.max(0, Math.floor(arr.length / 2))];
+      })() : 4;
+      const invO = oddsRaw.map(function (o) { return (Number.isFinite(o) && o > 0 && o < 900) ? (100 / o) : _invMed; });
       const rm = minMax(ratings), tm = minMax(times, true), dm = minMax(draws, true), wm = minMax(weights), om = minMax(invO);
       const sLast3 = (function (ls) { if (!ls || !ls.length) return 50; let t = 0; ls.forEach(function (r) { const f = typeof r === 'number' ? r : (r && typeof r.finish === 'number' ? r.finish : 14); if (f === 1) t += 100; else if (f === 2) t += 85; else if (f === 3) t += 70; else if (f <= 6) t += 50; else if (f <= 10) t += 35; else t += 15; }); return Math.round((t / ls.length) * 10) / 10; })(h.last_3);
-      const hInv = 100 / (h.odds_win > 0 ? h.odds_win : 1);
+      const _hBt = (Number.isFinite(h.best_time_sec) && h.best_time_sec > 0 && h.best_time_sec < 900) ? h.best_time_sec : _tMed;
+      const _hInv = (Number.isFinite(h.odds_win) && h.odds_win > 0 && h.odds_win < 900) ? (100 / h.odds_win) : _invMed;
       return {
-        last3: sLast3, rating: rm[h.rating] || 50, time: tm[h.best_time_sec] || 50,
-        draw: dm[h.draw] || 50, weight: wm[h.weight] || 50, odds: om[hInv] || 50,
+        last3: sLast3, rating: rm[h.rating] || 50, time: tm[_hBt] || 50,
+        draw: dm[h.draw] || 50, weight: wm[h.weight] || 50, odds: om[_hInv] || 50,
         trackwork: 50, distance: 50, synergy: 50, trend: 50, base6: 50, total: 50
       };
     })();
@@ -134,9 +143,18 @@
     const dist = raceInfo.distance_m || 0;
     const jB = typeof window.jockeyBonus === 'function' ? window.jockeyBonus(h.jockey, dist, h.trainer) : 0;
     const tB = typeof window.trainerBonus === 'function' ? window.trainerBonus(h.trainer, dist) : 0;
+    const _dashboardTotal = (h.scores && typeof h.scores.total === 'number' && h.scores.total > 0) ? h.scores.total : 0;
+    const _tmpForm = 50;
+    const _tmpExcept = 80;
+    const _tmpVet = 90;
+    const _base6 = baseScores.last3 * 0.30 + baseScores.rating * 0.20 + baseScores.time * 0.15 + baseScores.draw * 0.15 + baseScores.weight * 0.10 + baseScores.odds * 0.10;
+    const _baseAug = twScore * 0.12 + _tmpForm * 0.10 + _tmpExcept * 0.10 + _tmpVet * 0.08 + distScore * 0.03 + synScore * 0.03 + trScore * 0.03;
+    const _popupCalcTotal = Math.round((_base6 * 0.54 + _baseAug) * 10) / 10;
     const s = Object.assign({}, baseScores, {
       jockey_bonus: (typeof baseScores.jockey_bonus === 'number' && baseScores.jockey_bonus > 0) ? baseScores.jockey_bonus : (isNaN(jB) ? 0 : jB),
-      trainer_bonus: (typeof baseScores.trainer_bonus === 'number' && baseScores.trainer_bonus > 0) ? baseScores.trainer_bonus : (isNaN(tB) ? 0 : tB)
+      trainer_bonus: (typeof baseScores.trainer_bonus === 'number' && baseScores.trainer_bonus > 0) ? baseScores.trainer_bonus : (isNaN(tB) ? 0 : tB),
+      base6: _base6,
+      total: _dashboardTotal > 0 ? _dashboardTotal : _popupCalcTotal
     });
     $('hdName').textContent = h.name || '';
     $('hdMeta').textContent = '#' + (h.number || '?') + ' · ' + (h.draw || '?') + '檔 · ' + (raceInfo.venue || '') + ' ' + (raceInfo.distance_m || '') + 'm · ' + raceClass;
@@ -163,18 +181,40 @@
     const distScore = typeof s.distance === 'number' && s.distance > 0 ? s.distance : (augDist && typeof augDist.score === 'number' ? augDist.score : 50);
     const synScore = typeof s.synergy === 'number' && s.synergy > 0 ? s.synergy : (augSyn && typeof augSyn.score === 'number' ? augSyn.score : 50);
     const trScore = typeof s.trend === 'number' && s.trend > 0 ? s.trend : (augTr && typeof augTr.score === 'number' ? augTr.score : 50);
+    const formScore = (typeof s.form === 'number' && isFinite(s.form)) ? s.form : 50;
+    const vetScore = (typeof s.vet === 'number' && isFinite(s.vet)) ? s.vet : 90;
+    const exceptScore = (typeof s.except === 'number' && isFinite(s.except)) ? s.except : 80;
+    if (!(s.form > 0)) s.form = formScore;
+    if (!(s.vet > 0)) s.vet = vetScore;
+    if (!(s.except > 0)) s.except = exceptScore;
+    if (!(_dashboardTotal > 0)) {
+      const _base6Revised = s.last3 * 0.30 + s.rating * 0.20 + s.time * 0.15 + s.draw * 0.15 + s.weight * 0.10 + s.odds * 0.10;
+      const _baseAugRevised = twScore * 0.12 + formScore * 0.10 + exceptScore * 0.10 + vetScore * 0.08 + distScore * 0.03 + synScore * 0.03 + trScore * 0.03;
+      s.total = Math.round((_base6Revised * 0.54 + _baseAugRevised) * 10) / 10;
+      s.base6 = _base6Revised;
+    }
+    const formTitle = (aug.form_detail && aug.form_detail.note) ? String(aug.form_detail.note).slice(0, 80) : '近績形勢線分析';
+    const vetFlags = (aug.vet_detail && Array.isArray(aug.vet_detail.flags)) ? aug.vet_detail.flags : [];
+    const vetNote = (aug.vet_detail && aug.vet_detail.note) ? String(aug.vet_detail.note).slice(0, 80) : '獸醫健康檢查';
+    const vetTitle = vetFlags.length ? (vetFlags.join('、') + ' · ' + vetNote) : vetNote;
+    const exceptFlags = (aug.except_detail && Array.isArray(aug.except_detail.flags)) ? aug.except_detail.flags : [];
+    const exceptNote = (aug.except_detail && aug.except_detail.note) ? String(aug.except_detail.note).slice(0, 80) : '異常因素分析';
+    const exceptTitle = exceptFlags.length ? (exceptFlags.join('、') + ' · ' + exceptNote) : exceptNote;
 
     const scoreList = [
-      { k: '晨操狀態 (7%)', n: twScore, note: augTW ? (augTW.detail || '') : '晨操狀態分析' },
-      { k: '路程專長 (3%)', n: distScore, note: augDist ? (augDist.detail || '') : '同路程往績分析' },
-      { k: '騎馬默契 (3%)', n: synScore, note: augSyn ? (augSyn.detail || '') : '騎師 × 馬匹往績' },
-      { k: '走勢/同班 (3%)', n: trScore, note: augTr ? (augTr.detail || '') : '評分走勢 + 班次升降' },
-      { k: '近績質素 (30% base)', n: s.last3 || 0, note: '近3仗名次評分' },
-      { k: '評分實力 (20% base)', n: s.rating || 0, note: '現有評分轉換' },
-      { k: '最佳時間 (15% base)', n: s.time || 0, note: '路程最佳秒數轉換' },
-      { k: '檔位優勢 (15% base)', n: s.draw || 0, note: '檔位內檔/外檔優勢' },
-      { k: '體態/負磅 (10% base)', n: s.weight || 0, note: '負磅相對馬匹評分' },
-      { k: '市場預期 (10% base)', n: s.odds || 0, note: '即時賠率倒數市場熱度' }
+      { k: '🎖️ 晨操狀態 (12%)', n: twScore, note: augTW ? (augTW.detail || '') : '晨操紙 + 晨操歷史狀態混合' },
+      { k: '🎯 近績形勢 (10%)', n: formScore, note: formTitle },
+      { k: '⚠️ 異常因素 (10%)', n: exceptScore, note: exceptTitle },
+      { k: '🏥 獸醫健康 (8%)', n: vetScore, note: vetTitle },
+      { k: '📏 路程專長 (3%)', n: distScore, note: augDist ? (augDist.detail || '') : '同路程往績分析' },
+      { k: '🤝 騎練默契 (3%)', n: synScore, note: augSyn ? (augSyn.detail || '') : '騎師 × 馬匹往績' },
+      { k: '📈 同班走勢 (3%)', n: trScore, note: augTr ? (augTr.detail || '') : '評分走勢 + 班次升降' },
+      { k: '🏁 近績質素 (30% base)', n: s.last3 || 0, note: '近3仗名次評分' },
+      { k: '⭐ 評分實力 (20% base)', n: s.rating || 0, note: '現有評分轉換' },
+      { k: '⏱️ 最佳時間 (15% base)', n: s.time || 0, note: (h.best_time_sec && typeof h.best_time_sec === 'number' && h.best_time_sec < 900) ? ('實測 ' + h.best_time_sec + 's 轉換') : '暫無數據 → 全中位數中性評分' },
+      { k: '🚪 檔位優勢 (15% base)', n: s.draw || 0, note: '檔位內檔/外檔優勢' },
+      { k: '⚖️ 體態/負磅 (10% base)', n: s.weight || 0, note: '負磅相對馬匹評分' },
+      { k: '💰 市場預期 (10% base)', n: s.odds || 0, note: (Number.isFinite(h.odds_win) && h.odds_win > 0 && h.odds_win < 900) ? ('實際賠率 ' + h.odds_win.toFixed(1) + 'x 倒數熱度') : '暫無即時賠率 → 全中位數中性評分' }
     ];
     const jTSection = [
       { k: '騎師加成 (14%)', n: s.jockey_bonus || 0, note: s.jockey_bonus > 0 ? '+' + s.jockey_bonus.toFixed(1) + ' 分（騎師路程/班次表現）' : '0 分' },
@@ -194,8 +234,8 @@
           '<div class="bar" style="background:linear-gradient(90deg,#2a1a0a,#5a3a10);"><div style="width:' + pct + '%;background:linear-gradient(90deg,#8a5a20,#f0c050);"></div></div>' +
           '<span class="n" style="color:var(--gold);">' + (typeof r.n === 'number' ? r.n.toFixed(1) : r.n) + '</span></div>' + note;
       }).join('') +
-      '<div class="hd-total"><div><div class="label">AI 總分（base58% + 加成42%）</div>' +
-      '<div style="color:var(--text-dim);font-size:11px;margin-top:2px;">base6(近績+評分+時間+檔位+負磅+預期)58% · 晨操/路程/默契/走勢各3% · 騎師14% · 練馬師12%</div></div>' +
+      '<div class="hd-total"><div><div class="label">AI 總分（基礎 54% + 增強 46%）</div>' +
+      '<div style="color:var(--text-dim);font-size:11px;margin-top:2px;">base6 (近績+評分+步速+檔位+負磅+預期) 54% · 晨操12%/形勢10%/異常10%/獸醫8% · 路3%/契3%/勢3% · 騎師14% · 練馬師12%</div></div>' +
       '<div class="val">' + (s.total ? s.total.toFixed(1) : (s.base6 ? s.base6.toFixed(1) : '50.0')) + '</div></div>';
 
     const last3 = h.last_3 || [];
@@ -205,15 +245,16 @@
     } else {
       last3Html = '<table class="hd-table"><thead><tr>' +
         '<th>日期</th><th>場地</th><th>賽事</th><th>距離</th><th>班次</th><th>名次</th></tr></thead><tbody>' +
-        last3.map(function (r) {
+        last3.map(function (r, idx) {
           const fin = typeof r === 'number' ? r : (r && typeof r.finish === 'number' ? r.finish : 99);
           const finCls = fin === 1 ? 'fin-1' : (fin === 2 ? 'fin-2' : (fin === 3 ? 'fin-3' : ''));
           const finStr = fin <= 20 ? fin : '—';
-          const d = (r && r.date) ? r.date : '';
-          const v = (r && r.venue) ? r.venue : '';
-          const rn = (r && typeof r.race_no === 'number') ? ('R' + r.race_no) : '';
-          const dm = (r && r.distance_m) ? (r.distance_m + 'm') : '';
-          const cl = (r && r.class) ? r.class : '';
+          const isNumRow = typeof r === 'number';
+          const d = (!isNumRow && r && r.date) ? r.date : (['最近 1 仗', '最近 2 仗', '最近 3 仗'][idx] || '');
+          const v = (!isNumRow && r && r.venue) ? r.venue : (isNumRow ? '—' : '');
+          const rn = (!isNumRow && r && typeof r.race_no === 'number') ? ('R' + r.race_no) : '';
+          const dm = (!isNumRow && r && r.distance_m) ? (r.distance_m + 'm') : '';
+          const cl = (!isNumRow && r && r.class) ? r.class : '';
           return '<tr><td>' + d + '</td><td>' + v + '</td><td>' + rn + '</td><td>' + dm + '</td><td>' + cl + '</td>' +
             '<td class="' + finCls + '"><b>' + finStr + '</b></td></tr>';
         }).join('') + '</tbody></table>';
@@ -286,7 +327,7 @@
       '<div class="hd-section"><h4>📋 基本資料</h4>' + basicHtml + '</div>' +
       (extraHtml ? ('<div class="hd-section"><h4>💡 賽前情報</h4>' + extraHtml + '</div>') : '') +
       '<div class="hd-section"><h4>📰 東方日報情報</h4>' + ccSectionHtml + '</div>' +
-      '<div class="hd-section"><h4>🧠 10 維度評分（+2 加成）</h4>' + scoreHtml + '</div>' +
+      '<div class="hd-section"><h4>🧠 13 維度評分（+2 騎練加成）</h4>' + scoreHtml + '</div>' +
       '<div class="hd-section"><h4>📜 近三仗完整紀錄</h4>' + last3Html + '</div>';
 
     $('horseDetailModal').style.display = 'flex';
