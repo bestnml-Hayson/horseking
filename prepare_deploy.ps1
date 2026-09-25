@@ -2,6 +2,14 @@ $root = if ($PSScriptRoot) { $PSScriptRoot } else { (Get-Location).Path }
 $histDir = Join-Path $root "public\data\history"
 $apiDir = Join-Path $root "public\api"
 $dataListDir = Join-Path $root "public\data"
+$aiEngineDir = Join-Path $root "public\ai_engine"
+$srcAiDir = Join-Path $root "ai_engine"
+New-Item -ItemType Directory -Force -Path $aiEngineDir | Out-Null
+if (Test-Path $srcAiDir) {
+  Get-ChildItem $srcAiDir -Filter "*.js" -File | ForEach-Object {
+    Copy-Item -Path $_.FullName -Destination (Join-Path $aiEngineDir $_.Name) -Force
+  }
+}
 if (-not (Test-Path $apiDir)) { New-Item -ItemType Directory -Path $apiDir -Force | Out-Null }
 if (-not (Test-Path $dataListDir)) { New-Item -ItemType Directory -Path $dataListDir -Force | Out-Null }
 $utf8NoBom = [Text.UTF8Encoding]::new($false)

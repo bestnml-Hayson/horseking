@@ -330,11 +330,39 @@
       ? ('<div style="display:flex;flex-direction:column;gap:6px;">' + ccChips.join('') + twHtml + '</div>')
       : '<div style="color:var(--text-dim);font-size:12px;">暫未匯入東方日報對應數據</div>';
 
+    const kellyHtml = (h._ai && window.HorseAIKelly) ? (function () {
+      try {
+        const opts = DB._kellyOpts || { kellyFraction: 0.5, bankrollHKD: 5000 };
+        const k = window.HorseAIKelly.analyzeBet(h._ai.winProbPct, h.odds_win, h._ai.placeProbPct, h.odds_place, opts);
+        const row = function (label, cls, obj) {
+          const isVB = !!obj.isValueBet;
+          return '<tr>' +
+            '<td><b>' + label + '</b></td>' +
+            '<td>' + ((h._ai && label === '獨贏') ? (h._ai.winProbPct.toFixed(1) + '%') : ((h._ai && label === '位置') ? (h._ai.placeProbPct.toFixed(1) + '%') : '—')) + '</td>' +
+            '<td>' + (obj.decimalOdds > 0 ? obj.decimalOdds.toFixed(1) + 'x' : '—') + '</td>' +
+            '<td style="color:' + (isVB ? 'var(--green)' : 'var(--text-dim)') + ';font-weight:700;">' + (obj.evPct > 0 ? '+' : '') + obj.evPct.toFixed(1) + '%</td>' +
+            '<td>' + (isVB ? (obj.kellyFractionLabel + ' ' + Math.round(obj.fKellyFraction * 1000) / 10 + '%') : (obj.note || '<span style="color:var(--text-dim);">—</span>')) + '</td>' +
+            '<td style="color:' + (obj.betHKD > 0 ? 'var(--gold)' : 'var(--text-dim)') + ';font-weight:900;">' + (obj.betHKD > 0 ? '$' + obj.betHKD : '不建議') + '</td>' +
+            '</tr>';
+        };
+        return '<div class="hd-section">' +
+          '<h4>💰 期望值 + Kelly 資金分配（本金$' + (opts.bankrollHKD || 5000) + ' · ' + (k.win.kellyFractionLabel || 'Half Kelly') + '）</h4>' +
+          '<div class="table-scroll" style="font-size:12px;"><table class="data-table">' +
+          '<thead><tr><th>項目</th><th>AI真勝率P</th><th>市場賠率</th><th>期望值EV%</th><th>Kelly f*</th><th>建議下注</th></tr></thead>' +
+          '<tbody>' + row('獨贏', 'win', k.win) + row('位置', 'place', k.place) +
+          '<tr style="background:rgba(212,175,55,0.08);"><td colspan="5" style="font-weight:800;">合計建議 (獨+位)</td><td style="color:var(--gold);font-weight:900;">$' + k.summary.totalBetHKD + '</td></tr>' +
+          '</tbody></table></div>' +
+          (k.win.isValueBet || k.place.isValueBet ? '' : '<div style="margin-top:10px;padding:10px;border-radius:8px;background:rgba(255,150,150,0.08);border:1px dashed rgba(255,150,150,0.4);font-size:12px;color:#ffb3b3;">⚠️ 現階段市場賠率未反映價值 (EV ≤ 0)，建議等閘前 15 分鐘即時賠率更新再考慮下注。</div>') +
+          '</div>';
+      } catch (e) { return ''; }
+    })() : '';
+
     $('hdBody').innerHTML =
       '<div class="hd-section"><h4>📋 基本資料</h4>' + basicHtml + '</div>' +
       (extraHtml ? ('<div class="hd-section"><h4>💡 賽前情報</h4>' + extraHtml + '</div>') : '') +
       '<div class="hd-section"><h4>📰 東方日報情報</h4>' + ccSectionHtml + '</div>' +
       '<div class="hd-section"><h4>🧠 13 維度評分（+2 騎練加成）</h4>' + scoreHtml + '</div>' +
+      kellyHtml +
       '<div class="hd-section"><h4>📜 近三仗完整紀錄</h4>' + last3Html + '</div>';
 
     $('horseDetailModal').style.display = 'flex';
@@ -584,6 +612,25 @@
   window.racePickerBack = racePickerBack;
   window.selectRaceDate = selectRaceDate;
   window.selectRaceId = selectRaceId;
+
+  window.changeKellyStrategy = function (v) {
+    if (!DB._kellyOpts) DB._kellyOpts = { kellyFraction: 0.5, bankrollHKD: 5000 };
+    DB._kellyOpts.kellyFraction = Math.max(0.05, Math.min(1.5, Number(v) || 0.5));
+    try {
+      if (typeof loadAll === 'function' && document.querySelector('#statsCount')) {
+        renderDashboard();
+        renderRaceCards();
+      } else {
+        renderDashboard();
+      }
+    } catch (e) { console.error(e); }
+  };
+  window.changeKellyBankroll = function (v) {
+    if (!DB._kellyOpts) DB._kellyOpts = { kellyFraction: 0.5, bankrollHKD: 5000 };
+    const n = Math.max(1000, Math.min(10000000, Number(v) || 5000));
+    DB._kellyOpts.bankrollHKD = n;
+    try { renderDashboard(); renderRaceCards(); } catch (e) { console.error(e); }
+  };
 
   /* ========== 底部導航 Tab 切換 ========== */
   function initNav() {
@@ -892,6 +939,26 @@
     buildAugmentedDatabases();
     computeHistoryStats();
 
+    try {
+      const hasML = window.HorseAIML && typeof window.HorseAIML.attachToHorseObject === 'function';
+      const hasKelly = window.HorseAIKelly && typeof window.HorseAIKelly.valueBetRank === 'function';
+      if (hasML) {
+        DB.raceIndex.forEach(function (id) {
+          try {
+            const race = DB.races[id];
+            if (!race || !race.horses || !race.horses.length) return;
+            const ri = race.race_info || {};
+            const env = (race.meta && race.meta.env) || {};
+            window.HorseAIML.attachToHorseObject(race.horses, ri, race.meta || {}, DB, env);
+            if (hasKelly) {
+              try { DB._valueBets = DB._valueBets || {}; DB._valueBets[id] = window.HorseAIKelly.valueBetRank(race.horses); }
+              catch (_) {}
+            }
+          } catch (_) {}
+        });
+      }
+    } catch (_) {}
+
     if (!DB.currentRaceId) {
       const pendingFirst = DB.raceIndex.find(function (id) { return !DB.races[id].race_info.result_available; });
       DB.currentRaceId = pendingFirst || DB.raceIndex[DB.raceIndex.length - 1];
@@ -1128,11 +1195,12 @@
 
     const sc = $('statCards');
     if (sc) {
+      const vb = DB._globalValueBets || { totalValueBets: 0, totalPendingRaces: 0 };
       sc.innerHTML = [
         '<div class="stat-card"><div class="label">總賽事</div><div class="value">' + races.length + '</div><div class="delta">已完賽 ' + finished.length + ' / 待賽 ' + pending.length + '</div></div>',
         '<div class="stat-card"><div class="label">馬匹出戰</div><div class="value">' + allEntries + '</div><div class="delta">檔案馬 ' + totalHorses + ' 匹</div></div>',
         '<div class="stat-card"><div class="label">頭馬命中率</div><div class="value">' + Math.round(S.top1Rate * 100) + '%</div><div class="delta">' + S.hit1 + '/' + S.n + ' 命中</div></div>',
-        '<div class="stat-card"><div class="label">頭4入Q</div><div class="value">' + S.avgTop3InTop4.toFixed(2) + '</div><div class="delta">場均三甲入頭4</div></div>'
+        '<div class="stat-card"><div class="label">💰 Value Bets</div><div class="value" style="color:var(--gold);">' + vb.totalValueBets + '</div><div class="delta">待賽 ' + vb.totalPendingRaces + ' 場候選</div></div>'
       ].join('');
     }
 
@@ -1146,6 +1214,64 @@
         '<div class="accuracy-item"><div class="label">場均Q佔中</div><div class="value">' + S.avgTop3InTop4.toFixed(2) + '</div></div>' +
         '<div class="accuracy-item"><div class="label">Q ROI</div><div class="value" style="color:' + (S.totalQRet >= 0 ? 'var(--green)' : 'var(--red)') + ';">' + (S.totalQRet >= 0 ? '正' : '負') + '回報</div></div>' +
         '</div>';
+    }
+
+    const vbCard = $('valueBetCard');
+    if (vbCard && window.HorseAIKelly && DB._valueBets) {
+      try {
+        DB._kellyOpts = DB._kellyOpts || { kellyFraction: 0.5, bankrollHKD: 5000 };
+        const globalRows = [];
+        let vbCount = 0;
+        let pendingCount = 0;
+        DB.raceIndex.forEach(function (rid) {
+          const race = DB.races[rid];
+          if (!race || !race.race_info) return;
+          const done = !!race.race_info.result_available;
+          if (!done) pendingCount++;
+          const vbPerRace = DB._valueBets[rid];
+          if (!vbPerRace) return;
+          const ri = race.race_info;
+          const venueCode = String(ri.venue || '').indexOf('跑馬') >= 0 || /HV/i.test(String(ri.venue || '')) ? 'HV' : 'ST';
+          const reRank = window.HorseAIKelly.valueBetRank(race.horses, DB._kellyOpts);
+          reRank.valueBetsSorted.forEach(function (it) {
+            const a = it.analysis;
+            if (!a.win.isValueBet && !a.place.isValueBet) return;
+            if (!done) vbCount++;
+            globalRows.push({
+              done: done,
+              rid: rid, venue: venueCode, rn: ri.race_number, date: ri.race_date || '',
+              number: it.number, name: it.name, code: it.code,
+              winP: Math.round(((race.horses[it.idx] && race.horses[it.idx]._ai) ? race.horses[it.idx]._ai.winProbPct : 0) * 100) / 100,
+              oddsW: a.win.decimalOdds, oddsP: a.place.decimalOdds,
+              evPct: a.win.isValueBet ? a.win.evPct : a.place.evPct,
+              kellyLabel: a.win.kellyFractionLabel, fKelly: Math.max(a.win.fKellyFraction, a.place.fKellyFraction),
+              winBetHKD: a.win.betHKD, placeBetHKD: a.place.betHKD,
+              winValue: a.win.isValueBet, placeValue: a.place.isValueBet
+            });
+          });
+        });
+        DB._globalValueBets = { totalValueBets: vbCount, totalPendingRaces: pendingCount };
+        const tb = $('valueBetTable').querySelector('tbody');
+        if (tb) {
+          if (!globalRows.length) {
+            tb.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-dim);padding:18px;">所有市場賠率未更新，暫無 EV>0 之價值投注；等排位 + 即時賠率公佈。</td></tr>';
+          } else {
+            tb.innerHTML = globalRows.sort(function (a, b) { return b.evPct - a.evPct; }).slice(0, 30).map(function (r) {
+              return '<tr style="' + (r.done ? 'opacity:0.55;' : '') + '">' +
+                '<td><b>' + (r.date || '').slice(5) + ' ' + r.venue + ' R' + r.rn + '</b>' + (r.done ? ' <span style="color:var(--text-dim);">(已完)</span>' : '') + '</td>' +
+                '<td onclick="event.stopPropagation();selectRaceId(\'' + r.rid + '\');setTimeout(function(){openHorseDetail(\'' + (r.number || r.name || '') + '\');}, 150);" style="cursor:pointer;color:var(--gold);font-weight:700;">#' + (r.number || '?') + ' ' + (r.name || '') + '</td>' +
+                '<td>' + r.winP + '%</td>' +
+                '<td>' + (r.oddsW && r.oddsW > 0 ? r.oddsW.toFixed(1) : '—') + (r.oddsP && r.oddsP > 0 ? ' / 位 ' + r.oddsP.toFixed(1) : '') + '</td>' +
+                '<td style="color:var(--green);font-weight:700;">EV ' + (r.evPct > 0 ? '+' : '') + r.evPct.toFixed(1) + '%</td>' +
+                '<td>' + r.kellyLabel + ' ' + Math.round(r.fKelly * 100 * 10) / 10 + '%</td>' +
+                '<td style="color:' + (r.winValue ? 'var(--green)' : 'var(--text-dim)') + ';font-weight:700;">' + (r.winValue ? '$' + r.winBetHKD : '—') + '</td>' +
+                '<td style="color:' + (r.placeValue ? 'var(--green)' : 'var(--text-dim)') + ';font-weight:700;">' + (r.placeValue ? '$' + r.placeBetHKD : '—') + '</td>' +
+                '</tr>';
+            }).join('');
+          }
+        }
+        vbCard.style.display = 'block';
+      } catch (e) { console.error('valueBet render fail:', e); }
     }
 
     const at = document.querySelector('#accuracyTable tbody');
@@ -1317,13 +1443,24 @@
             const ow = _fmtOddsUI(h.odds_win);
             const rankCls = ri === 0 ? 'top1' : (ri === 1 ? 'top2' : (ri === 2 ? 'top3' : 'top4'));
             const adv = (p.core_advantage && p.core_advantage.detail) ? p.core_advantage.detail.slice(0, 24) + (p.core_advantage.detail.length > 24 ? '…' : '') : '';
+            const ai = h._ai || null;
+            const aiLine = ai ? ('<span style="font-size:10px;color:#9ef4c9;">P ' + Math.round(ai.winProbPct * 10) / 10 + '%</span>') : ('<span style="font-size:10px;color:var(--green);">AI ' + scr + '</span>');
+            const kLine = (h._ai && h.odds_win > 1 && window.HorseAIKelly) ? (function () {
+              try {
+                const k = window.HorseAIKelly.analyzeBet(h._ai.winProbPct, h.odds_win, h._ai.placeProbPct, h.odds_place, DB._kellyOpts || {});
+                const ev = k.win.isValueBet ? ('<span style="color:#93ffb6;">EV +' + (k.win.evPct).toFixed(1) + '%</span>') : '';
+                const kl = k.win.isValueBet ? ('<span style="color:#ffd77a;">半凱利 $' + k.win.betHKD + '</span>') : '';
+                return ev || kl ? ('<div style="font-size:10px;margin-top:2px;display:flex;justify-content:space-between;gap:4px;">' + ev + kl + '</div>') : '';
+              } catch (e) { return ''; }
+            })() : '';
             return '<div class="horse-click ' + rankCls + '" data-number="' + (h.number || '') + '" data-name="' + (h.name || '') + '" style="cursor:pointer;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--bg-card2);transition:background .15s,transform .15s;" onclick="event.stopPropagation();DB.currentRaceId=\'' + id + '\';openHorseDetail(\'' + (h.number || h.name || '') + '\');">' +
               '<div style="display:flex;align-items:center;gap:6px;"><span style="display:inline-block;min-width:18px;height:18px;line-height:18px;border-radius:4px;background:linear-gradient(135deg,var(--gold),var(--gold-dark));color:#000;font-weight:900;font-size:10px;text-align:center;">#' + (h.number || '?') + '</span>' +
               '<b style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (h.name || '') + ccExpertBadge(h, true) + '</b>' +
               '<span style="font-size:10px;color:var(--gold);white-space:nowrap;">' + ow + '</span></div>' +
               '<div style="display:flex;justify-content:space-between;margin-top:4px;"><span style="font-size:10px;color:var(--text-dim);">' + (h.jockey || '') + '/' + (h.trainer || '') + '</span>' +
-              '<span style="font-size:10px;color:var(--green);">AI ' + scr + '</span></div>' +
+              aiLine + '</div>' +
               (adv ? '<div style="font-size:10px;color:var(--gold);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">💡 ' + adv + '</div>' : '') +
+              kLine +
               '</div>';
           }).join('');
           const firstTime = info.post_time ? (info.post_time.slice(0, 5)) : '待公佈';

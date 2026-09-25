@@ -65,6 +65,30 @@
 
     <div class="accuracy-card" id="accuracyCard"></div>
 
+    <div class="card" id="valueBetCard" style="display:none;">
+      <div class="card-title" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;">
+        <h3 style="margin:0;"><span class="emoji">💰</span>價值投注建議（EV > 0 + Half Kelly）</h3>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <label style="font-size:12px;color:var(--text-dim);">策略
+            <select id="kellyStrategySelect" onchange="changeKellyStrategy(this.value)" style="margin-left:6px;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg-card2);color:var(--text);font-size:11px;font-weight:600;">
+              <option value="0.25">1/4 Kelly 低風險</option>
+              <option value="0.5" selected>1/2 Kelly 推薦</option>
+              <option value="1.0">Full Kelly 激進</option>
+            </select>
+          </label>
+          <label style="font-size:12px;color:var(--text-dim);">本金$
+            <input id="kellyBankroll" type="number" min="1000" max="500000" step="500" value="5000" onchange="changeKellyBankroll(this.value)" style="margin-left:6px;width:90px;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg-card2);color:var(--text);font-size:11px;font-weight:600;">
+          </label>
+        </div>
+      </div>
+      <div class="table-scroll">
+        <table class="data-table" id="valueBetTable">
+          <thead><tr><th>賽事</th><th>馬匹</th><th>AI真勝率P%</th><th>賠率</th><th>EV%</th><th>Kelly建議(半凱利)</th><th>獨贏下注$</th><th>位置下注$</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
     <div class="card">
       <div class="card-title" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;">
         <h3 style="margin:0;"><span class="emoji">🔥</span>近期 AI 預測準確度</h3>
@@ -238,8 +262,12 @@
   </div>
 </div>
 
-<script src="/ai.js?v=20260926-v2016-horse-detail-fix"></script>
-<script src="/app.js?v=20260926-v2016-horse-detail-fix"></script>
+<script src="/ai_engine/features.js?v=20260926-v210-kelly-ev"></script>
+<script src="/ai_engine/ml_score.js?v=20260926-v210-kelly-ev"></script>
+<script src="/ai_engine/kelly.js?v=20260926-v210-kelly-ev"></script>
+<script src="/ai_engine/scraper_schema.js?v=20260926-v210-kelly-ev"></script>
+<script src="/ai.js?v=20260926-v210-kelly-ev"></script>
+<script src="/app.js?v=20260926-v210-kelly-ev"></script>
 <script>
 (function () {
   var params = new URLSearchParams(window.location.search);
@@ -258,7 +286,7 @@
   }
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function () {
-      navigator.serviceWorker.register('/sw.js?v=20260926-v2016-horse-detail-fix', { scope: '/' })
+      navigator.serviceWorker.register('/sw.js?v=20260926-v210-kelly-ev', { scope: '/' })
         .then(function () { /* ok */ })
         .catch(function () { /* fallback */ });
     });
