@@ -742,91 +742,117 @@
     DB.races = {}; DB.raceIndex = [];
     const seen = {};
     let raceFiles = RACE_FILES.slice();
+    let listSource = 'hardcoded';
     try {
-      const list = await api('/api/list.json');
+      let list = await api('/api/list.json');
+      if (!list || !list.race_files || !list.race_files.length) {
+        list = await api('/data/list.json');
+      }
       if (list && list.race_files && list.race_files.length) {
         raceFiles = list.race_files.slice();
+        listSource = 'list.json (' + raceFiles.length + ')';
       }
     } catch (e) { console.warn('list.json load failed, fallback to hardcoded', e); }
-    for (let i = 0; i < raceFiles.length; i++) {
-      const f = raceFiles[i];
-      let r = await api('/api/history/' + f);
-      if (!r || r.error) r = await api('/data/history/' + f);
-      if (r && r.race_info) {
-        const id = r.race_info.race_id;
-        if (seen[id]) continue;
-        seen[id] = true;
-        if (!r.horses && r.entries) r.horses = r.entries.slice();
-        if (r.horses && r.horses.length && !r.horses[0].odds) {
-          r.horses.forEach(function (h) {
-            if (!h.odds) h.odds = { win: h.win_odds || 0, place: h.place_odds || 0 };
-          });
-        }
-        // Runtime post-fix: 人手 parse JSON 或舊版可能缺 last_3 (只係 last_6 填咗)
-        // HKJC 近績方向：左邊=最近 1 仗，右邊=最舊第 6 仗。last_3 = 最近 3 仗 (last_6 前三段)
-        // 同時修復 best_time_sec type/missing → 非 number/<=0 強制 sentinel 999
-        if (r.horses && r.horses.length) {
-          r.horses.forEach(function (h) {
-            if (typeof h.win_odds === 'number' && !(typeof h.odds_win === 'number' && h.odds_win > 0)) h.odds_win = h.win_odds;
-            if (typeof h.place_odds === 'number' && !(typeof h.odds_place === 'number' && h.odds_place > 0)) h.odds_place = h.place_odds;
-            var hasL3 = Array.isArray(h.last_3) && h.last_3.length === 3;
-            var noL6 = !h.last_6 || typeof h.last_6 !== 'string';
-            if (!hasL3 && !noL6) {
-              var m = h.last_6.match(/^(\d{1,2})\/(\d{1,2})\/(\d{1,2})\/(\d{1,2})\/(\d{1,2})\/(\d{1,2})$/);
-              if (m) {
-                h.last_3 = [Math.max(1, Math.min(14, parseInt(m[1], 10) || 14)),
-                            Math.max(1, Math.min(14, parseInt(m[2], 10) || 14)),
-                            Math.max(1, Math.min(14, parseInt(m[3], 10) || 14))];
-              } else {
-                var parts = h.last_6.split('/').map(function (p) { return parseInt(p, 10); }).filter(function (v) { return Number.isFinite(v) && v >= 1 && v <= 20; });
-                if (parts.length >= 3) {
-                  h.last_3 = parts.slice(0, 3).map(function (v) { return Math.max(1, Math.min(14, v)); });
+
+    const racePool = [
+      { files: raceFiles, label: listSource }
+    ];
+    if (listSource !== 'hardcoded') {
+      racePool.push({ files: RACE_FILES.slice(), label: 'hardcoded-fallback' });
+    }
+    let ok = 0, miss = 0;
+    for (let p = 0; p < racePool.length; p++) {
+      const files = racePool[p].files;
+      for (let i = 0; i < files.length; i++) {
+        const f = files[i];
+        let r = null;
+        try {
+          r = await api('/data/history/' + f);
+          if (!r || !r.race_info) {
+            const r2 = await api('/api/history/' + f);
+            if (r2 && r2.race_info) r = r2;
+          }
+        } catch (e) { r = null; }
+        if (!r || !r.race_info) { miss++; continue; }
+        try {
+          const id = r.race_info.race_id;
+          if (seen[id]) continue;
+          seen[id] = true;
+          if (!r.horses && r.entries) r.horses = r.entries.slice();
+          if (r.horses && r.horses.length && !r.horses[0].odds) {
+            r.horses.forEach(function (h) {
+              if (!h.odds) h.odds = { win: h.win_odds || 0, place: h.place_odds || 0 };
+            });
+          }
+          if (r.horses && r.horses.length) {
+            r.horses.forEach(function (h) {
+              if (typeof h.win_odds === 'number' && !(typeof h.odds_win === 'number' && h.odds_win > 0)) h.odds_win = h.win_odds;
+              if (typeof h.place_odds === 'number' && !(typeof h.odds_place === 'number' && h.odds_place > 0)) h.odds_place = h.place_odds;
+              var hasL3 = Array.isArray(h.last_3) && h.last_3.length === 3;
+              var noL6 = !h.last_6 || typeof h.last_6 !== 'string';
+              if (!hasL3 && !noL6) {
+                var m = h.last_6.match(/^(\d{1,2})\/(\d{1,2})\/(\d{1,2})\/(\d{1,2})\/(\d{1,2})\/(\d{1,2})$/);
+                if (m) {
+                  h.last_3 = [Math.max(1, Math.min(14, parseInt(m[1], 10) || 14)),
+                              Math.max(1, Math.min(14, parseInt(m[2], 10) || 14)),
+                              Math.max(1, Math.min(14, parseInt(m[3], 10) || 14))];
+                } else {
+                  var parts = h.last_6.split('/').map(function (p) { return parseInt(p, 10); }).filter(function (v) { return Number.isFinite(v) && v >= 1 && v <= 20; });
+                  if (parts.length >= 3) {
+                    h.last_3 = parts.slice(0, 3).map(function (v) { return Math.max(1, Math.min(14, v)); });
+                  }
                 }
               }
-            }
-            const bt = h.best_time_sec;
-            if (typeof bt !== 'number' || !isFinite(bt) || bt <= 0 || bt > 900) {
-              h.best_time_sec = 999;
-            }
-            const ow = h.odds_win;
-            if (typeof ow !== 'number' || !isFinite(ow) || ow <= 0 || ow >= 999) {
-              h.odds_win = 999;
-            }
-            const op = h.odds_place;
-            if (typeof op !== 'number' || !isFinite(op) || op <= 0 || op >= 999) {
-              h.odds_place = 999;
-            }
-            ['draw', 'rating', 'weight', 'number'].forEach(function (k) {
-              if (typeof h[k] !== 'number' || !isFinite(h[k])) {
-                h[k] = parseInt(h[k], 10) || 0;
+              const bt = h.best_time_sec;
+              if (typeof bt !== 'number' || !isFinite(bt) || bt <= 0 || bt > 900) {
+                h.best_time_sec = 999;
               }
-            });
-            if (!Array.isArray(h.last_3)) h.last_3 = [];
-          });
-          if (r.entries && r.entries.length === r.horses.length) {
-            r.horses.forEach(function (h, i) {
-              if (r.entries[i]) {
-                r.entries[i].last_3 = h.last_3;
-                r.entries[i].best_time_sec = h.best_time_sec;
-                r.entries[i].odds_win = h.odds_win;
-                r.entries[i].odds_place = h.odds_place;
+              const ow = h.odds_win;
+              if (typeof ow !== 'number' || !isFinite(ow) || ow <= 0 || ow >= 999) {
+                h.odds_win = 999;
               }
+              const op = h.odds_place;
+              if (typeof op !== 'number' || !isFinite(op) || op <= 0 || op >= 999) {
+                h.odds_place = 999;
+              }
+              ['draw', 'rating', 'weight', 'number'].forEach(function (k) {
+                if (typeof h[k] !== 'number' || !isFinite(h[k])) {
+                  h[k] = parseInt(h[k], 10) || 0;
+                }
+              });
+              if (!Array.isArray(h.last_3)) h.last_3 = [];
             });
-          } else {
-            r.entries = r.horses.map(function (h) { return Object.assign({}, h); });
+            if (r.entries && r.entries.length === r.horses.length) {
+              r.horses.forEach(function (h, i) {
+                if (r.entries[i]) {
+                  r.entries[i].last_3 = h.last_3;
+                  r.entries[i].best_time_sec = h.best_time_sec;
+                  r.entries[i].odds_win = h.odds_win;
+                  r.entries[i].odds_place = h.odds_place;
+                }
+              });
+            } else {
+              r.entries = r.horses.map(function (h) { return Object.assign({}, h); });
+            }
           }
+          DB.races[id] = r;
+          DB.raceIndex.push(id);
+          ok++;
+        } catch (e) {
+          console.warn('Race parse failed:', f, e);
+          miss++;
         }
-        DB.races[id] = r;
-        DB.raceIndex.push(id);
       }
+      if (Object.keys(DB.races).length >= 20) break;
     }
+    console.info('[loadAll] loaded=' + Object.keys(DB.races).length + ' ok=' + ok + ' miss=' + miss + ' source=' + listSource);
     DB.raceIndex.sort(function (a, b) {
       const da = (DB.races[a].race_info || {}).race_date || '';
       const db = (DB.races[b].race_info || {}).race_date || '';
       return da.localeCompare(db);
     });
 
-    let horsesDB = await api('/api/profiles/horses') || await api('/data/profiles/horses_db.json');
+    let horsesDB = await api('/data/profiles/horses_db.json') || await api('/api/profiles/horses');
     if (horsesDB && horsesDB.horses) {
       DB.horsesDB = horsesDB.horses;
       DB.raceIndex.forEach(function (rid) {
@@ -847,9 +873,9 @@
         });
       });
     }
-    let jocks = await api('/api/stats/jockeys') || await api('/data/stats/jockeys_db.json');
+    let jocks = await api('/data/stats/jockeys_db.json') || await api('/api/stats/jockeys');
     if (jocks && jocks.jockeys) DB.jockeysDB = jocks.jockeys;
-    let trains = await api('/api/stats/trainers') || await api('/data/stats/trainers_db.json');
+    let trains = await api('/data/stats/trainers_db.json') || await api('/api/stats/trainers');
     if (trains && trains.trainers) DB.trainersDB = trains.trainers;
 
     buildAugmentedDatabases();
@@ -1878,12 +1904,14 @@
     const S = DB.historyStats || { finished: [] };
     host.innerHTML = S.finished.slice().reverse().map(function (x) {
       const info = x.info;
+      const horses = (DB.races[x.id] && DB.races[x.id].horses) ? DB.races[x.id].horses : [];
+      const realTop3Label = (x.realTop3 || []).map(function (c) { return codeToHorseLabel(c, horses); }).join(' · ');
       return '<tr>' +
         '<td>' + info.race_date + '</td>' +
         '<td>' + info.venue + ' R' + info.race_number + '</td>' +
         '<td>' + (info.track || '') + ' · ' + info.distance_m + 'm · ' + info.class + '</td>' +
-        '<td><b>' + x.realTop3.join(' · ') + '</b></td>' +
-        '<td><span style="color:' + (x.hitTop1 ? 'var(--green)' : 'var(--text-dim)') + ';font-weight:700;">' + x.aiTop1 + (x.hitTop1 ? ' ✓' : ' ✗') + '</span></td>' +
+        '<td><b>' + (realTop3Label || '<span style="color:var(--text-dim);">—</span>') + '</b></td>' +
+        '<td><span style="color:' + (x.hitTop1 ? 'var(--green)' : 'var(--text-dim)') + ';font-weight:700;">' + (x.aiTop1Label || x.aiTop1 || '—') + (x.hitTop1 ? ' ✓' : ' ✗') + '</span></td>' +
         '<td>' + (x.winOdds ? '<span style="color:var(--green);font-weight:700;">+$' + Math.round((x.winOdds - 1) * 100) + '</span>' : '<span style="color:var(--red);">-$100</span>') + '</td>' +
         '<td>' + (x.qOdds ? '<span style="color:var(--green);font-weight:700;">+$' + Math.round((x.qOdds - 1) * 50) + '</span>' : '<span style="color:var(--red);">-$50</span>') + '</td>' +
         '</tr>';

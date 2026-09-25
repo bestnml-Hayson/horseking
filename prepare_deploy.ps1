@@ -1,7 +1,9 @@
-$root = "D:\Trae\horse"
+$root = if ($PSScriptRoot) { $PSScriptRoot } else { (Get-Location).Path }
 $histDir = Join-Path $root "public\data\history"
 $apiDir = Join-Path $root "public\api"
+$dataListDir = Join-Path $root "public\data"
 if (-not (Test-Path $apiDir)) { New-Item -ItemType Directory -Path $apiDir -Force | Out-Null }
+if (-not (Test-Path $dataListDir)) { New-Item -ItemType Directory -Path $dataListDir -Force | Out-Null }
 $utf8NoBom = [Text.UTF8Encoding]::new($false)
 
 $list = [ordered]@{
@@ -37,7 +39,8 @@ foreach ($rid in $allRidGroups.Keys) {
 $list.total = $list.race_files.Count
 $json = $list | ConvertTo-Json -Depth 10
 [IO.File]::WriteAllText((Join-Path $apiDir "list.json"), $json, $utf8NoBom)
-Write-Host ("Generated list.json: total=" + $list.total)
+[IO.File]::WriteAllText((Join-Path $dataListDir "list.json"), $json, $utf8NoBom)
+Write-Host ("Generated list.json (api & data): total=" + $list.total)
 
 # ===== UPDATE .gitignore (full 版，防止洩漏 tokens/logs) =====
 $gitIgnore = @"
