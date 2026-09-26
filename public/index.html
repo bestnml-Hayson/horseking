@@ -262,12 +262,12 @@
   </div>
 </div>
 
-<script src="/ai_engine/features.js?v=20260926-v212-fix"></script>
-<script src="/ai_engine/ml_score.js?v=20260926-v212-fix"></script>
-<script src="/ai_engine/kelly.js?v=20260926-v212-fix"></script>
-<script src="/ai_engine/scraper_schema.js?v=20260926-v212-fix"></script>
-<script src="/ai.js?v=20260926-v212-fix"></script>
-<script src="/app.js?v=20260926-v212-fix"></script>
+<script src="/ai_engine/features.js?v=20260927-v213-odds"></script>
+<script src="/ai_engine/ml_score.js?v=20260927-v213-odds"></script>
+<script src="/ai_engine/kelly.js?v=20260927-v213-odds"></script>
+<script src="/ai_engine/scraper_schema.js?v=20260927-v213-odds"></script>
+<script src="/ai.js?v=20260927-v213-odds"></script>
+<script src="/app.js?v=20260927-v213-odds"></script>
 <script>
 (function () {
   var params = new URLSearchParams(window.location.search);
@@ -286,7 +286,7 @@
   }
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function () {
-      navigator.serviceWorker.register('/sw.js?v=20260926-v212-fix', { scope: '/' })
+      navigator.serviceWorker.register('/sw.js?v=20260927-v213-odds', { scope: '/' })
         .then(function () { /* ok */ })
         .catch(function () { /* fallback */ });
     });

@@ -192,10 +192,14 @@
       { k: '騎師', v: h.jockey || '-' },
       { k: '練馬師', v: h.trainer || '-' },
       { k: '最佳時間', v: (h.best_time_sec && typeof h.best_time_sec === 'number' && h.best_time_sec < 999 && h.best_time_sec > 0) ? h.best_time_sec + 's' : '--' },
-      { k: '檔位', v: (h.draw || '?') + ' 檔' },
-      { k: '獨贏賠率', v: (typeof h.odds_win === 'number' && h.odds_win > 0 && h.odds_win < 999) ? (Math.round(h.odds_win * 10) / 10).toFixed(1) + 'x' : '--' },
-      { k: '位置賠率', v: (typeof h.odds_place === 'number' && h.odds_place > 0 && h.odds_place < 999) ? (Math.round(h.odds_place * 10) / 10).toFixed(1) + 'x' : '--' }
+      { k: '檔位', v: (h.draw || '?') + ' 檔' }
     ];
+    (function () {
+      const done = (meta && typeof meta.result_available !== 'undefined') ? !!meta.result_available : true;
+      const vOW = (typeof h.odds_win === 'number' && h.odds_win > 0 && h.odds_win < 999) ? (Math.round(h.odds_win * 10) / 10).toFixed(1) + 'x' : (done ? '—' : '<span style="color:var(--text-dim);font-weight:600;">排位待定</span>');
+      const vOP = (typeof h.odds_place === 'number' && h.odds_place > 0 && h.odds_place < 999) ? (Math.round(h.odds_place * 10) / 10).toFixed(1) + 'x' : (done ? '—' : '<span style="color:var(--text-dim);font-weight:600;">排位待定</span>');
+      basic.push({ k: '獨贏賠率', v: vOW }, { k: '位置賠率', v: vOP });
+    })();
     const basicHtml = '<div class="hd-grid">' + basic.map(function (c) {
       return '<div class="cell"><span class="k">' + c.k + '</span><span class="v">' + c.v + '</span></div>';
     }).join('') + '</div>';
@@ -1545,7 +1549,12 @@
 
     const todayAI = $('todayAI');
     if (todayAI) {
-      function _fmtOddsUI(o) { if (o == null || typeof o !== 'number' || !isFinite(o) || o >= 999 || o <= 0) return '--'; return (Math.round(o * 10) / 10).toFixed(1) + 'x'; }
+      function _fmtOddsUI(o, done) {
+        if (o == null || typeof o !== 'number' || !isFinite(o) || o >= 999 || o <= 0) {
+          return done ? '<span style="color:var(--text-dim);">—</span>' : '<span style="color:var(--text-dim);font-weight:600;">待定</span>';
+        }
+        return (Math.round(o * 10) / 10).toFixed(1) + 'x';
+      }
       let pendingKey = null;
       let pendingIds = [];
       const byDate2 = {};
@@ -1580,6 +1589,37 @@
           } catch (e) { console.warn('todayAI err', id, e); }
         });
         const venue = (DB.races[pendingIds[0]].race_info.venue === 'HV') ? '跑馬地' : '沙田';
+        const _oddsStat = (function () {
+          let total = 0, owOK = 0, opOK = 0;
+          pendingIds.forEach(function (id) {
+            const r = DB.races[id]; if (!r || !Array.isArray(r.horses)) return;
+            r.horses.forEach(function (h) {
+              total++;
+              if (typeof h.odds_win === 'number' && h.odds_win > 0 && h.odds_win < 999) owOK++;
+              if (typeof h.odds_place === 'number' && h.odds_place > 0 && h.odds_place < 999) opOK++;
+            });
+          });
+          const owPct = total ? Math.round(owOK / total * 100) : 0;
+          const ready = (owOK === total && opOK === total);
+          const color = ready ? 'var(--green)' : (owPct >= 50 ? 'var(--gold)' : 'var(--text-dim)');
+          return { total: total, owOK: owOK, opOK: opOK, owPct: owPct, ready: ready, color: color };
+        })();
+        const oddsBannerHtml =
+          '<div style="display:flex;flex-direction:column;gap:8px;padding:0 4px 14px;border-bottom:1px dashed rgba(212,175,55,0.25);margin-bottom:14px;">' +
+          '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">' +
+          '<div style="font-size:12px;"><b style="color:var(--gold);">📊 賠率狀態：</b>' +
+          '<span style="color:' + _oddsStat.color + ';font-weight:700;">獨贏 ' + _oddsStat.owOK + '/' + _oddsStat.total + '</span>' +
+          '<span style="color:var(--text-dim);margin:0 6px;">·</span>' +
+          '<span style="color:' + _oddsStat.color + ';font-weight:700;">位置 ' + _oddsStat.opOK + '/' + _oddsStat.total + '</span>' +
+          '<span style="color:var(--text-dim);margin:0 6px;">·</span>' +
+          (_oddsStat.ready
+            ? '<span style="color:var(--green);font-weight:800;">✅ 全部賽事賠率已同步</span>'
+            : '<span style="color:var(--text-dim);font-weight:600;">⏳ 等候 HKJC 排位/即時賠率公佈 (GitHub Actions workflow 每 3 分鐘同步)</span>') +
+          '</div>' +
+          '<button class="btn secondary" style="padding:4px 10px;font-size:11px;white-space:nowrap;" onclick="event.stopPropagation();triggerDataRefresh();">🔄 手動刷新賠率</button>' +
+          '</div>' +
+          (_oddsStat.ready ? '' : '<div style="font-size:11px;color:var(--text-dim);line-height:1.5;padding-left:4px;">⚠️ 顯示 <b style="color:var(--gold);">排位待定</b> 嘅馬匹 = HKJC 仲未出賠率，等到賽前大約 30-90 分鐘先會自動 populate。Value Bets 建議需要真實賠率先會顯示（暫時 placeholder 999 會自動被過濾）。</div>') +
+          '</div>';
         const headerHtml = '<div class="card">' +
           '<div class="card-title"><h3><span class="emoji">🎯</span>黎緊賽馬日 AI 分析 · ' + pendingKey + ' ' + venue + '</h3></div>' +
           '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:0 4px 16px;">' +
@@ -1587,7 +1627,8 @@
           '<div class="stat-card" style="padding:10px 12px;margin:0;"><div class="label" style="font-size:11px;">出馬匹數</div><div class="value" style="font-size:20px;">' + pendingIds.reduce(function (s, id) { return s + ((DB.races[id].horses && DB.races[id].horses.length) || 0); }, 0) + '</div><div class="delta" style="font-size:10px;">全部賽事</div></div>' +
           '<div class="stat-card" style="padding:10px 12px;margin:0;"><div class="label" style="font-size:11px;">AI 重心場次</div><div class="value" style="font-size:20px;">' + Math.max(1, Math.round(pendingIds.length / 3)) + '</div><div class="delta" style="font-size:10px;">高命中率</div></div>' +
           '<div class="stat-card" style="padding:10px 12px;margin:0;"><div class="label" style="font-size:11px;">Backtest</div><div class="value" style="font-size:20px;color:var(--green);">' + (S.top1Rate ? Math.round(S.top1Rate * 100) : '—') + '%</div><div class="delta" style="font-size:10px;">歷史頭馬命中率</div></div>' +
-          '</div>';
+          '</div>' +
+          oddsBannerHtml;
 
         let raceCardsHtml = '<div style="display:flex;flex-direction:column;gap:12px;">';
         let coreHorses = [];
@@ -1612,7 +1653,7 @@
             const h = p && p.horse ? p.horse : null;
             if (!h) return '';
             const scr = h.scores && typeof h.scores.total === 'number' ? h.scores.total.toFixed(1) : '—';
-            const ow = _fmtOddsUI(h.odds_win);
+            const ow = _fmtOddsUI(h.odds_win, !!info.result_available);
             const rankCls = ri === 0 ? 'top1' : (ri === 1 ? 'top2' : (ri === 2 ? 'top3' : 'top4'));
             const adv = (p.core_advantage && p.core_advantage.detail) ? p.core_advantage.detail.slice(0, 24) + (p.core_advantage.detail.length > 24 ? '…' : '') : '';
             const ai = h._ai || null;
@@ -1652,7 +1693,7 @@
         const coreListHtml = coreHorses && coreHorses.length
           ? '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;">' + coreHorses.slice(0, 12).map(function (h) {
               const scr = h.scores && typeof h.scores.total === 'number' ? h.scores.total.toFixed(1) : '—';
-              const ow = _fmtOddsUI(h.odds_win);
+              const ow = _fmtOddsUI(h.odds_win, false);
               const rd = h.draw ? (h.draw + '檔') : '';
               const rid = pendingIds.find(function (pid) {
                 return DB.races[pid].horses && DB.races[pid].horses.some(function (hh) { return hh.code === h.code; });
@@ -2217,15 +2258,16 @@
     loadAll();
   }
   async function triggerDataRefresh() {
-    toast('🧹 正在同步最新數據，請稍候...');
+    toast('🧹 正在同步最新賽事/賠率數據...');
     try {
       const r = await fetch('/api/refresh', { method: 'GET', cache: 'no-store' });
+      if (!r.ok) throw new Error('STATUS_' + r.status);
       const data = await r.json();
       if (!data || data.ok === false) {
         if (data && data.status === 'running') {
           toast('⏳ ' + (data.message || '同步進行中'), 'warn');
         } else {
-          toast('❌ 同步失敗：' + ((data && data.error) || (data && data.message) || '未知錯誤'), 'warn');
+          throw new Error(((data && data.error) || (data && data.message) || '伺服器回覆失敗'));
         }
         return;
       }
@@ -2238,11 +2280,16 @@
       msg += '，更新 ' + copied + ' 個檔案';
       if (dur > 0) msg += ' (' + dur + 's)';
       toast(msg, 'success');
-      setTimeout(function () {
-        window.location.reload(true);
-      }, 1200);
+      setTimeout(function () { window.location.reload(true); }, 1200);
     } catch (e) {
-      toast('❌ 同步出錯：' + e.message, 'warn');
+      const code = String(e && e.message ? e.message : '');
+      const isStaticMode = code.indexOf('404') >= 0 || code.indexOf('Failed to fetch') >= 0 || code.indexOf('network') >= 0 || code.indexOf('STATUS_404') >= 0;
+      if (isStaticMode) {
+        toast('✅ 靜態模式：已強制清除瀏覽器數據快取，重新載入最新 JSON（伺服器端排程同步 HKJC 即時賠率需於 workflow 自動處理）', 'success');
+        setTimeout(function () { window.location.reload(true); }, 900);
+      } else {
+        toast('❌ 同步出錯：' + code, 'warn');
+      }
     }
   }
   window.reanalyzeCurrent = reanalyzeCurrent;

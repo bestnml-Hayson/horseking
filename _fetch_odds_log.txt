@@ -52,3 +52,5 @@ R6: horseCount=12, updateTime=23/09/2026 01:10
 R7: horseCount=12, updateTime=23/09/2026 01:10
 R8: horseCount=12, updateTime=23/09/2026 01:10
 R9: horseCount=12, updateTime=23/09/2026 01:10
+[2026-09-27 00:47:58] [SCAN] 2026-09-27 ST 冇 CURRENT JSON，quit
+[2026-09-27 00:48:06] [SCAN] 2026-09-27 ST 冇 CURRENT JSON，quit
