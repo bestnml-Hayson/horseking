@@ -1355,38 +1355,78 @@
         const globalRows = [];
         let vbCount = 0;
         let pendingCount = 0;
+        const nextRid = (function () {
+          let bestId = null;
+          let bestKey = null;
+          const now = (function () { const n = new Date(); return new Date(n.getFullYear(), n.getMonth(), n.getDate(), n.getHours(), n.getMinutes(), 0).getTime(); })();
+          DB.raceIndex.forEach(function (rid) {
+            const r = DB.races[rid]; if (!r || !r.race_info) return;
+            if (r.race_info.result_available) return;
+            const dKey = String(r.race_info.race_date || '') + '|' + String(r.race_info.race_number || '00').padStart(2, '0');
+            const postTime = r.race_info.post_time || '';
+            let raceTimeMs = 0;
+            try {
+              const pD = String(r.race_info.race_date || '').split('/').reverse().join('/') + ' ' + String(postTime || '13:00');
+              raceTimeMs = new Date(pD).getTime() || 0;
+            } catch (e) {}
+            const score = (raceTimeMs || 0) + (r.race_info.race_number || 0) * 60000;
+            const better = (bestId === null) || ((raceTimeMs > 0 && now > 0) ? (Math.abs(raceTimeMs - now) < Math.abs(new Date(String(bestKey).split('|').reverse().join('/') + ' ' + (DB.races[bestId].race_info.post_time || '13:00')).getTime() - now)) : (dKey < bestKey));
+            if (better) { bestId = rid; bestKey = dKey; }
+          });
+          return bestId;
+        })();
         DB.raceIndex.forEach(function (rid) {
           const race = DB.races[rid];
           if (!race || !race.race_info) return;
           const done = !!race.race_info.result_available;
           if (!done) pendingCount++;
+          if (done || rid !== nextRid) return;
           const vbPerRace = DB._valueBets[rid];
           if (!vbPerRace) return;
           const ri = race.race_info;
           const venueCode = String(ri.venue || '').indexOf('跑馬') >= 0 || /HV/i.test(String(ri.venue || '')) ? 'HV' : 'ST';
-          const reRank = window.HorseAIKelly.valueBetRank(race.horses, DB._kellyOpts);
+          const reRank = window.HorseAIKelly.valueBetRank(
+            (race.horses || []).filter(function (h) {
+              const ow = Number(h.odds_win) || 0;
+              const op = Number(h.odds_place) || 0;
+              return ((ow > 1 && ow <= 200) || (op > 1 && op <= 100));
+            }),
+            DB._kellyOpts
+          );
           reRank.valueBetsSorted.forEach(function (it) {
             const a = it.analysis;
-            if (!a.win.isValueBet && !a.place.isValueBet) return;
-            if (!done) vbCount++;
+            const owValid = Number(a.win.decimalOdds) > 1 && Number(a.win.decimalOdds) <= 200;
+            const opValid = Number(a.place.decimalOdds) > 1 && Number(a.place.decimalOdds) <= 100;
+            if (!owValid && !opValid) return;
+            const winOk = owValid && a.win.isValueBet;
+            const placeOk = opValid && a.place.isValueBet;
+            if (!winOk && !placeOk) return;
+            vbCount++;
             globalRows.push({
               done: done,
               rid: rid, venue: venueCode, rn: ri.race_number, date: ri.race_date || '',
               number: it.number, name: it.name, code: it.code,
               winP: Math.round(((race.horses[it.idx] && race.horses[it.idx]._ai) ? race.horses[it.idx]._ai.winProbPct : 0) * 100) / 100,
-              oddsW: a.win.decimalOdds, oddsP: a.place.decimalOdds,
-              evPct: a.win.isValueBet ? a.win.evPct : a.place.evPct,
-              kellyLabel: a.win.kellyFractionLabel, fKelly: Math.max(a.win.fKellyFraction, a.place.fKellyFraction),
-              winBetHKD: a.win.betHKD, placeBetHKD: a.place.betHKD,
-              winValue: a.win.isValueBet, placeValue: a.place.isValueBet
+              oddsW: owValid ? a.win.decimalOdds : 0, oddsP: opValid ? a.place.decimalOdds : 0,
+              evPct: winOk ? a.win.evPct : a.place.evPct,
+              kellyLabel: winOk ? a.win.kellyFractionLabel : a.place.kellyFractionLabel,
+              fKelly: Math.max(winOk ? a.win.fKellyFraction : 0, placeOk ? a.place.fKellyFraction : 0),
+              winBetHKD: winOk ? a.win.betHKD : 0, placeBetHKD: placeOk ? a.place.betHKD : 0,
+              winValue: winOk, placeValue: placeOk
             });
           });
         });
-        DB._globalValueBets = { totalValueBets: vbCount, totalPendingRaces: pendingCount };
+        DB._globalValueBets = { totalValueBets: vbCount, totalPendingRaces: pendingCount, nextRaceId: nextRid };
         const tb = $('valueBetTable').querySelector('tbody');
         if (tb) {
+          const vbTitle = document.querySelector('#valueBetCard h4, #valueBetCard h3, #valueBetCard .card-title, #valueBetCard h5');
+          if (nextRid) {
+            const nxR = DB.races[nextRid]; const nxI = nxR && nxR.race_info ? nxR.race_info : {};
+            const nxV = String(nxI.venue || '') === 'HV' ? '跑馬地' : (String(nxI.venue || 'ST') === 'ST' ? '沙田' : (String(nxI.venue || '')));
+            if (vbTitle) vbTitle.textContent = '💰 價值投注建議（下一場：' + (nxI.race_date || '') + ' ' + nxV + ' R' + (nxI.race_number || '?') + ' · EV > 0 · Half Kelly）';
+          }
           if (!globalRows.length) {
-            tb.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-dim);padding:18px;">所有市場賠率未更新，暫無 EV>0 之價值投注；等排位 + 即時賠率公佈。</td></tr>';
+            tb.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-dim);padding:18px;">市場賠率未更新（999 佔位），暫無 EV>0 之價值投注；請等排位公佈 + 即時賠率刷新。</td></tr>';
           } else {
             tb.innerHTML = globalRows.sort(function (a, b) { return b.evPct - a.evPct; }).slice(0, 30).map(function (r) {
               return '<tr style="' + (r.done ? 'opacity:0.55;' : '') + '">' +
@@ -2270,32 +2310,52 @@
     const host = document.querySelector('#jockeysTable tbody');
     if (!host) return;
     const upcoming = getUpcomingCounts();
-    const jocks = Object.entries(DB.jockeysDB || {}).map(function (entry) {
-      const name = entry[0];
-      const j = entry[1] || {};
-      const wr = (typeof j.win_rate === 'number') ? j.win_rate : (j.starts ? (j.wins || 0) / j.starts : 0);
-      const pr = (typeof j.q_rate === 'number') ? j.q_rate : (j.starts ? (j.q_count || 0) / j.starts : 0);
-      const starts = j.starts || j.ride_count || 0;
-      const wins = j.wins || 0;
-      const places = typeof j.places === 'number' ? j.places : (j.q_count || 0);
+    const jAgg = {};
+    (DB.raceIndex || []).forEach(function (rid) {
+      const r = DB.races[rid]; if (!r || !r.race_info || !r.race_info.result_available) return;
+      (r.horses || []).forEach(function (h) {
+        const n = (h && h.jockey) ? String(h.jockey).trim() : ''; if (!n) return;
+        if (!jAgg[n]) jAgg[n] = { rides: 0, wins: 0, qs: 0, places: 0, best_dist: {}, name: n };
+        const j = jAgg[n];
+        j.rides++;
+        const fin = Number(h.finish) || 0;
+        if (fin >= 1 && fin <= 3) j.places++;
+        if (fin >= 1 && fin <= 4) j.qs++;
+        if (fin === 1) {
+          j.wins++;
+          const dK = String(r.race_info.distance_m || '?') + 'm';
+          j.best_dist[dK] = (j.best_dist[dK] || 0) + 1;
+        }
+      });
+    });
+    const jocks = Object.keys(jAgg).map(function (name) {
+      const j = jAgg[name] || {};
+      const staticJ = (DB.jockeysDB && DB.jockeysDB[name]) ? DB.jockeysDB[name] : {};
+      const rides = (typeof j.rides === 'number' && j.rides > 0) ? j.rides : (staticJ.starts || staticJ.ride_count || 0);
+      const wins = j.wins || staticJ.wins || 0;
+      const qs = j.qs || staticJ.q_count || 0;
+      const places = (typeof j.places === 'number') ? j.places : (qs || staticJ.places || 0);
+      const wr = rides ? (wins / rides) : (typeof staticJ.win_rate === 'number' ? staticJ.win_rate : 0);
+      const pr = rides ? (qs / rides) : (typeof staticJ.q_rate === 'number' ? staticJ.q_rate : 0);
       const form = (wr >= 0.18) ? 88 : (wr >= 0.14) ? 75 : (wr >= 0.10) ? 60 : 50;
-      const upcomingN = upcoming.jockeyRides[name] || 0;
-      const bestDistRaw = (typeof j.distance_win_rate === 'object' && j.distance_win_rate)
-        ? Object.entries(j.distance_win_rate).sort(function (a, b) { return b[1] - a[1]; })[0] : null;
+      const upcomingN = (upcoming && upcoming.jockeyRides) ? (upcoming.jockeyRides[name] || 0) : 0;
+      const bestDistArr = Object.keys(j.best_dist || {}).sort(function (a, b) { return j.best_dist[b] - j.best_dist[a]; });
+      const bestDistRaw = bestDistArr.length ? [bestDistArr[0], j.best_dist[bestDistArr[0]] / Math.max(1, rides)] : null;
       const specialty = (wr * 100).toFixed(0) + '%勝 / ' + (pr * 100).toFixed(0) + '%入Q';
       return {
         name: name,
-        starts: starts,
+        starts: rides,
         wins: wins,
         places: places,
+        qs: qs,
         win_rate: wr,
         place_rate: pr,
         current_form: form,
         best_dist: bestDistRaw ? (bestDistRaw[0] + ' ' + Math.round(bestDistRaw[1] * 100) + '%') : specialty,
         upcoming: upcomingN + ' 場'
       };
-    }).sort(function (a, b) { return b.win_rate - a.win_rate; });
-    host.innerHTML = jocks.map(function (j, i) {
+    }).sort(function (a, b) { return (b.win_rate - a.win_rate) || (b.starts - a.starts); });
+    host.innerHTML = jocks.slice(0, 20).map(function (j, i) {
       const wrPct = Math.round(j.win_rate * 100);
       const prPct = Math.round(j.place_rate * 100);
       const formCls = j.current_form >= 85 ? 'good' : (j.current_form >= 70 ? 'mid' : 'bad');
@@ -2311,7 +2371,7 @@
         '<td><span class="last3"><span class="' + formCls + '">' + j.current_form + '</span></span></td>' +
         '<td>' + j.best_dist + '</td>' +
         '</tr>';
-    }).join('');
+    }).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--text-dim);padding:16px;">騎師數據未準備，請先完成載入。</td></tr>';
   }
 
   function renderTrainersTable() {
