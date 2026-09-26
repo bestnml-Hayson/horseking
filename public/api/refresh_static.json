@@ -1,9 +1,9 @@
 {
-    "ok":  true,
-    "status":  "static-deploy",
-    "message":  "Data refreshed on Vercel deploy. For live updates, run sync_data locally then git push / redeploy.",
-    "copied_files":  0,
-    "total_races":  145,
-    "generated_at":  "2026-09-26T02:53:40.2123858+08:00",
-    "hint_manual":  "Run: powershell -File sync_data.ps1 ; git add -A ; git commit -m \u0027data: refresh\u0027 ; git push  (Vercel auto rebuild)"
+  "ok": true,
+  "status": "static-deploy",
+  "message": "Data refreshed on Vercel deploy. For live updates, run sync_data locally then git push / redeploy.",
+  "copied_files": 0,
+  "total_races": 145,
+  "generated_at": "2026-09-26T16:37:46.1693049+00:00",
+  "hint_manual": "Run: powershell -File sync_data.ps1 ; git add -A ; git commit -m 'data: refresh' ; git push  (Vercel auto rebuild)"
 }

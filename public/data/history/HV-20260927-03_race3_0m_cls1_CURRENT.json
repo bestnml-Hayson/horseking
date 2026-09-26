@@ -1,0 +1,30 @@
+{
+  "meta": {
+    "import_from": "https://racing.hkjc.com/zh-hk/local/information/racecard?racedate=2026/09/27&Racecourse=HV&RaceNo=3",
+    "import_time": "2026-09-26 16:37:50",
+    "race_name_full": "董事盃",
+    "update_time": "2026-09-26 16:37:50",
+    "note": "HKJC racecard auto-populated R3 跑馬地 2026-09-27: entries/last_6(0/0)/gear/draw/rating/weight/jockey/trainer/post_time/num_horses fully parsed from HKJC zh-hk racecard. odds / results / payouts will be auto-filled by sync_data Actions Steps A/C/G."
+  },
+  "race_info": {
+    "race_id": "HV-20260927-03",
+    "race_date": "2026-09-27",
+    "race_number": 3,
+    "venue": "跑馬地",
+    "track": "",
+    "surface": "草地",
+    "distance_m": 0,
+    "class": "",
+    "rating_range": "",
+    "prize": "",
+    "going": "好地",
+    "post_time": "14:00",
+    "result_available": false,
+    "num_horses": 0,
+    "official_result": [],
+    "split_times": [],
+    "payouts": {}
+  },
+  "horses": [],
+  "entries": []
+}

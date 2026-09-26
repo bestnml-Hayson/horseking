@@ -1,0 +1,32 @@
+{
+  "started_at": "2026-09-26 16:37:59",
+  "date_dash": "2026-09-27",
+  "date_slash": "2026/09/27",
+  "venue": "HV",
+  "races": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+  ],
+  "per_info_fetch_bytes": {},
+  "per_race_horses_updated": {},
+  "errors": [
+    "R01 horses/entries 空",
+    "R02 horses/entries 空",
+    "R03 horses/entries 空",
+    "R04 horses/entries 空",
+    "R05 horses/entries 空",
+    "R06 horses/entries 空",
+    "R07 horses/entries 空",
+    "R08 horses/entries 空",
+    "R09 horses/entries 空"
+  ],
+  "finished_at": "2026-09-26 16:37:59",
+  "total_horses_with_supplement": 0
+}
