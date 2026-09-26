@@ -1355,7 +1355,7 @@
     const vbCard = $('valueBetCard');
     if (vbCard && window.HorseAIKelly && DB._valueBets) {
       try {
-        DB._kellyOpts = DB._kellyOpts || { kellyFraction: 0.5, bankrollHKD: 5000 };
+        DB._kellyOpts = DB._kellyOpts || { kellyFraction: 0.25, bankrollHKD: 100000 };
         const globalRows = [];
         let vbCount = 0;
         let pendingCount = 0;
@@ -1386,11 +1386,39 @@
           if (!done) pendingCount++;
           if (done || rid !== nextRid) return;
           const vbPerRace = DB._valueBets[rid];
+          const horses = race.horses || [];
+          const field = horses.slice();
+          const invOdds = function (x) { return (typeof x.odds_win === 'number' && x.odds_win > 1 && x.odds_win < 999) ? 1 / x.odds_win : 0; };
+          let pmSum = 0, pubSum = 0;
+          field.forEach(function (x) { pmSum += (x._ai && x._ai.winProbPct > 0) ? (x._ai.winProbPct / 100) : (1 / Math.max(field.length, 1)); pubSum += invOdds(x); });
+          const horsesWithBB = field.map(function (h) {
+            const winProb = (h._ai && h._ai.winProbPct > 0) ? (h._ai.winProbPct / 100) : 0;
+            const pModel = pmSum > 0 ? winProb / pmSum : 1 / Math.max(field.length, 1);
+            const pPublic = pubSum > 0 ? invOdds(h) / pubSum : 1 / Math.max(field.length, 1);
+            const pf = 0.25 * pModel + 0.75 * pPublic;
+            const oddsWin = (typeof h.odds_win === 'number' && h.odds_win > 1) ? h.odds_win : 0;
+            const evRaw = oddsWin > 0 ? (pf * oddsWin) : 0;
+            const evRounded = Math.round(evRaw * 100) / 100;
+            const o = oddsWin;
+            const fFull = (o > 1) ? (((o - 1) * pf) - (1 - pf)) / (o - 1) : 0;
+            const fStar = Math.max(0, fFull) * 0.25;
+            const isVB = (evRounded > 1.15) && (fStar > 0);
+            const bet = isVB ? (Math.round(DB._kellyOpts.bankrollHKD * fStar / 10) * 10) : 0;
+            return Object.assign({}, h, {
+              bb_p_final: Math.round(pf * 1000) / 10,
+              bb_ev: evRounded,
+              bb_is_value_bet: isVB,
+              bb_recommended_bet: bet,
+              bb_fStar: fStar
+            });
+          });
+          const bbIdxMap = {};
+          horsesWithBB.forEach(function (h) { if (h.number != null) bbIdxMap[h.number] = h; });
           if (!vbPerRace) return;
           const ri = race.race_info;
           const venueCode = String(ri.venue || '').indexOf('跑馬') >= 0 || /HV/i.test(String(ri.venue || '')) ? 'HV' : 'ST';
           const reRank = window.HorseAIKelly.valueBetRank(
-            (race.horses || []).filter(function (h) {
+            horses.filter(function (h) {
               const ow = Number(h.odds_win) || 0;
               const op = Number(h.odds_place) || 0;
               return ((ow > 1 && ow <= 200) || (op > 1 && op <= 100));
@@ -1404,19 +1432,26 @@
             if (!owValid && !opValid) return;
             const winOk = owValid && a.win.isValueBet;
             const placeOk = opValid && a.place.isValueBet;
-            if (!winOk && !placeOk) return;
+            const bbH = bbIdxMap[it.number];
+            const bbIsVB = bbH && bbH.bb_is_value_bet;
+            if (!winOk && !placeOk && !bbIsVB) return;
             vbCount++;
             globalRows.push({
               done: done,
               rid: rid, venue: venueCode, rn: ri.race_number, date: ri.race_date || '',
               number: it.number, name: it.name, code: it.code,
+              bb_p_final: bbH ? bbH.bb_p_final : 0,
+              bb_ev: bbH ? bbH.bb_ev : 0,
+              bb_recommended_bet: bbH ? bbH.bb_recommended_bet : 0,
+              bb_is_value_bet: !!bbIsVB,
               winP: Math.round(((race.horses[it.idx] && race.horses[it.idx]._ai) ? race.horses[it.idx]._ai.winProbPct : 0) * 100) / 100,
               oddsW: owValid ? a.win.decimalOdds : 0, oddsP: opValid ? a.place.decimalOdds : 0,
               evPct: winOk ? a.win.evPct : a.place.evPct,
               kellyLabel: winOk ? a.win.kellyFractionLabel : a.place.kellyFractionLabel,
               fKelly: Math.max(winOk ? a.win.fKellyFraction : 0, placeOk ? a.place.fKellyFraction : 0),
-              winBetHKD: winOk ? a.win.betHKD : 0, placeBetHKD: placeOk ? a.place.betHKD : 0,
-              winValue: winOk, placeValue: placeOk
+              winBetHKD: bbH && bbH.bb_recommended_bet > 0 ? bbH.bb_recommended_bet : (winOk ? a.win.betHKD : 0),
+              placeBetHKD: placeOk ? a.place.betHKD : 0,
+              winValue: winOk || bbIsVB, placeValue: placeOk
             });
           });
         });
@@ -1427,20 +1462,27 @@
           if (nextRid) {
             const nxR = DB.races[nextRid]; const nxI = nxR && nxR.race_info ? nxR.race_info : {};
             const nxV = String(nxI.venue || '') === 'HV' ? '跑馬地' : (String(nxI.venue || 'ST') === 'ST' ? '沙田' : (String(nxI.venue || '')));
-            if (vbTitle) vbTitle.textContent = '💰 價值投注建議（下一場：' + (nxI.race_date || '') + ' ' + nxV + ' R' + (nxI.race_number || '?') + ' · EV > 0 · Half Kelly）';
+            if (vbTitle) vbTitle.textContent = '💰 價值投注建議（下一場：' + (nxI.race_date || '') + ' ' + nxV + ' R' + (nxI.race_number || '?') + ' · EV > 1.15 · 1/4 Kelly · 本金 $100,000）';
           }
           if (!globalRows.length) {
-            tb.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-dim);padding:18px;">市場賠率未更新（999 佔位），暫無 EV>0 之價值投注；請等排位公佈 + 即時賠率刷新。</td></tr>';
+            tb.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-dim);padding:18px;">市場賠率未更新（999 佔位），暫無 EV>1.15 之 Bill Benter 價值投注；請等排位公佈 + 即時賠率刷新。</td></tr>';
           } else {
-            tb.innerHTML = globalRows.sort(function (a, b) { return b.evPct - a.evPct; }).slice(0, 30).map(function (r) {
-              return '<tr style="' + (r.done ? 'opacity:0.55;' : '') + '">' +
+            tb.innerHTML = globalRows.sort(function (a, b) { return (b.bb_ev || (b.evPct + 1)) - (a.bb_ev || (a.evPct + 1)); }).slice(0, 30).map(function (r) {
+              const isVB = r.bb_is_value_bet;
+              const rowBg = isVB ? 'background-color:#d1fae5;' : '';
+              const vbStrong = isVB ? 'color:#064e3b;font-weight:800;' : '';
+              const vbTag = isVB ? ' <span style="display:inline-block;padding:1px 6px;border-radius:4px;background:#065f46;color:#ecfdf5;font-size:10px;font-weight:800;margin-left:4px;vertical-align:middle;white-space:nowrap;">[價值投注]</span>' : '';
+              const evText = (r.bb_ev && r.bb_ev > 0) ? r.bb_ev.toFixed(2) : ((r.evPct != null) ? ('1.' + Math.max(0, Math.round((r.evPct + 1 - 1) * 100)).toString().padStart(2, '0')) : '—');
+              const pfText = (r.bb_p_final && r.bb_p_final > 0) ? Number(r.bb_p_final).toFixed(1) + '%' : ((r.winP && r.winP > 0) ? r.winP + '%' : '—');
+              const betText = r.bb_recommended_bet && r.bb_recommended_bet > 0 ? ('$' + r.bb_recommended_bet.toLocaleString('en-HK')) : (r.winValue ? ('$' + r.winBetHKD) : '—');
+              return '<tr style="' + (r.done ? 'opacity:0.55;' : '') + rowBg + '">' +
                 '<td><b>' + (r.date || '').slice(5) + ' ' + r.venue + ' R' + r.rn + '</b>' + (r.done ? ' <span style="color:var(--text-dim);">(已完)</span>' : '') + '</td>' +
-                '<td onclick="event.stopPropagation();selectRaceId(\'' + r.rid + '\');setTimeout(function(){openHorseDetail(\'' + (r.number || r.name || '') + '\');}, 150);" style="cursor:pointer;color:var(--gold);font-weight:700;">#' + (r.number || '?') + ' ' + (r.name || '') + '</td>' +
-                '<td>' + r.winP + '%</td>' +
+                '<td onclick="event.stopPropagation();selectRaceId(\'' + r.rid + '\');setTimeout(function(){openHorseDetail(\'' + (r.number || r.name || '') + '\');}, 150);" style="cursor:pointer;color:var(--gold);font-weight:700;">#' + (r.number || '?') + ' ' + (r.name || '') + vbTag + '</td>' +
+                '<td style="font-weight:700;">' + pfText + '</td>' +
                 '<td>' + (r.oddsW && r.oddsW > 0 ? r.oddsW.toFixed(1) : '—') + (r.oddsP && r.oddsP > 0 ? ' / 位 ' + r.oddsP.toFixed(1) : '') + '</td>' +
-                '<td style="color:var(--green);font-weight:700;">EV ' + (r.evPct > 0 ? '+' : '') + r.evPct.toFixed(1) + '%</td>' +
-                '<td>' + r.kellyLabel + ' ' + Math.round(r.fKelly * 100 * 10) / 10 + '%</td>' +
-                '<td style="color:' + (r.winValue ? 'var(--green)' : 'var(--text-dim)') + ';font-weight:700;">' + (r.winValue ? '$' + r.winBetHKD : '—') + '</td>' +
+                '<td style="color:var(--green);' + vbStrong + '">' + evText + '</td>' +
+                '<td>' + (r.kellyLabel ? (r.kellyLabel + ' ' + Math.round(r.fKelly * 100 * 10) / 10 + '%') : '1/4 Kelly') + '</td>' +
+                '<td style="color:' + (isVB || r.winValue ? '#064e3b' : 'var(--text-dim)') + ';' + vbStrong + '">' + betText + '</td>' +
                 '<td style="color:' + (r.placeValue ? 'var(--green)' : 'var(--text-dim)') + ';font-weight:700;">' + (r.placeValue ? '$' + r.placeBetHKD : '—') + '</td>' +
                 '</tr>';
             }).join('');
@@ -2122,64 +2164,116 @@
 
     const budgetHtml = '';
 
-    const horsesHtml = '<div class="table-scroll" style="margin-top:4px;">' +
-      '<table class="data-table" style="min-width:1020px;"><thead><tr>' +
-      '<th>排名</th><th>馬號</th><th>馬匹</th><th>檔</th><th>評分</th><th>體重</th><th>近績6</th><th>晨</th><th>醫</th><th>異</th><th>獨贏</th>' +
-      '<th title="晨操狀態">操</th><th title="路程專長">路</th><th title="騎馬默契">契</th><th title="評分走勢/同班適應">勢</th>' +
-      '<th>騎+</th><th>練+</th><th>AI總分</th>' +
+    const bbDefaultBankroll = 100000;
+    if (!window._bbBankroll) window._bbBankroll = bbDefaultBankroll;
+    const bbField = (data.horses || []).slice();
+    const bbFallbackMap = {};
+    analysis.all_ranked_horses.forEach(function (rh) { if (rh.number != null) bbFallbackMap[rh.number] = rh; });
+    const bbRaw = bbField.map(function (h, idx) {
+      const enriched = bbFallbackMap[h.number] || h;
+      const s = (enriched.scores) ? enriched.scores : {};
+      if (typeof h.p_final === 'number' && typeof h.ev === 'number') {
+        const fStar = (h.recommended_bet && h.recommended_bet > 0) ? (h.recommended_bet / bbDefaultBankroll) : 0;
+        return Object.assign({}, enriched, {
+          p_final: h.p_final, ev: h.ev,
+          is_value_bet: !!h.is_value_bet,
+          recommended_bet: Number(h.recommended_bet) || 0,
+          _fStar: fStar,
+          scores: s
+        });
+      }
+      const field = bbField;
+      const winProb = (enriched._ai && enriched._ai.winProbPct > 0) ? (enriched._ai.winProbPct / 100) : 0;
+      let pmSum = 0;
+      field.forEach(function (x) {
+        const rh2 = bbFallbackMap[x.number] || x;
+        pmSum += (rh2._ai && rh2._ai.winProbPct > 0) ? (rh2._ai.winProbPct / 100) : (1 / Math.max(field.length, 1));
+      });
+      const pModel = pmSum > 0 ? winProb / pmSum : 1 / Math.max(field.length, 1);
+      const invOdds = function (x) { return (typeof x.odds_win === 'number' && x.odds_win > 1 && x.odds_win < 999) ? 1 / x.odds_win : 0; };
+      let pubSum = 0;
+      field.forEach(function (x) { pubSum += invOdds(x); });
+      const pPublic = pubSum > 0 ? invOdds(h) / pubSum : 1 / Math.max(field.length, 1);
+      const pf = 0.25 * pModel + 0.75 * pPublic;
+      const oddsWin = (typeof h.odds_win === 'number' && h.odds_win > 1) ? h.odds_win : 0;
+      const evRaw = oddsWin > 0 ? (pf * oddsWin) : 0;
+      const evRounded = Math.round(evRaw * 100) / 100;
+      const o = oddsWin;
+      const fFull = (o > 1) ? (((o - 1) * pf) - (1 - pf)) / (o - 1) : 0;
+      const fStar = Math.max(0, fFull) * 0.25;
+      const isVB = (evRounded > 1.15) && (fStar > 0);
+      const bet = isVB ? (Math.round(bbDefaultBankroll * fStar / 10) * 10) : 0;
+      return Object.assign({}, enriched, {
+        p_final: Math.round(pf * 1000) / 10,
+        ev: evRounded,
+        is_value_bet: isVB,
+        recommended_bet: bet,
+        _fStar: fStar,
+        scores: s
+      });
+    });
+    bbRaw.sort(function (a, b) { return (Number(b.ev) || 0) - (Number(a.ev) || 0); });
+    window._bbFStar = window._bbFStar || {};
+    window._bbFStar[id] = {};
+    bbRaw.forEach(function (h) {
+      if (h.number != null) {
+        window._bbFStar[id][h.number] = (h._fStar > 0) ? h._fStar : ((h.recommended_bet && bbDefaultBankroll > 0) ? (h.recommended_bet / bbDefaultBankroll) : 0);
+      }
+    });
+    const bbDomId = 'raceBody_' + id.replace(/[^a-zA-Z0-9]/g, '_');
+    const bbInputId = 'bb_bankroll_' + id.replace(/[^a-zA-Z0-9]/g, '_');
+    const bbBankrollHtml = '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;margin:4px 0 10px;border-radius:8px;background:rgba(212,175,55,0.06);border:1px solid rgba(212,175,55,0.2);flex-wrap:wrap;">' +
+      '<div style="font-size:12px;color:var(--gold);font-weight:700;">🧮 Bill Benter 25/75 融合 · 1/4 Kelly · EV 門檻 1.15</div>' +
+      '<div style="display:flex;align-items:center;gap:6px;"><label for="' + bbInputId + '" style="font-size:12px;font-weight:600;">總本金 (HKD)</label>' +
+      '<input type="number" min="1000" step="1000" value="' + window._bbBankroll + '" id="' + bbInputId + '" class="bb-bankroll-input" data-rid="' + id + '" ' +
+      'style="width:140px;padding:4px 8px;border-radius:5px;border:1px solid rgba(255,255,255,0.15);background:rgba(0,0,0,0.3);color:var(--text);font-weight:700;font-size:12px;" ' +
+      'oninput="(function(){const i=document.getElementById(\'' + bbInputId + '\');if(!i)return;const v=Math.max(1000,parseInt(i.value)||0);window._bbBankroll=v;' +
+      'const m=window._bbFStar&&window._bbFStar[\'' + id + '\']?window._bbFStar[\'' + id + '\']:{};' +
+      'const t=document.getElementById(\'' + bbDomId + '\');if(!t)return;' +
+      't.querySelectorAll(\'tr[data-bb-hn]\').forEach(function(tr){' +
+      'const hn=parseInt(tr.dataset.bbHn);const fs=m[hn]||0;const ev=parseFloat(tr.dataset.bbEv)||0;' +
+      'const bet=(fs>0&&ev>1.15)?(Math.round(v*fs/10)*10):0;' +
+      'const c=tr.querySelector(\'.bb-bet-cell\');if(c)c.textContent=bet>0?\'$\'+bet.toLocaleString(\'en-HK\'):\'—\';' +
+      '});})();"></div></div>';
+    const horsesHtml = bbBankrollHtml + '<div class="table-scroll" style="margin-top:4px;">' +
+      '<table class="data-table" style="min-width:980px;"><thead><tr>' +
+      '<th>排名</th><th>馬號</th><th>馬匹</th><th>檔</th><th>即時賠率</th><th>最終勝率</th><th>期望值 EV</th><th>建議注碼</th>' +
+      '<th>評分</th><th>體重</th><th>近績6</th><th>AI總分</th>' +
       '</tr></thead><tbody>' +
-      analysis.all_ranked_horses.map(function (h) {
-        const s = h.scores;
+      bbRaw.map(function (h, displayIdx) {
+        const s = h.scores || {};
         const aug = h.aug || {};
-        const oddsCls = h.odds_win <= 5 ? 'hot' : (h.odds_win >= 20 ? 'cold' : '');
+        const oddsCls = (h.odds_win <= 5) ? 'hot' : ((h.odds_win >= 20) ? 'cold' : '');
         let rpCls = '';
-        if (h.ai_rank === 1) rpCls = 'top1';
-        else if (h.ai_rank === 2) rpCls = 'top2';
-        else if (h.ai_rank === 3) rpCls = 'top3';
-        else if (h.ai_rank === 4) rpCls = 'top4';
+        const rnk = (h.ai_rank != null) ? h.ai_rank : (displayIdx + 1);
+        if (rnk === 1) rpCls = 'top1';
+        else if (rnk === 2) rpCls = 'top2';
+        else if (rnk === 3) rpCls = 'top3';
+        else if (rnk === 4) rpCls = 'top4';
         const l3 = last6Badge(h);
-        const twScore = s.trackwork || 0;
-        const twTitle = aug.trackwork ? (aug.trackwork.detail || '') : '';
-        const twCls = twScore >= 80 ? 'good' : (twScore >= 60 ? 'mid' : 'bad');
-        const formScore = (typeof s.form === 'number' && isFinite(s.form)) ? s.form : 50;
-        const formCls = formScore >= 75 ? 'good' : (formScore >= 55 ? 'mid' : 'bad');
-        const formTitle = (aug.form_detail && aug.form_detail.note) ? String(aug.form_detail.note).slice(0, 80) : '形勢評分（來源 Formline）';
-        const vetScore = (typeof s.vet === 'number' && isFinite(s.vet)) ? s.vet : 90;
-        const vetCls = vetScore >= 85 ? 'good' : (vetScore >= 65 ? 'mid' : 'bad');
-        const vetTitle = (aug.vet_detail && aug.vet_detail.note) ? (aug.vet_detail.flags && aug.vet_detail.flags.length ? aug.vet_detail.flags.join('、') + ' · ' : '') + String(aug.vet_detail.note).slice(0, 80) : '獸醫健康評分（來源 VeterinaryRecord）';
-        const exceptScore = (typeof s.except === 'number' && isFinite(s.except)) ? s.except : 80;
-        const exceptCls = exceptScore >= 80 ? 'good' : (exceptScore >= 60 ? 'mid' : 'bad');
-        const exceptTitle = (aug.except_detail && aug.except_detail.note) ? (aug.except_detail.flags && aug.except_detail.flags.length ? aug.except_detail.flags.join('、') + ' · ' : '') + String(aug.except_detail.note).slice(0, 80) : '異常因素評分（來源 ExceptionalFactors）';
-        const distScore = s.distance || 0;
-        const distTitle = aug.distance ? (aug.distance.detail || '') : '';
-        const distCls = distScore >= 75 ? 'good' : (distScore >= 55 ? 'mid' : 'bad');
-        const synScore = s.synergy || 0;
-        const synTitle = aug.synergy ? (aug.synergy.detail || '') : '';
-        const synCls = synScore >= 80 ? 'good' : (synScore >= 58 ? 'mid' : 'bad');
-        const trScore = s.trend || 0;
-        const trTitle = aug.trend ? (aug.trend.detail || '') : '';
-        const trCls = trScore >= 70 ? 'good' : (trScore >= 55 ? 'mid' : 'bad');
-        return '<tr class="horse-click" data-number="' + h.number + '" data-name="' + h.name + '">' +
-          '<td><span class="rank-pill ' + rpCls + '">' + h.ai_rank + '</span></td>' +
+        const isVB = !!h.is_value_bet || (Number(h.ev) > 1.15 && h._fStar > 0);
+        const rowStyle = isVB ? 'background-color:#d1fae5;' : '';
+        const vbCell = isVB ? 'background-color:#d1fae5;color:#064e3b;font-weight:800;' : '';
+        const vbTag = isVB ? ' <span style="display:inline-block;padding:1px 6px;border-radius:4px;background:#065f46;color:#ecfdf5;font-size:10px;font-weight:800;margin-left:4px;vertical-align:middle;white-space:nowrap;">[價值投注]</span>' : '';
+        const betText = (h.recommended_bet && h.recommended_bet > 0) ? ('$' + h.recommended_bet.toLocaleString('en-HK')) : '—';
+        const evText = (h.ev && isFinite(Number(h.ev)) && Number(h.ev) > 0) ? Number(h.ev).toFixed(2) : '—';
+        const pfText = (h.p_final != null && isFinite(Number(h.p_final))) ? Number(h.p_final).toFixed(1) + '%' : '—';
+        return '<tr class="horse-click" data-number="' + h.number + '" data-name="' + h.name + '" data-bb-hn="' + h.number + '" data-bb-ev="' + (Number(h.ev) || 0) + '" style="' + rowStyle + '">' +
+          '<td><span class="rank-pill ' + rpCls + '">' + rnk + '</span></td>' +
           '<td><b>#' + h.number + '</b></td>' +
-          '<td><div><b>' + (h.name || '') + ccExpertBadge(h, true) + '</b></div>' +
+          '<td><div><b>' + (h.name || '') + ccExpertBadge(h, true) + vbTag + '</b></div>' +
           '<div style="font-size:11px;color:var(--text-dim);">' + (h.jockey || '') + '/' + (h.trainer || '') + '</div></td>' +
-          '<td>' + h.draw + '</td>' +
-          '<td>' + h.rating + '</td>' +
-          '<td>' + h.weight + '</td>' +
-          '<td>' + l3 + '</td>' +
-          '<td title="' + formTitle.replace(/"/g, '&quot;') + '" style="cursor:help;"><span class="mini-pill ' + formCls + '">' + Math.round(formScore) + '</span></td>' +
-          '<td title="' + vetTitle.replace(/"/g, '&quot;') + '" style="cursor:help;"><span class="mini-pill ' + vetCls + '">' + Math.round(vetScore) + '</span></td>' +
-          '<td title="' + exceptTitle.replace(/"/g, '&quot;') + '" style="cursor:help;"><span class="mini-pill ' + exceptCls + '">' + Math.round(exceptScore) + '</span></td>' +
+          '<td>' + (h.draw || '—') + '</td>' +
           '<td class="odds ' + oddsCls + '">' + fmtOddsUI(h.odds_win) + '</td>' +
-          '<td title="' + twTitle + '" style="cursor:help;"><span class="mini-pill ' + twCls + '">' + Math.round(twScore) + '</span></td>' +
-          '<td title="' + distTitle + '" style="cursor:help;"><span class="mini-pill ' + distCls + '">' + Math.round(distScore) + '</span></td>' +
-          '<td title="' + synTitle + '" style="cursor:help;"><span class="mini-pill ' + synCls + '">' + Math.round(synScore) + '</span></td>' +
-          '<td title="' + trTitle + '" style="cursor:help;"><span class="mini-pill ' + trCls + '">' + Math.round(trScore) + '</span></td>' +
-          '<td style="color:var(--green);font-weight:700;font-size:12px;">+' + (s.jockey_bonus || 0).toFixed(1) + '</td>' +
-          '<td style="color:var(--blue);font-weight:700;font-size:12px;">+' + (s.trainer_bonus || 0).toFixed(1) + '</td>' +
-          '<td><div style="display:flex;align-items:center;gap:6px;"><b style="color:var(--gold);">' + s.total.toFixed(1) + '</b>' +
-          '<div class="mini-score"><div class="fill" style="width:' + Math.min(100, s.total) + '%;"></div></div></div></td>' +
+          '<td style="font-weight:700;">' + pfText + '</td>' +
+          '<td style="' + vbCell + '">' + evText + '</td>' +
+          '<td class="bb-bet-cell" style="' + vbCell + '">' + betText + '</td>' +
+          '<td>' + (h.rating || '—') + '</td>' +
+          '<td>' + (h.weight || '—') + '</td>' +
+          '<td>' + l3 + '</td>' +
+          '<td><div style="display:flex;align-items:center;gap:6px;"><b style="color:var(--gold);">' + (s.total ? s.total.toFixed(1) : '—') + '</b>' +
+          (s.total ? ('<div class="mini-score"><div class="fill" style="width:' + Math.min(100, s.total) + '%;"></div></div>') : '') +
+          '</div></td>' +
           '</tr>';
       }).join('') + '</tbody></table></div>';
 

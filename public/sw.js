@@ -3,8 +3,8 @@
    Cache Strategy: Network First (HTML / Data), Cache First (CSS/JS/Img)
    ========================================================== */
 
-const CACHE_VERSION = 'horse-ai-v2.1.3-odds-status-banner-placeholder';
-const DATA_CACHE = 'horse-ai-data-v2.1.3-odds-status-banner-placeholder';
+const CACHE_VERSION = 'horse-ai-v2.2.0-bill-benter-ui-upgrade';
+const DATA_CACHE = 'horse-ai-data-v2.2.0-bill-benter-ui-upgrade';
 const APP_SHELL = [
   '/',
   '/index.html',
