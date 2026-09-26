@@ -137,12 +137,35 @@
         const env = runtimeEnv || {};
 
         const h = horse || {};
+        const horseCode = h.code || '';
         const last6 = _extractLast6Arr(h);
         const last3 = (Array.isArray(h.last_3) && h.last_3.length) ? h.last_3 : last6.slice(0, 3);
 
         const wrOverall = _winRate(last6);
         const wr3 = _winRate(last3);
-        const sameVenueDist = (histDB && typeof histDB._horseVenDistWinRate === 'function') ? histDB._horseVenDistWinRate(h.code, venue, distanceM) : null;
+        const sameVenueDist = (function () {
+            try {
+                const _db = histDB || (global.window && window.DB ? window.DB : null);
+                if (_db && _db.horsesDB && horseCode && _db.horsesDB[horseCode] && Array.isArray(_db.horsesDB[horseCode].history)) {
+                    const pool = _db.horsesDB[horseCode].history.filter(function (r) {
+                        if (!r) return false;
+                        if (venue && r.venue && String(r.venue) !== String(venue)) return false;
+                        if (distanceM > 0 && r.distance_m && Math.abs(Number(r.distance_m) - distanceM) > 100) return false;
+                        return true;
+                    });
+                    if (pool.length) {
+                        let w = 0, p = 0;
+                        pool.forEach(function (r) {
+                            const f = Number(r.finish) || 99;
+                            if (f === 1) w++;
+                            if (f >= 1 && f <= 3) p++;
+                        });
+                        return { n: pool.length, winRate: (w / pool.length), placeRate: (p / pool.length) };
+                    }
+                }
+            } catch (e) {}
+            return null;
+        })();
 
         const rating = _num(h.rating, 0);
         const weight = _num(h.weight, 126);
