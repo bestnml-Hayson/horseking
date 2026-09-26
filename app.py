@@ -27,11 +27,17 @@ AUTO_REFRESH_INTERVAL = 300  # 5 分鐘自動刷新
 
 sys.path.insert(0, os.path.join(BASE_DIR, 'scripts'))
 try:
-    from ai_engine import run_analysis, simulate_update
+    from ai_engine import run_analysis, simulate_update, bill_benter_quant
     HAS_AI = True
 except Exception as e:
-    HAS_AI = False
-    print(f"[WARN] AI 模組載入失敗: {e}，將以數據直出模式運行")
+    try:
+        from ai_engine import run_analysis, simulate_update
+        bill_benter_quant = None
+        HAS_AI = True
+    except Exception as e2:
+        bill_benter_quant = None
+        HAS_AI = False
+        print(f"[WARN] AI 模組載入失敗: {e}，將以數據直出模式運行")
 
 
 def ensure_analysis():
@@ -136,7 +142,62 @@ class RacingHTTPRequestHandler(SimpleHTTPRequestHandler):
     def _handle_api(self, path, parsed, method='GET'):
         try:
             if path == '/api/race':
-                return self._send_json(load_json(RACE_FILE))
+                race = load_json(RACE_FILE)
+                if isinstance(race, dict) and isinstance(race.get('horses'), list) and callable(bill_benter_quant):
+                    try:
+                        race = deepcopy_local = race
+                        race['horses'] = bill_benter_quant(list(race.get('horses', [])), total_bankroll=100000)
+                    except Exception:
+                        pass
+                return self._send_json(race)
+            if path == '/api/predict':
+                if method == 'POST':
+                    length = int(self.headers.get('Content-Length') or 0)
+                    body = self.rfile.read(length) if length > 0 else b'{}'
+                    payload = {}
+                    try:
+                        payload = json.loads(body.decode('utf-8') or '{}')
+                    except Exception:
+                        payload = {}
+                else:
+                    raw = parse_qs(parsed.query)
+                    horses_raw = (raw.get('horses') or [None])[0]
+                    payload = {}
+                    if isinstance(horses_raw, str) and horses_raw:
+                        try:
+                            payload = json.loads(horses_raw)
+                        except Exception:
+                            payload = {}
+                horses = None
+                if isinstance(payload, list):
+                    horses = payload
+                elif isinstance(payload, dict):
+                    if isinstance(payload.get('horses'), list):
+                        horses = payload['horses']
+                    elif isinstance(payload.get('race'), dict) and isinstance(payload['race'].get('horses'), list):
+                        horses = payload['race']['horses']
+                if not isinstance(horses, list):
+                    race0 = load_json(RACE_FILE)
+                    horses = list(race0.get('horses', [])) if isinstance(race0, dict) else []
+                bankroll = 100000
+                if isinstance(payload, dict):
+                    try:
+                        br = payload.get('total_bankroll') or payload.get('bankroll')
+                        if isinstance(br, (int, float)) and br > 0:
+                            bankroll = int(br)
+                    except Exception:
+                        pass
+                if callable(bill_benter_quant):
+                    out = bill_benter_quant(list(horses), total_bankroll=bankroll)
+                else:
+                    out = [dict(h) for h in (horses or [])]
+                return self._send_json({
+                    'ok': True,
+                    'engine': 'bill_benter_25_75_kelly_1_4',
+                    'total_bankroll': bankroll,
+                    'num_horses': len(out),
+                    'horses': out
+                })
             if path == '/api/analysis':
                 if not os.path.exists(ANALYSIS_FILE):
                     if HAS_AI:

@@ -287,6 +287,7 @@ def run_analysis():
 
     pace_analysis = analyze_pace(race_info, horses)
     scored_horses = score_horses(horses, race_info)
+    scored_horses = bill_benter_quant(scored_horses, total_bankroll=100000)
     top4 = scored_horses[:4]
     betting = generate_betting_suggestion(top4, scored_horses, race_info)
 
@@ -308,6 +309,62 @@ def run_analysis():
     }
     save_analysis(analysis)
     return analysis
+
+
+def bill_benter_quant(horses, total_bankroll=100000, blend_model_wt=0.25, blend_public_wt=0.75, kelly_fraction=0.25, min_ev=1.15):
+    if not horses:
+        return horses
+    n = len(horses)
+    raw_scores = []
+    for h in horses:
+        s = h.get('scores') if isinstance(h.get('scores'), dict) else {}
+        t = s.get('total') if isinstance(s, dict) else None
+        if isinstance(t, (int, float)):
+            raw_scores.append(float(t))
+        else:
+            pace = s.get('pace') if isinstance(s, dict) else None
+            past = s.get('past') if isinstance(s, dict) else None
+            fallback = 0.0
+            for v in (t, pace, past, h.get('base_score'), h.get('speed_figure')):
+                if isinstance(v, (int, float)):
+                    fallback = float(v)
+                    break
+            raw_scores.append(fallback)
+    import math
+    mx = max(raw_scores) if raw_scores else 0.0
+    exps = [math.exp(x - mx) for x in raw_scores]
+    exp_sum = sum(exps) if raw_scores else 0.0
+    p_model = [(e / exp_sum) if exp_sum > 0 else (1.0 / n if n else 0.0) for e in exps]
+    p_public_raw = []
+    for h in horses:
+        odds = h.get('odds_win') or h.get('win_odds') or 0
+        o = float(odds) if isinstance(odds, (int, float)) else 0.0
+        p_public_raw.append((1.0 / o) if o > 1 else 0.0)
+    pub_sum = sum(p_public_raw)
+    if pub_sum > 0:
+        p_public = [x / pub_sum for x in p_public_raw]
+    else:
+        p_public = [1.0 / n if n else 0.0] * n
+    for i, h in enumerate(horses):
+        odds = h.get('odds_win') or h.get('win_odds') or 0
+        o = float(odds) if isinstance(odds, (int, float)) else 0.0
+        pf = blend_model_wt * p_model[i] + blend_public_wt * p_public[i]
+        ev = round(pf * o, 2) if o > 0 else 0.0
+        f_star = 0.0
+        if o > 1:
+            b = o - 1
+            f_raw = (b * pf - (1 - pf)) / b
+            f_star = f_raw * kelly_fraction
+        bet = 0
+        if f_star > 0 and ev > min_ev:
+            raw = float(total_bankroll) * f_star
+            bet = int(round(raw / 10) * 10) if raw > 0 else 0
+        p_final_pct = round(pf * 100, 2)
+        h['p_final'] = p_final_pct
+        h['ev'] = ev
+        h['is_value_bet'] = bool(ev > min_ev and bet > 0)
+        h['recommended_bet'] = bet
+    return horses
 
 
 def simulate_update():
