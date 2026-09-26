@@ -1,0 +1,57 @@
+[2026-09-27 01:23:04] 
+[R1] source: https://bet.hkjc.com/ch/racing/wp/2026-09-27/ST/1
+[2026-09-27 01:23:04] [R1] target: ST-20260927-01_race1_1200m_cls5.json
+[2026-09-27 01:23:04] [R1] parsed horses with odds: [] (0匹)
+[2026-09-27 01:23:04] [R1] OK, updated fields=0
+[2026-09-27 01:23:04] 
+[R2] source: https://bet.hkjc.com/ch/racing/wp/2026-09-27/ST/2
+[2026-09-27 01:23:04] [R2] target: ST-20260927-02_race2_1200m_cls4.json
+[2026-09-27 01:23:04] [R2] parsed horses with odds: [] (0匹)
+[2026-09-27 01:23:04] [R2] OK, updated fields=0
+[2026-09-27 01:23:04] 
+[R3] source: https://bet.hkjc.com/ch/racing/wp/2026-09-27/ST/3
+[2026-09-27 01:23:04] [R3] target: ST-20260927-03_race3_1400m_cls5.json
+[2026-09-27 01:23:04] [R3] parsed horses with odds: [] (0匹)
+[2026-09-27 01:23:04] [R3] OK, updated fields=0
+[2026-09-27 01:23:04] 
+[R4] source: https://bet.hkjc.com/ch/racing/wp/2026-09-27/ST/4
+[2026-09-27 01:23:04] [R4] target: ST-20260927-04_race4_1000m_cls4.json
+[2026-09-27 01:23:05] [R4] parsed horses with odds: [] (0匹)
+[2026-09-27 01:23:05] [R4] OK, updated fields=0
+[2026-09-27 01:23:05] 
+[R5] source: https://bet.hkjc.com/ch/racing/wp/2026-09-27/ST/5
+[2026-09-27 01:23:05] [R5] target: ST-20260927-05_race5_1200m_cls4.json
+[2026-09-27 01:23:05] [R5] parsed horses with odds: [] (0匹)
+[2026-09-27 01:23:05] [R5] OK, updated fields=0
+[2026-09-27 01:23:05] 
+[R6] source: https://bet.hkjc.com/ch/racing/wp/2026-09-27/ST/6
+[2026-09-27 01:23:05] [R6] target: ST-20260927-06_race6_1400m_cls4.json
+[2026-09-27 01:23:05] [R6] parsed horses with odds: [] (0匹)
+[2026-09-27 01:23:05] [R6] OK, updated fields=0
+[2026-09-27 01:23:05] 
+[R7] source: https://bet.hkjc.com/ch/racing/wp/2026-09-27/ST/7
+[2026-09-27 01:23:05] [R7] target: ST-20260927-07_race7_1200m_cls3.json
+[2026-09-27 01:23:05] [R7] parsed horses with odds: [] (0匹)
+[2026-09-27 01:23:05] [R7] OK, updated fields=0
+[2026-09-27 01:23:05] 
+[R8] source: https://bet.hkjc.com/ch/racing/wp/2026-09-27/ST/8
+[2026-09-27 01:23:05] [R8] target: ST-20260927-08_race8_1400m_cls1.json
+[2026-09-27 01:23:05] [R8] parsed horses with odds: [] (0匹)
+[2026-09-27 01:23:05] [R8] OK, updated fields=0
+[2026-09-27 01:23:05] 
+[R9] source: https://bet.hkjc.com/ch/racing/wp/2026-09-27/ST/9
+[2026-09-27 01:23:05] [R9] target: ST-20260927-09_race9_1600m_cls3.json
+[2026-09-27 01:23:05] [R9] parsed horses with odds: [] (0匹)
+[2026-09-27 01:23:05] [R9] OK, updated fields=0
+[2026-09-27 01:23:05] 
+[R10] source: https://bet.hkjc.com/ch/racing/wp/2026-09-27/ST/10
+[2026-09-27 01:23:05] [R10] target: ST-20260927-10_race10_1200m_cls2.json
+[2026-09-27 01:23:05] [R10] parsed horses with odds: [] (0匹)
+[2026-09-27 01:23:05] [R10] OK, updated fields=0
+[2026-09-27 01:23:05] 
+[R11] source: https://bet.hkjc.com/ch/racing/wp/2026-09-27/ST/11
+[2026-09-27 01:23:05] [R11] target: ST-20260927-11_race11_1400m_cls3.json
+[2026-09-27 01:23:05] [R11] parsed horses with odds: [] (0匹)
+[2026-09-27 01:23:05] [R11] OK, updated fields=0
+[2026-09-27 01:23:05] 
+[DONE] files with odds updates: 0/11

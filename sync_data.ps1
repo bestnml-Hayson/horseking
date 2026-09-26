@@ -441,6 +441,7 @@ try {
         generated_at = (Get-Date -Format "yyyy-MM-dd HH:mm:ss")
         racedate = $todayHK
         win_odds = @{}
+        place_odds = @{}
         scratched = @()
         jockey_changes = @()
     }
@@ -452,6 +453,14 @@ try {
             $odds = [double]$m.Groups[3].Value
             if (-not $oddsOut.win_odds.Contains($rn)) { $oddsOut.win_odds[$rn] = @{} }
             $oddsOut.win_odds[$rn][$hn.ToString()] = $odds
+        }
+        $placeCells = [regex]::Matches($html, 'RaceNo=(\d+).*?HorseNo=(\d+).*?class="(?:place|plc)".*?>(\d+(?:\.\d+)?)', [System.Text.RegularExpressions.RegexOptions]::Singleline)
+        foreach ($m in $placeCells) {
+            $rn = "R" + $m.Groups[1].Value
+            $hn = [int]$m.Groups[2].Value
+            $odds = [double]$m.Groups[3].Value
+            if (-not $oddsOut.place_odds.Contains($rn)) { $oddsOut.place_odds[$rn] = @{} }
+            $oddsOut.place_odds[$rn][$hn.ToString()] = $odds
         }
         $scratched = [regex]::Matches($html, '退出.*?No\.?\s*(\d+)', [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
         foreach ($sm in $scratched) { $oddsOut.scratched += [int]$sm.Groups[1].Value }
@@ -469,6 +478,82 @@ try {
     $summary.step_g_races = $oddsOut.win_odds.Keys.Count
     $summary.step_g_scratched_count = $oddsOut.scratched.Count
     Append-Log ("  [G] OK races=" + $summary.step_g_races + " scratched=" + $summary.step_g_scratched_count)
+
+    # --- APPLY LIVE WIN / PLACE ODDS FROM STEP G TO HISTORY JSONS DIRECTLY ---
+    # Root cause of 27/09 missing odds: _fetch_live_odds.py (Step C) ONLY scans
+    # *_CURRENT.json files, which we never generate for ST raceday. Now Step G parses
+    # the OFFICIAL HKJC live odds page successfully, so propagate here to each
+    # ST-YYYYMMDD-NN_raceNN_*.json history file immediately.
+    try {
+        $todayHkYmdNoDash = $todayHK -replace "-", ""
+        $histGlob = Join-Path $histDir "ST-${todayHkYmdNoDash}-*_race*_*.json"
+        $hvGlob = Join-Path $histDir "HV-${todayHkYmdNoDash}-*_race*_*.json"
+        $allRaceJsons = @()
+        foreach ($g in @($histGlob,$hvGlob)) {
+            if (Test-Path $g) { $allRaceJsons += Get-Item $g }
+        }
+        $updatedHist = 0
+        $updatedHorses = 0
+        foreach ($jf in $allRaceJsons) {
+            try {
+                $rm = [regex]::Match($jf.Name, '(?:ST|HV)-\d{8}-(\d{2})_race(\d+)_')
+                if (-not $rm.Success) { continue }
+                $rn = "R" + ([int]$rm.Groups[2].Value).ToString()
+                if (-not $oddsOut.win_odds.Contains($rn)) { continue }
+                $raw = [IO.File]::ReadAllText($jf.FullName, $utf8NoBom)
+                $data = $raw | ConvertFrom-Json -Depth 20
+                $horses = $data.horses
+                if (-not $horses -or $horses.Count -eq 0) { continue }
+                $winMap = $oddsOut.win_odds[$rn]
+                $placeMap = $null
+                if ($oddsOut.place_odds -and $oddsOut.place_odds.Contains($rn)) { $placeMap = $oddsOut.place_odds[$rn] }
+                $changedThis = $false
+                foreach ($h in $horses) {
+                    $hn = $null
+                    if ($h.PSObject.Properties["number"]) { $hn = $h.number }
+                    elseif ($h.PSObject.Properties["horse_no"]) { $hn = $h.horse_no }
+                    else { continue }
+                    $hnStr = ([int]$hn).ToString()
+                    if ($winMap -and $winMap.Contains($hnStr)) {
+                        $o = [double]$winMap[$hnStr]
+                        if ($o -gt 0 -and [double]$h.odds_win -ne $o) {
+                            $h.odds_win = [math]::Round($o, 1)
+                            $updatedHorses++; $changedThis = $true
+                        }
+                    }
+                    if ($placeMap -and $placeMap.Contains($hnStr)) {
+                        $o = [double]$placeMap[$hnStr]
+                        if ($o -gt 0 -and [double]$h.odds_place -ne $o) {
+                            $h.odds_place = [math]::Round($o, 1)
+                            $updatedHorses++; $changedThis = $true
+                        }
+                    }
+                }
+                if ($changedThis) {
+                    if (-not $data.meta) { $data | Add-Member -NotePropertyName meta -NotePropertyValue ([ordered]@{}) }
+                    $meta = $data.meta
+                    if (-not $meta.PSObject.Properties["odds_update_time"]) {
+                        $meta | Add-Member -NotePropertyName "odds_update_time" -NotePropertyValue (Get-Date -Format "dd/MM/yyyy HH:mm") -Force
+                    } else {
+                        $meta.odds_update_time = Get-Date -Format "dd/MM/yyyy HH:mm"
+                    }
+                    if (-not $meta.PSObject.Properties["odds_source"]) {
+                        $meta | Add-Member -NotePropertyName "odds_source" -NotePropertyValue "HKJC racing.hkjc.com/information Odds.aspx Step G live sync" -Force
+                    } else {
+                        $meta.odds_source = "HKJC racing.hkjc.com/information Odds.aspx Step G live sync"
+                    }
+                    $newContent = ($data | ConvertTo-Json -Depth 20)
+                    [IO.File]::WriteAllText($jf.FullName, $newContent, $utf8NoBom)
+                    $updatedHist++
+                }
+            } catch {
+                Append-Log ("  [G-APPLY] WARN on " + $jf.Name + ": " + $_.Exception.Message) "WARN"
+            }
+        }
+        Append-Log ("  [G-APPLY] Injected live odds -> history JSONs: files=" + $updatedHist + " horses=" + $updatedHorses)
+    } catch {
+        Append-Log ("  [G-APPLY] FAIL: " + $_.Exception.Message) "WARN"
+    }
 } catch {
     Append-Log ("  [G] Fetch FAIL (normal if no race today): " + $_.Exception.Message) "WARN"
     $summary.step_g_odds_ok = $false

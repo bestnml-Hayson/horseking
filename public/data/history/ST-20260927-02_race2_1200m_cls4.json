@@ -4,7 +4,9 @@
     "import_time": "2026-09-26 02:26:32",
     "race_name_full": "孔雀讓賽",
     "update_time": "2026-09-26 02:26:32",
-    "note": "HKJC racecard auto-populated R2 沙田 2026-09-27: entries/last_6(5/12)/gear/draw/rating/weight/jockey/trainer/post_time/num_horses fully parsed from HKJC zh-hk racecard. odds / results / payouts will be auto-filled by sync_data Actions Steps A/C/G."
+    "note": "HKJC racecard auto-populated R2 沙田 2026-09-27: entries/last_6(5/12)/gear/draw/rating/weight/jockey/trainer/post_time/num_horses fully parsed from HKJC zh-hk racecard. odds / results / payouts will be auto-filled by sync_data Actions Steps A/C/G.",
+    "odds_update_time": "27/09/2026 01:45",
+    "odds_source": "bet.hkjc.com/ch/racing/wp/2026-09-27/ST/<R> direct MCP browser parse"
   },
   "race_info": {
     "race_id": "ST-20260927-02",
@@ -38,8 +40,8 @@
       "gear": "",
       "last_6": "",
       "best_time_sec": 0.0,
-      "odds_win": 0.0,
-      "odds_place": 0.0,
+      "odds_win": 17.0,
+      "odds_place": 4.2,
       "last_3": [
         3,
         7,
@@ -64,8 +66,8 @@
       "gear": "",
       "last_6": "",
       "best_time_sec": 0.0,
-      "odds_win": 0.0,
-      "odds_place": 0.0,
+      "odds_win": 34.0,
+      "odds_place": 8.5,
       "last_3": [
         10,
         8,
@@ -91,8 +93,8 @@
       "gear": "",
       "last_6": "",
       "best_time_sec": 0.0,
-      "odds_win": 0.0,
-      "odds_place": 0.0,
+      "odds_win": 69.0,
+      "odds_place": 12.0,
       "last_3": [
         12,
         9,
@@ -118,8 +120,8 @@
       "gear": "H/TT",
       "last_6": "5/11/7/5/1/4",
       "best_time_sec": 0.0,
-      "odds_win": 0.0,
-      "odds_place": 0.0,
+      "odds_win": 6.6,
+      "odds_place": 2.3,
       "last_3": [
         5,
         11,
@@ -144,8 +146,8 @@
       "gear": "",
       "last_6": "",
       "best_time_sec": 0.0,
-      "odds_win": 0.0,
-      "odds_place": 0.0,
+      "odds_win": 19.0,
+      "odds_place": 5.2,
       "last_3": [
         10,
         10,
@@ -170,8 +172,8 @@
       "gear": "",
       "last_6": "",
       "best_time_sec": 0.0,
-      "odds_win": 0.0,
-      "odds_place": 0.0,
+      "odds_win": 16.0,
+      "odds_place": 7.8,
       "last_3": [
         8,
         11,
@@ -196,8 +198,8 @@
       "gear": "",
       "last_6": "",
       "best_time_sec": 0.0,
-      "odds_win": 0.0,
-      "odds_place": 0.0,
+      "odds_win": 10.0,
+      "odds_place": 2.9,
       "last_3": [
         3,
         5,
@@ -222,8 +224,8 @@
       "gear": "",
       "last_6": "",
       "best_time_sec": 0.0,
-      "odds_win": 0.0,
-      "odds_place": 0.0,
+      "odds_win": 4.5,
+      "odds_place": 1.8,
       "last_3": [
         4,
         5,
@@ -248,8 +250,8 @@
       "gear": "PP",
       "last_6": "7/7/10/8/9/4",
       "best_time_sec": 0.0,
-      "odds_win": 0.0,
-      "odds_place": 0.0,
+      "odds_win": 12.0,
+      "odds_place": 3.1,
       "last_3": [
         7,
         7,
@@ -274,8 +276,8 @@
       "gear": "CP/XB/TT",
       "last_6": "10/7/2/2/4/10",
       "best_time_sec": 0.0,
-      "odds_win": 0.0,
-      "odds_place": 0.0,
+      "odds_win": 7.1,
+      "odds_place": 2.5,
       "last_3": [
         10,
         7,
@@ -300,8 +302,8 @@
       "gear": "B",
       "last_6": "5/9/5/6/6/2",
       "best_time_sec": 0.0,
-      "odds_win": 0.0,
-      "odds_place": 0.0,
+      "odds_win": 7.4,
+      "odds_place": 2.8,
       "last_3": [
         5,
         9,
@@ -326,8 +328,8 @@
       "gear": "B/TT",
       "last_6": "4/9/10/7/12/3",
       "best_time_sec": 0.0,
-      "odds_win": 0.0,
-      "odds_place": 0.0,
+      "odds_win": 5.6,
+      "odds_place": 2.0,
       "last_3": [
         4,
         9,

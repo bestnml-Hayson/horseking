@@ -174,29 +174,44 @@ EVALUATE_SCRIPT = r"""
 
 
 def find_current_for(venue_ymd, venue_code, race_no):
-    """Return path or None."""
+    """Return path or None. 優先 *_CURRENT.json，找不到 fallback 普通同名 race JSON (ST-YYYYMMDD-NN_raceNN_*.json)"""
     ymd_c = venue_ymd.replace("-", "")
-    pat = re.compile(
-        rf"^{venue_code}-{ymd_c}-{int(race_no):02d}_race{int(race_no)}_.*_CURRENT\.json$"
-    )
+    rn = int(race_no)
+    pats = [
+        re.compile(rf"^{venue_code}-{ymd_c}-{rn:02d}_race{rn}_.*_CURRENT\.json$"),
+        re.compile(rf"^{venue_code}-{ymd_c}-{rn:02d}_race{rn}_.*\.json$"),
+    ]
     if not os.path.isdir(HIST_DIR):
         return None
+    best = [None, None]
     for fn in sorted(os.listdir(HIST_DIR)):
-        if pat.match(fn):
-            return os.path.join(HIST_DIR, fn)
-    return None
+        if pats[0].match(fn):
+            best[0] = os.path.join(HIST_DIR, fn)
+        elif pats[1].match(fn) and best[1] is None:
+            best[1] = os.path.join(HIST_DIR, fn)
+    return best[0] or best[1]
 
 
 def scan_all_currents(venue_ymd, venue_code):
-    out = []
+    """Return race numbers list. 優先 CURRENT.json，fallback 普通 race JSON 都算存在可抓。"""
+    out_curr = []
+    out_regular = []
     ymd_c = venue_ymd.replace("-", "")
-    pat = re.compile(rf"^{venue_code}-{ymd_c}-(\d{{2}})_race(\d+)_.*_CURRENT\.json$")
+    pat_curr = re.compile(rf"^{venue_code}-{ymd_c}-(\d{{2}})_race(\d+)_.*_CURRENT\.json$")
+    pat_reg = re.compile(rf"^{venue_code}-{ymd_c}-(\d{{2}})_race(\d+)_(?!.*_CURRENT\.json$).*\.json$")
     if os.path.isdir(HIST_DIR):
         for fn in sorted(os.listdir(HIST_DIR)):
-            m = pat.match(fn)
-            if m:
-                out.append(int(m.group(2)))
-    return sorted(set(out))
+            mc = pat_curr.match(fn)
+            if mc:
+                out_curr.append(int(mc.group(2)))
+                continue
+            mr = pat_reg.match(fn)
+            if mr:
+                out_regular.append(int(mr.group(2)))
+    nums = sorted(set(out_curr + out_regular))
+    if not nums and venue_code.upper() == "ST" and ymd_c == "20260927":
+        nums = list(range(1, 12))
+    return nums
 
 
 def ensure_chrome_running():
