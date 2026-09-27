@@ -4,6 +4,6 @@
   "message": "Data refreshed on Vercel deploy. For live updates, run sync_data locally then git push / redeploy.",
   "copied_files": 0,
   "total_races": 154,
-  "generated_at": "2026-09-27T04:08:31.6897829+00:00",
+  "generated_at": "2026-09-27T04:30:59.4155520+00:00",
   "hint_manual": "Run: powershell -File sync_data.ps1 ; git add -A ; git commit -m 'data: refresh' ; git push  (Vercel auto rebuild)"
 }
