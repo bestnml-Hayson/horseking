@@ -1,0 +1,61 @@
+name: Live Sync & Benter Predict
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: live-sync-predict
+  cancel-in-progress: true
+
+env:
+  SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+  SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+
+jobs:
+  sync-and-predict:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install --quiet --upgrade pip
+          pip install --quiet -r requirements.txt
+          playwright install chromium
+          python -c "import supabase,requests,bs4,playwright; print('[OK] deps loaded')"
+
+      - name: Step 1 - Scrape live race data & odds
+        run: |
+          echo "=== [SCRAPER] Fetching today's race cards & live odds ==="
+          python scripts/auto_scraper.py --fetch-live
+          echo "=== [SCRAPER] Done ==="
+
+      - name: Step 2 - Benter model prediction
+        run: |
+          echo "=== [BENTER] Running model: Softmax + Odds Fusion + Kelly ==="
+          python scripts/benter_model.py supabase
+          echo "=== [BENTER] Done ==="
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Live Sync & Predict Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- Trigger: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Time: $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
+          echo "- Status: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
