@@ -1,9 +1,5 @@
 {
   "name": "horse-ai-live",
-  "version": 2,
-  "buildCommand": null,
-  "installCommand": "echo no-deps",
-  "outputDirectory": "public",
   "headers": [
     {
       "source": "/(.*)\\.webmanifest",
