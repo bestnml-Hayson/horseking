@@ -51,3 +51,4 @@ yarn-error.log*
 # === 鍘熷 HKJC PDF / debug HTML (鍞旈渶瑕?deploy锛岀暀鏈湴) ===
 data/references/*.pdf
 data/references/_debug*.html
+.vercel

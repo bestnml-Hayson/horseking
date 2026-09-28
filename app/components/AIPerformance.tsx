@@ -165,30 +165,28 @@ export function AIPerformance() {
 
   return (
     <div className="ai-perf-root">
-      {/* Date Selector - always visible when dates exist */}
-      {availableDates.length > 0 && (
-        <div className="perf-date-selector animate-fade-in">
-          <span className="perf-date-label">&#x1F4C5; 賽事日期:</span>
-          <div className="perf-date-pills">
-            {availableDates.map(date => (
-              <button
-                key={date}
-                className={`perf-date-pill ${date === selectedDate ? 'active' : ''}`}
-                onClick={() => setSelectedDate(date)}
-              >
-                {date}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* KPI Header */}
+      {/* KPI Header with compact date selector */}
       <div className="perf-kpi-section animate-fade-in">
         <div className="perf-section-header">
-          <span className="perf-badge ai-badge">AI</span>
-          <span className="perf-badge-label">歷史預測準確度</span>
-          <span className="perf-sublabel">Post-Race Performance Analysis</span>
+          <div className="perf-header-left">
+            <span className="perf-badge ai-badge">AI</span>
+            <span className="perf-badge-label">歷史預測準確度</span>
+            <span className="perf-sublabel">Post-Race Performance Analysis</span>
+          </div>
+          {availableDates.length > 0 && (
+            <div className="perf-date-select-wrap">
+              <label className="perf-date-select-label">&#x1F4C5;</label>
+              <select
+                className="perf-date-select"
+                value={selectedDate ?? ''}
+                onChange={(e) => setSelectedDate(e.target.value)}
+              >
+                {availableDates.map(date => (
+                  <option key={date} value={date}>{date}</option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
 
         {loading ? (

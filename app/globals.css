@@ -1,32 +1,32 @@
 :root {
-  --bg-primary: #0a0f1a;
-  --bg-secondary: #0f1729;
-  --bg-card: #131b2e;
-  --bg-card-hover: #1a2540;
-  --bg-elevated: #1e293b;
-  --border-primary: rgba(30, 41, 59, 0.7);
-  --border-secondary: rgba(51, 65, 85, 0.6);
-  --text-primary: #f1f5f9;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
-  --accent-blue: #3b82f6;
-  --accent-green: #34d399;
-  --accent-amber: #fbbf24;
-  --accent-red: #fb7185;
-  --accent-purple: #a78bfa;
-  --accent-cyan: #22d3ee;
-  --accent-emerald: #34d399;
-  --accent-rose: #fb7185;
-  --accent-sky: #38bdf8;
-  --glow-blue: rgba(59, 130, 246, 0.15);
-  --glow-green: rgba(52, 211, 153, 0.15);
-  --glow-amber: rgba(251, 191, 36, 0.12);
-  --gold-start: #f59e0b;
-  --gold-end: #fbbf24;
-  --silver-start: #94a3b8;
-  --silver-end: #cbd5e1;
-  --bronze-start: #b45309;
-  --bronze-end: #d97706;
+  --bg-primary: #090D16;
+  --bg-secondary: #0D1117;
+  --bg-card: #0F1419;
+  --bg-card-hover: #161B22;
+  --bg-elevated: #1C2128;
+  --border-primary: rgba(48, 54, 61, 0.7);
+  --border-secondary: rgba(63, 71, 80, 0.6);
+  --text-primary: #f0f6fc;
+  --text-secondary: #8b949e;
+  --text-muted: #6e7681;
+  --accent-blue: #58a6ff;
+  --accent-green: #3fb950;
+  --accent-amber: #d29922;
+  --accent-red: #f85149;
+  --accent-purple: #bc8cff;
+  --accent-cyan: #39d2c0;
+  --accent-emerald: #3fb950;
+  --accent-rose: #f85149;
+  --accent-sky: #58a6ff;
+  --glow-blue: rgba(88, 166, 255, 0.15);
+  --glow-green: rgba(63, 185, 80, 0.15);
+  --glow-amber: rgba(210, 153, 34, 0.12);
+  --gold-start: #d29922;
+  --gold-end: #e3b341;
+  --silver-start: #8b949e;
+  --silver-end: #b1bac4;
+  --bronze-start: #9a6700;
+  --bronze-end: #d29922;
 }
 
 * {
@@ -105,8 +105,8 @@ html, body {
 .app-version {
   padding: 3px 10px;
   border-radius: 9999px;
-  background: rgba(59, 130, 246, 0.12);
-  color: #93c5fd;
+  background: rgba(88, 166, 255, 0.12);
+  color: #79c0ff;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.03em;
@@ -195,10 +195,10 @@ html, body {
 }
 .race-pill:hover { border-color: var(--accent-blue); color: var(--text-primary); background: var(--bg-elevated); }
 .race-pill.active {
-  background: linear-gradient(135deg, #1d4ed8, #3b82f6);
-  border-color: #3b82f6;
+  background: linear-gradient(135deg, #1f6feb, #58a6ff);
+  border-color: #58a6ff;
   color: #fff;
-  box-shadow: 0 0 16px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 0 16px rgba(88, 166, 255, 0.3);
 }
 
 .no-races-text { color: var(--text-muted); font-size: 13px; }
@@ -229,9 +229,9 @@ html, body {
 .error-banner {
   padding: 14px 20px;
   border-radius: 12px;
-  background: rgba(239, 68, 68, 0.08);
-  border: 1px solid rgba(239, 68, 68, 0.2);
-  color: #fca5a5;
+  background: rgba(248, 81, 73, 0.08);
+  border: 1px solid rgba(248, 81, 73, 0.2);
+  color: #ffa198;
   font-size: 13px;
 }
 
@@ -251,7 +251,7 @@ html, body {
   right: -10%;
   width: 200px;
   height: 200px;
-  background: radial-gradient(circle, rgba(59, 130, 246, 0.06), transparent 70%);
+  background: radial-gradient(circle, rgba(88, 166, 255, 0.06), transparent 70%);
   pointer-events: none;
 }
 
@@ -268,8 +268,8 @@ html, body {
   gap: 4px;
   padding: 4px 12px;
   border-radius: 9999px;
-  background: rgba(59, 130, 246, 0.12);
-  color: #93c5fd;
+  background: rgba(88, 166, 255, 0.12);
+  color: #79c0ff;
   font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
@@ -342,7 +342,7 @@ html, body {
   padding: 4px 12px;
   border-radius: 9999px;
   background: rgba(245, 158, 11, 0.12);
-  color: #fbbf24;
+  color: #d29922;
   font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
@@ -377,8 +377,8 @@ html, body {
   right: 0;
   height: 4px;
   background: var(--pick-color, var(--accent-blue));
-  box-shadow: 0 0 12px var(--pick-color, rgba(59, 130, 246, 0.5)),
-              0 0 4px var(--pick-color, rgba(59, 130, 246, 0.3));
+  box-shadow: 0 0 12px var(--pick-color, rgba(88, 166, 255, 0.5)),
+              0 0 4px var(--pick-color, rgba(88, 166, 255, 0.3));
 }
 
 .pick-card:hover {
@@ -410,16 +410,16 @@ html, body {
 }
 .pick-rank.rank-silver {
   background: linear-gradient(135deg, var(--silver-start), var(--silver-end));
-  color: #1e293b;
+  color: #161B22;
   text-shadow: none;
-  box-shadow: 0 2px 12px rgba(148, 163, 184, 0.3);
+  box-shadow: 0 2px 12px rgba(139, 148, 158, 0.3);
 }
 .pick-rank.rank-bronze {
   background: linear-gradient(135deg, var(--bronze-start), var(--bronze-end));
   box-shadow: 0 2px 12px rgba(180, 83, 9, 0.35);
 }
 .pick-rank.rank-sky {
-  background: linear-gradient(135deg, #0ea5e9, #38bdf8);
+  background: linear-gradient(135deg, #58a6ff, #79c0ff);
   box-shadow: 0 2px 12px rgba(14, 165, 233, 0.3);
 }
 
@@ -519,8 +519,8 @@ html, body {
 .pick-ai-insight {
   margin-top: 10px;
   padding: 10px 12px;
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(59, 130, 246, 0.06));
-  border: 1px solid rgba(99, 102, 241, 0.2);
+  background: linear-gradient(135deg, rgba(188, 140, 255, 0.08), rgba(88, 166, 255, 0.06));
+  border: 1px solid rgba(188, 140, 255, 0.2);
   border-radius: 10px;
   font-size: 12.5px;
   line-height: 1.7;
@@ -557,7 +557,7 @@ html, body {
   padding: 4px 12px;
   border-radius: 9999px;
   background: rgba(16, 185, 129, 0.12);
-  color: #6ee7b7;
+  color: #56d364;
   font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
@@ -617,8 +617,8 @@ html, body {
   width: 32px;
   height: 32px;
   border-radius: 8px;
-  background: rgba(59, 130, 246, 0.15);
-  color: #93c5fd;
+  background: rgba(88, 166, 255, 0.15);
+  color: #79c0ff;
   font-size: 14px;
   font-weight: 900;
 }
@@ -816,7 +816,7 @@ html, body {
 .data-table tbody tr:nth-child(even) {
   background: rgba(15, 23, 42, 0.4);
 }
-.data-table tbody tr:hover { background: rgba(59, 130, 246, 0.08); }
+.data-table tbody tr:hover { background: rgba(88, 166, 255, 0.08); }
 
 .data-table tbody td {
   padding: 12px 16px;
@@ -825,11 +825,11 @@ html, body {
 }
 
 .data-table tbody tr.value-row {
-  background: rgba(52, 211, 153, 0.06);
-  border-left: 2px solid rgba(52, 211, 153, 0.3);
+  background: rgba(63, 185, 80, 0.06);
+  border-left: 2px solid rgba(63, 185, 80, 0.3);
 }
 .data-table tbody tr.value-row:hover {
-  background: rgba(52, 211, 153, 0.12);
+  background: rgba(63, 185, 80, 0.12);
 }
 
 .horse-no-cell { padding: 8px 16px !important; }
@@ -889,14 +889,14 @@ html, body {
   white-space: nowrap;
 }
 .jt-jockey-badge {
-  background: rgba(59, 130, 246, 0.1);
-  color: #93c5fd;
-  border: 1px solid rgba(59, 130, 246, 0.2);
+  background: rgba(88, 166, 255, 0.1);
+  color: #79c0ff;
+  border: 1px solid rgba(88, 166, 255, 0.2);
 }
 .jt-trainer-badge {
-  background: rgba(148, 163, 184, 0.08);
+  background: rgba(139, 148, 158, 0.08);
   color: var(--text-muted);
-  border: 1px solid rgba(148, 163, 184, 0.15);
+  border: 1px solid rgba(139, 148, 158, 0.15);
   font-size: 10px;
   font-weight: 500;
 }
@@ -917,19 +917,19 @@ html, body {
 }
 
 .badge-value {
-  background: linear-gradient(135deg, #065f46, #10b981);
+  background: linear-gradient(135deg, #0d4a2f, #3fb950);
   color: #fff;
   box-shadow: 0 0 8px rgba(16, 185, 129, 0.3);
 }
 
 .badge-ai-pick {
-  background: linear-gradient(135deg, #92400e, #f59e0b);
+  background: linear-gradient(135deg, #6e4b08, #d29922);
   color: #fff;
   box-shadow: 0 0 8px rgba(245, 158, 11, 0.3);
 }
 
 .badge-cold {
-  background: linear-gradient(135deg, #1e3a5f, #3b82f6);
+  background: linear-gradient(135deg, #1e3a5f, #58a6ff);
   color: #bfdbfe;
 }
 
@@ -940,21 +940,21 @@ html, body {
 }
 
 .badge-odds-pending {
-  background: rgba(251, 191, 36, 0.08);
+  background: rgba(210, 153, 34, 0.08);
   color: var(--accent-amber);
-  border: 1px solid rgba(251, 191, 36, 0.2);
+  border: 1px solid rgba(210, 153, 34, 0.2);
   font-style: italic;
   font-size: 10px;
 }
 
 .badge-prob {
-  background: rgba(59, 130, 246, 0.12);
-  color: #93c5fd;
-  border: 1px solid rgba(59, 130, 246, 0.2);
+  background: rgba(88, 166, 255, 0.12);
+  color: #79c0ff;
+  border: 1px solid rgba(88, 166, 255, 0.2);
 }
 
 /* ===== EV Colors ===== */
-.ev-positive { color: var(--accent-emerald); font-weight: 700; text-shadow: 0 0 8px rgba(52, 211, 153, 0.2); }
+.ev-positive { color: var(--accent-emerald); font-weight: 700; text-shadow: 0 0 8px rgba(63, 185, 80, 0.2); }
 .ev-negative { color: var(--accent-rose); opacity: 0.7; }
 .ev-neutral { color: var(--accent-amber); }
 
@@ -1025,9 +1025,9 @@ html, body {
 }
 .app-tab:hover { color: var(--text-secondary); background: var(--bg-elevated); }
 .app-tab.active {
-  background: linear-gradient(135deg, #1d4ed8, #3b82f6);
+  background: linear-gradient(135deg, #1f6feb, #58a6ff);
   color: #fff;
-  box-shadow: 0 0 16px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 0 16px rgba(88, 166, 255, 0.3);
 }
 .tab-icon { font-size: 16px; }
 
@@ -1036,13 +1036,6 @@ html, body {
   display: flex;
   flex-direction: column;
   gap: 20px;
-}
-
-.perf-section-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 16px;
 }
 
 .perf-badge {
@@ -1057,8 +1050,8 @@ html, body {
 }
 
 .ai-badge {
-  background: rgba(139, 92, 246, 0.12);
-  color: #c4b5fd;
+  background: rgba(188, 140, 255, 0.12);
+  color: #d2a8ff;
 }
 
 .perf-badge-label {
@@ -1188,8 +1181,8 @@ html, body {
 }
 .perf-race-pill:hover { border-color: var(--accent-blue); color: var(--text-primary); }
 .perf-race-pill.active {
-  background: linear-gradient(135deg, #1d4ed8, #3b82f6);
-  border-color: #3b82f6;
+  background: linear-gradient(135deg, #1f6feb, #58a6ff);
+  border-color: #58a6ff;
   color: #fff;
 }
 .perf-race-pill.hit { border-color: rgba(16, 185, 129, 0.4); }
@@ -1317,14 +1310,14 @@ html, body {
 }
 
 .perf-table tbody tr.row-hit {
-  background: rgba(59, 130, 246, 0.06);
+  background: rgba(88, 166, 255, 0.06);
 }
 .perf-table tbody tr.row-hit:hover {
-  background: rgba(59, 130, 246, 0.1);
+  background: rgba(88, 166, 255, 0.1);
 }
 
 .perf-table tbody tr.row-miss {
-  background: rgba(239, 68, 68, 0.04);
+  background: rgba(248, 81, 73, 0.04);
 }
 
 .ai-rank {
@@ -1347,8 +1340,8 @@ html, body {
 }
 .ai-rank.rank-2 {
   background: linear-gradient(135deg, var(--silver-start), var(--silver-end));
-  color: #1e293b;
-  box-shadow: 0 2px 8px rgba(148, 163, 184, 0.25);
+  color: #161B22;
+  box-shadow: 0 2px 8px rgba(139, 148, 158, 0.25);
 }
 .ai-rank.rank-3 {
   background: linear-gradient(135deg, var(--bronze-start), var(--bronze-end));
@@ -1387,22 +1380,22 @@ html, body {
   white-space: nowrap;
 }
 .result-win {
-  background: linear-gradient(135deg, #065f46, #10b981);
+  background: linear-gradient(135deg, #0d4a2f, #3fb950);
   color: #fff;
 }
 .result-hit {
-  background: rgba(59, 130, 246, 0.15);
-  color: #93c5fd;
-  border: 1px solid rgba(59, 130, 246, 0.3);
+  background: rgba(88, 166, 255, 0.15);
+  color: #79c0ff;
+  border: 1px solid rgba(88, 166, 255, 0.3);
 }
 .result-miss {
-  background: rgba(239, 68, 68, 0.1);
-  color: #fca5a5;
-  border: 1px solid rgba(239, 68, 68, 0.2);
+  background: rgba(248, 81, 73, 0.1);
+  color: #ffa198;
+  border: 1px solid rgba(248, 81, 73, 0.2);
 }
 .result-surprise {
   background: rgba(245, 158, 11, 0.12);
-  color: #fbbf24;
+  color: #d29922;
   border: 1px solid rgba(245, 158, 11, 0.2);
 }
 .result-na {
@@ -1410,47 +1403,66 @@ html, body {
   color: var(--text-muted);
 }
 
-/* Date Selector */
-.perf-date-selector {
+/* Date Selector - Compact Dropdown */
+.perf-section-header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 12px;
-  padding: 16px 20px;
-  background: var(--bg-card);
-  border: 1px solid var(--border-primary);
-  border-radius: 12px;
-  margin-bottom: 20px;
-}
-.perf-date-label {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  white-space: nowrap;
-}
-.perf-date-pills {
-  display: flex;
-  gap: 8px;
+  margin-bottom: 16px;
   flex-wrap: wrap;
 }
-.perf-date-pill {
-  padding: 6px 14px;
+
+.perf-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.perf-date-select-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.perf-date-select-label {
+  font-size: 14px;
+  opacity: 0.7;
+}
+
+.perf-date-select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding: 6px 32px 6px 12px;
   border-radius: 8px;
   font-size: 13px;
   font-weight: 600;
+  font-family: inherit;
   background: var(--bg-elevated);
-  color: var(--text-secondary);
-  border: 1px solid var(--border-primary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-secondary);
   cursor: pointer;
   transition: all 0.15s ease;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238b949e' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  min-width: 130px;
 }
-.perf-date-pill:hover {
-  border-color: var(--border-secondary);
-  color: var(--text-primary);
-}
-.perf-date-pill.active {
-  background: linear-gradient(135deg, var(--accent-blue), #3b82f6);
-  color: #fff;
+
+.perf-date-select:hover {
   border-color: var(--accent-blue);
+}
+
+.perf-date-select:focus {
+  outline: none;
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 0 2px rgba(88, 166, 255, 0.15);
+}
+
+.perf-date-select option {
+  background: var(--bg-card);
+  color: var(--text-primary);
 }
 
 /* Horse Name Cell */
@@ -1602,10 +1614,10 @@ html, body {
   align-items: center;
   gap: 8px;
   padding: 12px 16px;
-  background: #ef444420;
-  border: 1px solid #ef444440;
+  background: #f8514920;
+  border: 1px solid #f8514940;
   border-radius: 8px;
-  color: #ef4444;
+  color: #f85149;
   font-size: 14px;
 }
 .drawer-error-icon {
@@ -1710,12 +1722,12 @@ html, body {
   font-weight: 600;
 }
 .venue-st {
-  background: #3b82f620;
-  color: #3b82f6;
+  background: #58a6ff20;
+  color: #58a6ff;
 }
 .venue-hv {
-  background: #f59e0b20;
-  color: #f59e0b;
+  background: #d2992220;
+  color: #d29922;
 }
 .finish-badge {
   display: inline-flex;
@@ -1768,7 +1780,7 @@ html, body {
    Race Info Bar - Enhanced
    ===================================================================== */
 .race-time-highlight .race-info-value {
-  color: #f59e0b;
+  color: #d29922;
   font-weight: 800;
   font-size: 1.05rem;
 }
@@ -1782,8 +1794,8 @@ html, body {
    ===================================================================== */
 .ai-analysis-section {
   margin: 1.5rem 0;
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.06) 0%, rgba(139, 92, 246, 0.04) 100%);
-  border: 1px solid rgba(99, 102, 241, 0.15);
+  background: linear-gradient(135deg, rgba(188, 140, 255, 0.06) 0%, rgba(188, 140, 255, 0.04) 100%);
+  border: 1px solid rgba(188, 140, 255, 0.15);
   border-radius: 12px;
   padding: 1.25rem;
 }
@@ -1798,12 +1810,12 @@ html, body {
 .ai-analysis-badge {
   font-weight: 700;
   font-size: 1rem;
-  color: #818cf8;
+  color: #bc8cff;
 }
 
 .ai-analysis-sublabel {
   font-size: 0.8rem;
-  color: #64748b;
+  color: #6e7681;
 }
 
 .ai-analysis-grid {
@@ -1824,7 +1836,7 @@ html, body {
   padding: 1rem;
   background: rgba(15, 23, 42, 0.6);
   border-radius: 10px;
-  border: 1px solid rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(188, 140, 255, 0.1);
 }
 
 .ai-card-icon {
@@ -1841,7 +1853,7 @@ html, body {
 
 .ai-card-label {
   font-size: 0.75rem;
-  color: #94a3b8;
+  color: #8b949e;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-bottom: 4px;
@@ -1850,13 +1862,13 @@ html, body {
 .ai-card-value {
   font-size: 1.1rem;
   font-weight: 700;
-  color: #e2e8f0;
+  color: #c9d1d9;
   margin-bottom: 4px;
 }
 
 .ai-card-detail {
   font-size: 0.8rem;
-  color: #94a3b8;
+  color: #8b949e;
   line-height: 1.5;
 }
 
@@ -1885,12 +1897,12 @@ html, body {
 }
 
 .ai-factor-item .factor-text {
-  color: #cbd5e1;
+  color: #b1bac4;
 }
 
-.factor-positive .factor-text { color: #86efac; }
-.factor-negative .factor-text { color: #fca5a5; }
-.factor-neutral .factor-text { color: #94a3b8; }
+.factor-positive .factor-text { color: #56d364; }
+.factor-negative .factor-text { color: #ffa198; }
+.factor-neutral .factor-text { color: #8b949e; }
 
 /* Model Legend */
 .ai-model-legend {
@@ -1899,7 +1911,7 @@ html, body {
   gap: 10px;
   margin-top: 8px;
   padding-top: 8px;
-  border-top: 1px solid rgba(99, 102, 241, 0.1);
+  border-top: 1px solid rgba(188, 140, 255, 0.1);
 }
 
 .legend-item {
@@ -1907,7 +1919,7 @@ html, body {
   align-items: center;
   gap: 5px;
   font-size: 0.7rem;
-  color: #94a3b8;
+  color: #8b949e;
 }
 
 .legend-dot {
@@ -1916,9 +1928,9 @@ html, body {
   border-radius: 50%;
 }
 
-.dot-model { background: #818cf8; }
-.dot-market { background: #f59e0b; }
-.dot-final { background: #10b981; }
+.dot-model { background: #bc8cff; }
+.dot-market { background: #d29922; }
+.dot-final { background: #3fb950; }
 
 /* =====================================================================
    Benter Table - Model Columns
@@ -1944,31 +1956,31 @@ html, body {
 
 .prob-model {
   background: rgba(129, 140, 248, 0.12);
-  color: #a5b4fc;
+  color: #d2a8ff;
 }
 
 .prob-market {
   background: rgba(245, 158, 11, 0.12);
-  color: #fbbf24;
+  color: #d29922;
 }
 
 .badge-final {
-  background: rgba(52, 211, 153, 0.15) !important;
-  color: #34d399 !important;
+  background: rgba(63, 185, 80, 0.15) !important;
+  color: #3fb950 !important;
   font-weight: 700 !important;
-  box-shadow: 0 0 6px rgba(52, 211, 153, 0.15);
+  box-shadow: 0 0 6px rgba(63, 185, 80, 0.15);
 }
 
 .th-model {
-  color: #818cf8 !important;
+  color: #bc8cff !important;
 }
 
 .th-market {
-  color: #f59e0b !important;
+  color: #d29922 !important;
 }
 
 .th-final {
-  color: #10b981 !important;
+  color: #3fb950 !important;
 }
 
 .ai-insight-cell {
@@ -1982,8 +1994,8 @@ html, body {
 .drawer-ai-insight {
   margin-bottom: 20px;
   padding: 16px;
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(59, 130, 246, 0.06));
-  border: 1px solid rgba(99, 102, 241, 0.25);
+  background: linear-gradient(135deg, rgba(188, 140, 255, 0.1), rgba(88, 166, 255, 0.06));
+  border: 1px solid rgba(188, 140, 255, 0.25);
   border-radius: 14px;
 }
 
@@ -2001,7 +2013,7 @@ html, body {
 .drawer-ai-insight-title {
   font-size: 14px;
   font-weight: 700;
-  color: #818cf8;
+  color: #bc8cff;
 }
 
 .drawer-ai-insight-text {
@@ -2040,7 +2052,7 @@ html, body {
 
 .benter-label {
   font-size: 0.72rem;
-  color: #94a3b8;
+  color: #8b949e;
   font-weight: 500;
 }
 
@@ -2051,12 +2063,12 @@ html, body {
   font-family: 'JetBrains Mono', 'SF Mono', ui-monospace, monospace;
 }
 
-.model-val { color: #a5b4fc; }
-.market-val { color: #fbbf24; }
-.final-val { color: #34d399; font-weight: 700; }
-.ev-pos { color: #34d399; }
-.ev-neg { color: #94a3b8; }
-.kelly-val { color: #38bdf8; }
+.model-val { color: #d2a8ff; }
+.market-val { color: #d29922; }
+.final-val { color: #3fb950; font-weight: 700; }
+.ev-pos { color: #3fb950; }
+.ev-neg { color: #8b949e; }
+.kelly-val { color: #79c0ff; }
 
 .pick-stats-mini {
   display: flex;
@@ -2117,14 +2129,14 @@ html, body {
   margin-top: 10px;
   font-size: 13px;
   color: var(--text-muted);
-  background: rgba(59, 130, 246, 0.08);
-  border: 1px solid rgba(59, 130, 246, 0.2);
+  background: rgba(88, 166, 255, 0.08);
+  border: 1px solid rgba(88, 166, 255, 0.2);
   border-radius: 6px;
   padding: 6px 12px;
   display: inline-block;
 }
 .best-distance-tag strong {
-  color: #3b82f6;
+  color: #58a6ff;
 }
 
 /* Jockey Partners */
@@ -2150,7 +2162,7 @@ html, body {
   margin-top: 2px;
 }
 .jp-wr {
-  color: #10b981;
+  color: #3fb950;
 }
 
 /* Clickable horse name in AI Performance table */
@@ -2186,7 +2198,7 @@ html, body {
 .drawer-benter-breakdown {
   margin-bottom: 20px;
   padding: 16px;
-  background: linear-gradient(135deg, rgba(129, 140, 248, 0.08), rgba(59, 130, 246, 0.05));
+  background: linear-gradient(135deg, rgba(129, 140, 248, 0.08), rgba(88, 166, 255, 0.05));
   border: 1px solid rgba(129, 140, 248, 0.2);
   border-radius: 14px;
 }
@@ -2205,7 +2217,7 @@ html, body {
 .drawer-benter-title {
   font-size: 14px;
   font-weight: 700;
-  color: #818cf8;
+  color: #bc8cff;
 }
 
 .benter-factors-grid {
@@ -2334,14 +2346,14 @@ html, body {
 .bt-value {
   font-size: 22px;
   font-weight: 900;
-  color: #818cf8;
+  color: #bc8cff;
   font-variant-numeric: tabular-nums;
 }
 
 .benter-summary-text {
   margin: 12px 0 0;
   padding: 10px 12px;
-  background: rgba(99, 102, 241, 0.06);
+  background: rgba(188, 140, 255, 0.06);
   border-radius: 8px;
   font-size: 13px;
   line-height: 1.7;
@@ -2361,7 +2373,7 @@ html, body {
   border-color: var(--pick-color, var(--border-secondary));
   transform: translateY(-4px);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35),
-              0 0 20px color-mix(in srgb, var(--pick-color, #3b82f6) 15%, transparent);
+              0 0 20px color-mix(in srgb, var(--pick-color, #58a6ff) 15%, transparent);
 }
 
 /* ===== Enhanced Benter Factor Card ===== */
@@ -2379,9 +2391,9 @@ html, body {
 
 /* ===== Enhanced Value Badge Glow ===== */
 .badge-value {
-  background: linear-gradient(135deg, #065f46, #34d399);
+  background: linear-gradient(135deg, #0d4a2f, #3fb950);
   color: #fff;
-  box-shadow: 0 0 12px rgba(52, 211, 153, 0.4);
+  box-shadow: 0 0 12px rgba(63, 185, 80, 0.4);
   animation: pulse-glow 3s ease-in-out infinite;
 }
 
