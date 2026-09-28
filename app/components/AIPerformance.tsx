@@ -32,7 +32,9 @@ interface ComparisonRow {
   runner_id: string
   horse_no: number
   horse_id: string
+  horse_name: string
   jockey: string | null
+  trainer: string | null
   draw: number | null
   win_odds: number | null
   finish_position: number | null
@@ -69,14 +71,32 @@ export function AIPerformance() {
   const [raceDetail, setRaceDetail] = useState<RaceDetail | null>(null)
   const [detailLoading, setDetailLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [availableDates, setAvailableDates] = useState<string[]>([])
+  const [selectedDate, setSelectedDate] = useState<string | null>(null)
 
   const [tableMissing, setTableMissing] = useState(false)
+
+  const fetchDates = useCallback(async () => {
+    try {
+      const res = await fetch('/api/performance/dates')
+      const json = await res.json()
+      if (json.ok && json.dates?.length > 0) {
+        setAvailableDates(json.dates)
+        if (!selectedDate) {
+          setSelectedDate(json.dates[0])
+        }
+      }
+    } catch (e: any) {
+      console.error('Failed to fetch dates:', e)
+    }
+  }, [selectedDate])
 
   const fetchSummary = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch('/api/performance')
+      const url = selectedDate ? `/api/performance?date=${selectedDate}` : '/api/performance'
+      const res = await fetch(url)
       const json = await res.json()
       if (json.ok) {
         setSummary(json.summary)
@@ -93,7 +113,7 @@ export function AIPerformance() {
     } finally {
       setLoading(false)
     }
-  }, [selectedRaceId])
+  }, [selectedDate, selectedRaceId])
 
   const fetchRaceDetail = useCallback(async (raceId: string) => {
     setDetailLoading(true)
@@ -113,8 +133,15 @@ export function AIPerformance() {
   }, [])
 
   useEffect(() => {
-    fetchSummary()
-  }, [fetchSummary])
+    fetchDates()
+  }, [fetchDates])
+
+  useEffect(() => {
+    if (selectedDate) {
+      setSelectedRaceId(null)
+      fetchSummary()
+    }
+  }, [selectedDate, fetchSummary])
 
   useEffect(() => {
     if (selectedRaceId) {
@@ -183,6 +210,24 @@ export function AIPerformance() {
           </div>
         )}
       </div>
+
+      {/* Date Selector */}
+      {availableDates.length > 1 && (
+        <div className="perf-date-selector animate-fade-in">
+          <span className="perf-date-label">&#x1F4C5; 賽事日期:</span>
+          <div className="perf-date-pills">
+            {availableDates.map(date => (
+              <button
+                key={date}
+                className={`perf-date-pill ${date === selectedDate ? 'active' : ''}`}
+                onClick={() => setSelectedDate(date)}
+              >
+                {date}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Race Selector + Detail */}
       {records.length > 0 && (
@@ -260,15 +305,14 @@ export function AIPerformance() {
                   <table className="data-table perf-table">
                     <thead>
                       <tr>
-                        <th>AI 排名</th>
+                        <th>名次</th>
                         <th>馬號</th>
-                        <th>騎師</th>
-                        <th>檔位</th>
-                        <th>賠率</th>
-                        <th>AI 勝率</th>
-                        <th>EV</th>
-                        <th>實際名次</th>
-                        <th>結果</th>
+                        <th>馬匹名稱</th>
+                        <th>騎師/練馬師</th>
+                        <th>獨贏賠率</th>
+                        <th>AI 預測勝率%</th>
+                        <th>AI 預測排名</th>
+                        <th>命中狀態</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -348,32 +392,32 @@ function ComparisonRow({ row }: { row: ComparisonRow }) {
   return (
     <tr className={rowClass}>
       <td>
-        <span className={`ai-rank rank-${row.rank}`}>
-          {row.rank}
-          {isTopPick && <span className="rank-star">&#x2605;</span>}
+        <span className={`finish-pos ${row.finish_position != null && row.finish_position <= 3 ? 'finish-top3' : ''}`}>
+          {row.finish_position ?? '-'}
         </span>
       </td>
       <td>
         <span className="horse-no-badge">{row.horse_no}</span>
       </td>
-      <td className="jockey-name">{row.jockey ?? '-'}</td>
-      <td className="draw-cell">{row.draw ?? '-'}</td>
-      <td>{row.win_odds ? `${row.win_odds.toFixed(1)}` : '-'}</td>
+      <td className="horse-name-cell">
+        <span className="horse-name">{row.horse_name}</span>
+      </td>
+      <td className="jockey-trainer-cell">
+        <div className="jt-jockey">{row.jockey ?? '-'}</div>
+        <div className="jt-trainer">{row.trainer ?? '-'}</div>
+      </td>
+      <td>
+        <span className="odds-cell">{row.win_odds ? `${row.win_odds.toFixed(1)}` : '-'}</span>
+      </td>
       <td>
         <span className="badge badge-prob">
           {row.predicted_prob != null ? `${(row.predicted_prob * 100).toFixed(1)}%` : '-'}
         </span>
       </td>
       <td>
-        {row.expected_value != null ? (
-          <span className={row.expected_value > 1.15 ? 'ev-positive' : 'ev-neutral'}>
-            {row.expected_value.toFixed(2)}
-          </span>
-        ) : '-'}
-      </td>
-      <td>
-        <span className={`finish-pos ${row.finish_position != null && row.finish_position <= 3 ? 'finish-top3' : ''}`}>
-          {row.finish_position ?? '-'}
+        <span className={`ai-rank rank-${row.rank}`}>
+          {row.rank}
+          {row.rank <= 3 && <span className="rank-star">&#x2605;</span>}
         </span>
       </td>
       <td>

@@ -3,14 +3,23 @@ import { getServerSupabase } from '@/lib/supabase-server'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
+    const { searchParams } = new URL(req.url)
+    const date = searchParams.get('date')
+    
     const supabase = getServerSupabase()
 
-    const { data: perfData, error: perfError } = await supabase
+    let query = supabase
       .from('ai_performance')
       .select('*')
       .order('analysis_date', { ascending: false })
+    
+    if (date) {
+      query = query.eq('race_date', date)
+    }
+
+    const { data: perfData, error: perfError } = await query
 
     if (perfError) {
       if (perfError.message?.includes('Could not find') || perfError.code === '42P01') {
