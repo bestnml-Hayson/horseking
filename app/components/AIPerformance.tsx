@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 
 interface PerfSummary {
   win_rate: number
@@ -73,44 +73,46 @@ export function AIPerformance() {
   const [error, setError] = useState<string | null>(null)
   const [availableDates, setAvailableDates] = useState<string[]>([])
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
-
   const [tableMissing, setTableMissing] = useState(false)
-  const [hasLoadedDates, setHasLoadedDates] = useState(false)
-  const [hasLoadedSummary, setHasLoadedSummary] = useState(false)
+
+  const datesFetchedRef = useRef(false)
+  const summaryFetchedRef = useRef<string | null>(null)
+  const detailFetchedRef = useRef<string | null>(null)
 
   const fetchDates = useCallback(async () => {
-    if (hasLoadedDates) return
+    if (datesFetchedRef.current) return
+    datesFetchedRef.current = true
     try {
       const res = await fetch('/api/performance/dates')
       const json = await res.json()
       if (json.ok && json.dates?.length > 0) {
         setAvailableDates(json.dates)
-        if (!selectedDate) {
-          setSelectedDate(json.dates[0])
-        }
-        setHasLoadedDates(true)
+        setSelectedDate(json.dates[0])
       }
     } catch (e: any) {
       console.error('Failed to fetch dates:', e)
     }
-  }, [hasLoadedDates, selectedDate])
+  }, [])
 
-  const fetchSummary = useCallback(async () => {
-    if (hasLoadedSummary) return
+  const fetchSummary = useCallback(async (date: string) => {
+    if (summaryFetchedRef.current === date) return
+    summaryFetchedRef.current = date
     setLoading(true)
     setError(null)
     try {
-      const url = selectedDate ? `/api/performance?date=${selectedDate}` : '/api/performance'
-      const res = await fetch(url)
+      const res = await fetch(`/api/performance?date=${date}`)
       const json = await res.json()
       if (json.ok) {
         setSummary(json.summary)
         setRecords(json.records ?? [])
         setTableMissing(!!json.table_missing)
-        if (json.records?.length > 0 && !selectedRaceId) {
+        setRaceDetail(null)
+        detailFetchedRef.current = null
+        if (json.records?.length > 0) {
           setSelectedRaceId(json.records[0].race_id)
+        } else {
+          setSelectedRaceId(null)
         }
-        setHasLoadedSummary(true)
       } else {
         setError(json.error ?? 'Failed to load performance data')
       }
@@ -119,10 +121,11 @@ export function AIPerformance() {
     } finally {
       setLoading(false)
     }
-  }, [selectedDate, hasLoadedSummary, selectedRaceId])
+  }, [])
 
   const fetchRaceDetail = useCallback(async (raceId: string) => {
-    if (raceDetail?.race_id === raceId) return
+    if (detailFetchedRef.current === raceId) return
+    detailFetchedRef.current = raceId
     setDetailLoading(true)
     try {
       const res = await fetch(`/api/performance/${raceId}`)
@@ -137,7 +140,7 @@ export function AIPerformance() {
     } finally {
       setDetailLoading(false)
     }
-  }, [raceDetail?.race_id])
+  }, [])
 
   useEffect(() => {
     fetchDates()
@@ -145,10 +148,7 @@ export function AIPerformance() {
 
   useEffect(() => {
     if (selectedDate) {
-      setHasLoadedSummary(false)
-      setSelectedRaceId(null)
-      setRaceDetail(null)
-      fetchSummary()
+      fetchSummary(selectedDate)
     }
   }, [selectedDate, fetchSummary])
 
@@ -162,6 +162,24 @@ export function AIPerformance() {
 
   return (
     <div className="ai-perf-root">
+      {/* Date Selector - always visible when dates exist */}
+      {availableDates.length > 0 && (
+        <div className="perf-date-selector animate-fade-in">
+          <span className="perf-date-label">&#x1F4C5; 賽事日期:</span>
+          <div className="perf-date-pills">
+            {availableDates.map(date => (
+              <button
+                key={date}
+                className={`perf-date-pill ${date === selectedDate ? 'active' : ''}`}
+                onClick={() => setSelectedDate(date)}
+              >
+                {date}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* KPI Header */}
       <div className="perf-kpi-section animate-fade-in">
         <div className="perf-section-header">
@@ -219,24 +237,6 @@ export function AIPerformance() {
           </div>
         )}
       </div>
-
-      {/* Date Selector */}
-      {availableDates.length > 1 && (
-        <div className="perf-date-selector animate-fade-in">
-          <span className="perf-date-label">&#x1F4C5; 賽事日期:</span>
-          <div className="perf-date-pills">
-            {availableDates.map(date => (
-              <button
-                key={date}
-                className={`perf-date-pill ${date === selectedDate ? 'active' : ''}`}
-                onClick={() => setSelectedDate(date)}
-              >
-                {date}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Race Selector + Detail */}
       {records.length > 0 && (

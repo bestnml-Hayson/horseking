@@ -29,6 +29,16 @@ export async function GET(
       .eq('race_id', raceId)
       .order('horse_no', { ascending: true })
 
+    const horseIds = (runners ?? []).map((r: any) => r.horse_id).filter(Boolean)
+    const { data: horses } = horseIds.length > 0
+      ? await supabase
+          .from('horses')
+          .select('horse_id, horse_name')
+          .in('horse_id', horseIds)
+      : { data: [] }
+
+    const horseNameMap = new Map((horses ?? []).map((h: any) => [h.horse_id, h.horse_name]))
+
     const { data: predictions } = await supabase
       .from('model_predictions')
       .select('*')
@@ -60,7 +70,7 @@ export async function GET(
         runner_id: pred.runner_id,
         horse_no: runner?.horse_no,
         horse_id: runner?.horse_id,
-        horse_name: runner?.horse_name || runner?.horse_id || `馬${runner?.horse_no || '?'}`,
+        horse_name: horseNameMap.get(runner?.horse_id) || runner?.horse_id || `馬${runner?.horse_no || '?'}`,
         jockey: runner?.jockey,
         trainer: runner?.trainer,
         draw: runner?.draw,
