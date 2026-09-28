@@ -26,6 +26,7 @@ export interface RaceRunner {
   win_odds: number | null
   finish_position: number | null
   finish_time: number | null
+  form_history: string | null
 }
 
 export interface ModelPrediction {

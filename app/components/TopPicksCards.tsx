@@ -3,7 +3,6 @@
 import type { RaceRow } from '@/lib/types'
 import {
   computeAIScore,
-  generateFormHistory,
   generateExpertAnalysis,
   fmtOdds,
   getFormColor,
@@ -35,11 +34,11 @@ export function TopPicksCards({ picks }: TopPicksCardsProps) {
       <div className="picks-grid">
         {picks.map((row, idx) => {
           const score = computeAIScore(row)
-          const form = generateFormHistory(row)
+          const form = row.form_history ?? ''
           const analysis = generateExpertAnalysis(row, idx + 1)
           const odds = fmtOdds(row.win_odds)
           const color = PICK_COLORS[idx]
-          const formPositions = form.split('-').map(Number)
+          const formPositions = form ? form.split('-').map(Number).filter(n => !isNaN(n)) : []
 
           return (
             <div
@@ -79,17 +78,21 @@ export function TopPicksCards({ picks }: TopPicksCardsProps) {
               </div>
 
               <div className="pick-form">
-                <div className="pick-form-label">近五場走勢</div>
+                <div className="pick-form-label">近六場走勢</div>
                 <div className="pick-form-chart">
-                  {formPositions.map((pos, fi) => (
-                    <span
-                      key={fi}
-                      className="form-position"
-                      style={{ color: getFormColor(pos) }}
-                    >
-                      {pos}
-                    </span>
-                  ))}
+                  {formPositions.length > 0 ? (
+                    formPositions.map((pos, fi) => (
+                      <span
+                        key={fi}
+                        className="form-position"
+                        style={{ color: getFormColor(pos) }}
+                      >
+                        {pos}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="form-position" style={{ color: '#64748b' }}>暫無數據</span>
+                  )}
                 </div>
               </div>
 

@@ -1,4 +1,4 @@
-import type { RaceRow, Race, RaceRunner } from './types'
+import type { RaceRow, Race } from './types'
 
 /**
  * Compute AI composite score (0-100) from model predictions.
@@ -14,29 +14,6 @@ export function computeAIScore(row: RaceRow): number {
   const kellyScore = Math.min(kelly * 1000, 100)
 
   return Math.round(pScore * 0.6 + evScore * 0.25 + kellyScore * 0.15)
-}
-
-/**
- * Generate pseudo form history string based on model confidence.
- * In production, this would come from historical race results.
- */
-export function generateFormHistory(row: RaceRow): string {
-  const p = row.prediction?.final_prob ?? 0.05
-  const positions = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
-
-  if (p > 0.20) {
-    return '1-2-1-3-1'
-  } else if (p > 0.15) {
-    return '2-1-3-2-4'
-  } else if (p > 0.10) {
-    return '3-4-2-1-5'
-  } else if (p > 0.07) {
-    return '4-3-5-2-6'
-  } else if (p > 0.04) {
-    return '5-6-4-7-3'
-  } else {
-    return '8-10-6-9-7'
-  }
 }
 
 /**

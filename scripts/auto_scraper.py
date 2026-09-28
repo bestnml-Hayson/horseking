@@ -73,8 +73,8 @@ def scrape_hkjc_races(date_str: str, venue: str) -> List[Dict]:
         sys.exit(1)
 
     date_path = date_str.replace('-', '')
+    date_slash = date_str.replace('-', '/')
     venue_cn = '沙田' if venue == 'ST' else '跑馬地'
-    base_url = f"https://bet.hkjc.com/ch/racing/wp/{date_str}/{venue}/{{race_no}}"
 
     all_races = []
     print(f"\n[Scraper] Starting HKJC scraper for {date_str} {venue_cn}...")
@@ -84,96 +84,154 @@ def scrape_hkjc_races(date_str: str, venue: str) -> List[Dict]:
         page = browser.new_page()
 
         for race_no in range(1, 13):
-            url = base_url.format(race_no=race_no)
             print(f"  Scraping R{race_no}...")
 
             try:
-                page.goto(url, wait_until='domcontentloaded', timeout=30000)
-                page.wait_for_timeout(3000)
+                racecard_url = f"https://racing.hkjc.com/racing/information/Chinese/Racing/RaceCard.aspx?RaceDate={date_slash}&Racecourse={venue}&RaceNo={race_no}"
+                page.goto(racecard_url, wait_until='domcontentloaded', timeout=30000)
+                page.wait_for_timeout(4000)
 
                 horses = page.evaluate('''() => {
                     const horses = [];
-                    const rows = document.querySelectorAll('.rc-odds-row');
-                    rows.forEach(row => {
-                        const cells = row.querySelectorAll('td');
-                        if (cells.length >= 8) {
-                            const horseNo = parseInt(cells[0].textContent.trim());
-                            if (!isNaN(horseNo) && horseNo > 0 && horseNo <= 20) {
-                                const winOddsText = cells[7].textContent.trim();
-                                const placeOddsText = cells[8] ? cells[8].textContent.trim() : '0';
-                                const winOdds = parseFloat(winOddsText) || 0;
-                                const placeOdds = parseFloat(placeOddsText) || 0;
-                                const horseCodeEl = row.querySelector('[data-horse-code], [data-horsecode], a[href*="horse="]');
-                                let horseCode = '';
-                                if (horseCodeEl) {
-                                    horseCode = horseCodeEl.getAttribute('data-horse-code')
-                                        || horseCodeEl.getAttribute('data-horsecode')
-                                        || '';
-                                    if (!horseCode) {
-                                        const href = horseCodeEl.getAttribute('href') || '';
-                                        const m = href.match(/horse=(\\w+)/);
-                                        if (m) horseCode = m[1];
-                                    }
+                    const tables = document.querySelectorAll('table');
+                    let targetTable = null;
+
+                    for (const t of tables) {
+                        const rows = t.querySelectorAll('tr');
+                        if (rows.length < 5) continue;
+
+                        const firstRowCells = rows[0].querySelectorAll('td, th');
+                        let hasFormCol = false;
+                        let hasHorseCol = false;
+                        for (const c of firstRowCells) {
+                            const txt = c.textContent.trim();
+                            if (txt === '6次近績') hasFormCol = true;
+                            if (txt === '馬名') hasHorseCol = true;
+                        }
+
+                        if (hasFormCol && hasHorseCol) {
+                            const secondRowCells = rows.length > 1 ? rows[1].querySelectorAll('td') : [];
+                            if (secondRowCells.length >= 10) {
+                                const firstCell = secondRowCells[0].textContent.trim();
+                                const num = parseInt(firstCell);
+                                if (!isNaN(num) && num > 0 && num <= 20) {
+                                    targetTable = t;
+                                    break;
                                 }
-                                if (!horseCode) {
-                                    const nameLink = cells[2] ? cells[2].querySelector('a') : null;
-                                    if (nameLink) {
-                                        const href = nameLink.getAttribute('href') || '';
-                                        const m = href.match(/horse=(\\w+)/);
-                                        if (m) horseCode = m[1];
-                                    }
-                                }
-                                horses.push({
-                                    horse_no: horseNo,
-                                    horse_name: cells[2].textContent.trim(),
-                                    horse_code: horseCode,
-                                    draw: parseInt(cells[3].textContent.trim()) || 0,
-                                    weight: parseFloat(cells[4].textContent.trim()) || 0,
-                                    jockey: cells[5].textContent.trim(),
-                                    trainer: cells[6].textContent.trim(),
-                                    win_odds: winOdds,
-                                    place_odds: placeOdds,
-                                });
                             }
                         }
-                    });
+                    }
+                    if (!targetTable) return horses;
+
+                    const rows = targetTable.querySelectorAll('tr');
+                    for (let ri = 1; ri < rows.length; ri++) {
+                        const cells = rows[ri].querySelectorAll('td');
+                        if (cells.length < 10) continue;
+
+                        const horseNoText = cells[0].textContent.trim();
+                        const horseNo = parseInt(horseNoText);
+                        if (isNaN(horseNo) || horseNo <= 0 || horseNo > 20) continue;
+
+                        const formRaw = cells[1].textContent.trim();
+                        const formHistory = formRaw.replace(/[\\/]/g, '-').replace(/\\s+/g, '-').replace(/^-+|-+$/g, '');
+                        const horseName = cells[3].textContent.trim();
+                        const horseCode = cells[4].textContent.trim();
+                        const weight = parseFloat(cells[5].textContent.trim()) || 0;
+                        let jockey = cells[6].textContent.trim();
+                        const draw = parseInt(cells[8].textContent.trim()) || 0;
+                        let trainer = cells[9].textContent.trim();
+
+                        jockey = jockey.split('(')[0].trim();
+                        trainer = trainer.split('(')[0].trim();
+
+                        horses.push({
+                            horse_no: horseNo,
+                            horse_name: horseName,
+                            horse_code: horseCode,
+                            draw: draw,
+                            weight: weight,
+                            jockey: jockey,
+                            trainer: trainer,
+                            form_history: formHistory,
+                        });
+                    }
                     return horses;
                 }''')
 
-                if horses:
-                    race_meta = page.evaluate('''() => {
-                        const text = document.body.innerText;
-                        const distMatch = text.match(/(\\d{3,4})米/);
-                        const goingMatch = text.match(/(好地|快地|慢地|軟地|黏地|好至快地|好至黏地)/);
-                        const classMatch = text.match(/第([一二三四五六七八九十]+)班/);
-                        return {
-                            distance: distMatch ? parseInt(distMatch[1]) : null,
-                            going: goingMatch ? goingMatch[1] : null,
-                            class_level: classMatch ? classMatch[0] : null,
-                        };
-                    }''')
-
-                    race_data = {
-                        'race_id': f"{venue}-{date_path}-{race_no:02d}",
-                        'race_date': date_str,
-                        'race_no': race_no,
-                        'venue': venue,
-                        'distance': race_meta.get('distance'),
-                        'class_level': race_meta.get('class_level'),
-                        'going': race_meta.get('going'),
-                        'horses': horses,
-                    }
-                    all_races.append(race_data)
-                    print(f"    [OK] {len(horses)} horses")
-                else:
+                if not horses:
                     print(f"    [SKIP] No horses (race may not exist yet)")
                     if race_no > 1:
                         break
+                    continue
+
+                race_meta = page.evaluate('''() => {
+                    const text = document.body.innerText;
+                    const distMatch = text.match(/(\\d{3,4})米/);
+                    const goingMatch = text.match(/(好地|快地|慢地|軟地|黏地|好至快地|好至黏地|好至黏快|黏地|快地)/);
+                    const classMatch = text.match(/第([一二三四五六七八九十]+)班/);
+                    return {
+                        distance: distMatch ? parseInt(distMatch[1]) : null,
+                        going: goingMatch ? goingMatch[1] : null,
+                        class_level: classMatch ? classMatch[0] : null,
+                    };
+                }''')
+
+                for h in horses:
+                    h['win_odds'] = 0
+                    h['place_odds'] = 0
+
+                race_data = {
+                    'race_id': f"{venue}-{date_path}-{race_no:02d}",
+                    'race_date': date_str,
+                    'race_no': race_no,
+                    'venue': venue,
+                    'distance': race_meta.get('distance'),
+                    'class_level': race_meta.get('class_level'),
+                    'going': race_meta.get('going'),
+                    'horses': horses,
+                }
+                all_races.append(race_data)
+                print(f"    [OK] {len(horses)} horses (form: {horses[0].get('form_history', 'N/A')})")
 
             except Exception as e:
                 print(f"    [FAIL] R{race_no}: {e}")
                 if race_no > 1:
                     break
+
+        # Second pass: fetch odds from bet.hkjc.com
+        print(f"\n  [Odds] Fetching live odds from bet.hkjc.com...")
+        odds_url_base = f"https://bet.hkjc.com/ch/racing/wp/{date_str}/{venue}/{{race_no}}"
+        for race_data in all_races:
+            race_no = race_data['race_no']
+            try:
+                page.goto(odds_url_base.format(race_no=race_no), wait_until='domcontentloaded', timeout=20000)
+                page.wait_for_timeout(3000)
+
+                odds_map = page.evaluate('''() => {
+                    const map = {};
+                    const rows = document.querySelectorAll('.rc-odds-row');
+                    rows.forEach(row => {
+                        const cells = row.querySelectorAll('td');
+                        if (cells.length >= 8) {
+                            const horseNo = parseInt(cells[0].textContent.trim());
+                            const winOdds = parseFloat(cells[7].textContent.trim()) || 0;
+                            if (!isNaN(horseNo) && horseNo > 0) {
+                                map[horseNo] = winOdds;
+                            }
+                        }
+                    });
+                    return map;
+                }''')
+
+                for h in race_data['horses']:
+                    if h['horse_no'] in odds_map:
+                        h['win_odds'] = odds_map[h['horse_no']]
+
+                matched = sum(1 for h in race_data['horses'] if h['win_odds'] > 0)
+                print(f"    [OK] R{race_no}: {matched}/{len(race_data['horses'])} horses with odds")
+
+            except Exception as e:
+                print(f"    [WARN] R{race_no} odds: {e}")
 
         browser.close()
 
@@ -224,6 +282,7 @@ def write_to_supabase(supabase: Client, races: List[Dict], dry_run: bool = False
             jockey = jockey.split('(')[0].strip() if '(' in jockey else jockey
 
             runner_id = f"{race['race_id']}_H{horse['horse_no']:02d}"
+            form_history = horse.get('form_history', '')
             supabase.table('race_runners').upsert({
                 'runner_id': runner_id[:48],
                 'race_id': race['race_id'][:32],
@@ -240,6 +299,7 @@ def write_to_supabase(supabase: Client, races: List[Dict], dry_run: bool = False
                 'trainer_win_rate': 0.10,
                 'weight_carried_diff': 0.0,
                 'rest_days': 0,
+                'form_history': form_history[:64] if form_history else None,
             }, on_conflict='runner_id').execute()
 
         print(f"  [OK] {race['race_id']}: {len(race['horses'])} runners upserted")
