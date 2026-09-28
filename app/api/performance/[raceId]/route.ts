@@ -54,14 +54,14 @@ export async function GET(
       .from('race_results')
       .select('*')
       .eq('race_id', raceId)
-      .single()
 
-    const finishPosMap = new Map<string, number>()
-    if (results) {
-      if (results.first_horse_id) finishPosMap.set(results.first_horse_id, 1)
-      if (results.second_horse_id) finishPosMap.set(results.second_horse_id, 2)
-      if (results.third_horse_id) finishPosMap.set(results.third_horse_id, 3)
-      if (results.fourth_horse_id) finishPosMap.set(results.fourth_horse_id, 4)
+    const finishPosMap = new Map<number, number>()
+    if (results && results.length > 0) {
+      for (const r of results) {
+        if (r.horse_no != null && r.finish_position != null) {
+          finishPosMap.set(r.horse_no, r.finish_position)
+        }
+      }
     }
 
     const runnerMap = new Map((runners ?? []).map((r: any) => [r.runner_id, r]))
@@ -74,13 +74,14 @@ export async function GET(
     const comparison = sortedPreds.map((pred: any, idx: number) => {
       const runner = runnerMap.get(pred.runner_id)
       const horseId = runner?.horse_id
-      const finishPos = finishPosMap.get(horseId) ?? runner?.finish_position ?? null
+      const horseNo = runner?.horse_no
+      const finishPos = finishPosMap.get(horseNo) ?? runner?.finish_position ?? null
       return {
         rank: idx + 1,
         runner_id: pred.runner_id,
-        horse_no: runner?.horse_no,
+        horse_no: horseNo,
         horse_id: horseId,
-        horse_name: horseNameMap.get(horseId) || horseId || `馬${runner?.horse_no || '?'}`,
+        horse_name: horseNameMap.get(horseId) || horseId || `馬${horseNo || '?'}`,
         jockey: runner?.jockey,
         trainer: runner?.trainer,
         draw: runner?.draw,
