@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { HorseDetailDrawer } from './HorseDetailDrawer'
 
 interface PerfSummary {
   win_rate: number
@@ -74,6 +75,8 @@ export function AIPerformance() {
   const [availableDates, setAvailableDates] = useState<string[]>([])
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const [tableMissing, setTableMissing] = useState(false)
+  const [drawerHorseId, setDrawerHorseId] = useState<string | null>(null)
+  const [drawerHorseName, setDrawerHorseName] = useState('')
 
   const datesFetchedRef = useRef(false)
   const summaryFetchedRef = useRef<string | null>(null)
@@ -326,7 +329,7 @@ export function AIPerformance() {
                     </thead>
                     <tbody>
                       {raceDetail.comparison.map((row) => (
-                        <ComparisonRow key={row.runner_id} row={row} />
+                        <ComparisonRow key={row.runner_id} row={row} onHorseClick={(id, name) => { setDrawerHorseId(id); setDrawerHorseName(name) }} />
                       ))}
                     </tbody>
                   </table>
@@ -342,6 +345,12 @@ export function AIPerformance() {
       )}
 
       {error && <div className="error-banner">{error}</div>}
+
+      <HorseDetailDrawer
+        horseId={drawerHorseId}
+        horseName={drawerHorseName}
+        onClose={() => setDrawerHorseId(null)}
+      />
     </div>
   )
 }
@@ -388,7 +397,7 @@ function FactorCard({ factor }: { factor: KeyFactor }) {
   )
 }
 
-function ComparisonRow({ row }: { row: ComparisonRow }) {
+function ComparisonRow({ row, onHorseClick }: { row: ComparisonRow; onHorseClick: (horseId: string, horseName: string) => void }) {
   const isTopPick = row.rank <= 3
   const hit = row.is_top3_pick && row.finished_in_top3
   const winner = row.is_winner
@@ -409,7 +418,13 @@ function ComparisonRow({ row }: { row: ComparisonRow }) {
         <span className="horse-no-badge">{row.horse_no}</span>
       </td>
       <td className="horse-name-cell">
-        <span className="horse-name">{row.horse_name}</span>
+        <button
+          className="horse-name horse-name-link"
+          onClick={() => onHorseClick(row.horse_id, row.horse_name)}
+          title={`查看 ${row.horse_name} 詳情`}
+        >
+          {row.horse_name}
+        </button>
       </td>
       <td className="jockey-trainer-cell">
         <div className="jt-jockey">{row.jockey ?? '-'}</div>

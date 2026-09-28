@@ -1909,3 +1909,118 @@ html, body {
   gap: 1rem;
   padding: 6px 0;
 }
+
+/* ===== Enhanced Horse Detail Drawer ===== */
+.drawer-panel-wide {
+  width: 680px;
+}
+.drawer-country {
+  display: inline-block;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* Wider stats grid for 8 cards */
+.drawer-panel-wide .horse-stats-grid {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+/* Venue Stats */
+.venue-stats-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.venue-stat-card {
+  flex: 1;
+  min-width: 140px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+.venue-stat-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+.venue-stat-detail {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.venue-stat-rates {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 6px;
+}
+.venue-stat-rates strong {
+  color: var(--text-primary);
+}
+.best-distance-tag {
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--text-muted);
+  background: rgba(59, 130, 246, 0.08);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 6px;
+  padding: 6px 12px;
+  display: inline-block;
+}
+.best-distance-tag strong {
+  color: #3b82f6;
+}
+
+/* Jockey Partners */
+.jockey-partners-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 8px;
+}
+.jockey-partner-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+.jp-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.jp-stats {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+.jp-wr {
+  color: #10b981;
+}
+
+/* Clickable horse name in AI Performance table */
+.horse-name-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--accent-blue);
+  cursor: pointer;
+  text-align: left;
+  transition: color 0.15s;
+}
+.horse-name-link:hover {
+  color: #60a5fa;
+  text-decoration: underline;
+}
+
+/* Detailed race history table (wider) */
+.race-history-table-detailed {
+  min-width: 700px;
+}
+.race-history-table-detailed th,
+.race-history-table-detailed td {
+  white-space: nowrap;
+  padding: 6px 8px;
+  font-size: 12px;
+}

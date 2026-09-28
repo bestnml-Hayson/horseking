@@ -62,16 +62,28 @@ export interface FormEntry {
 
 export interface HorseRaceHistory {
   race_id: string
-  race_date: string
-  venue: string
-  race_no: number
+  race_date: string | null
+  venue: string | null
+  race_no: number | null
   distance: number | null
   going: string | null
-  finish_position: number
+  finish_position: number | null
   horse_no: number
   win_odds: number | null
   jockey: string | null
   trainer: string | null
+  weight_carried: number | null
+  draw: number | null
+  finish_time: number | null
+  form_history: string | null
+}
+
+export interface HorseVenueStats {
+  venue: string
+  starts: number
+  wins: number
+  win_rate: number
+  top3_rate: number
 }
 
 export interface HorseDetail {
@@ -82,6 +94,14 @@ export interface HorseDetail {
   race_history: HorseRaceHistory[]
   total_starts: number
   total_wins: number
+  total_places: number
+  total_shows: number
+  total_fourth: number
   win_rate: number
   top3_rate: number
+  top4_rate: number
+  avg_odds: number
+  venue_stats: HorseVenueStats[]
+  best_distance: string | null
+  jockey_partners: { name: string; rides: number; wins: number }[]
 }

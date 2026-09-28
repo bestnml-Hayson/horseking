@@ -10,6 +10,15 @@ interface HorseDetailDrawerProps {
   onClose: () => void
 }
 
+const VENUE_LABEL: Record<string, string> = { ST: '沙田', HV: '跑馬地' }
+
+function fmtTime(seconds: number | null): string {
+  if (seconds == null) return '-'
+  const min = Math.floor(seconds / 60)
+  const sec = (seconds % 60).toFixed(2)
+  return min > 0 ? `${min}:${sec.padStart(5, '0')}` : `${sec}s`
+}
+
 export function HorseDetailDrawer({ horseId, horseName, onClose }: HorseDetailDrawerProps) {
   const [detail, setDetail] = useState<HorseDetail | null>(null)
   const [loading, setLoading] = useState(false)
@@ -55,9 +64,12 @@ export function HorseDetailDrawer({ horseId, horseName, onClose }: HorseDetailDr
 
   return (
     <div className="drawer-overlay" onClick={onClose}>
-      <div className="drawer-panel" onClick={e => e.stopPropagation()}>
+      <div className="drawer-panel drawer-panel-wide" onClick={e => e.stopPropagation()}>
         <div className="drawer-header">
-          <h2 className="drawer-title">{horseName}</h2>
+          <div>
+            <h2 className="drawer-title">{horseName}</h2>
+            {detail?.country && <span className="drawer-country">{detail.country}</span>}
+          </div>
           <button className="drawer-close" onClick={onClose}>&times;</button>
         </div>
 
@@ -78,14 +90,27 @@ export function HorseDetailDrawer({ horseId, horseName, onClose }: HorseDetailDr
 
           {detail && !loading && (
             <>
+              {/* Career Stats Grid */}
               <div className="horse-stats-grid">
                 <div className="horse-stat-card">
                   <div className="horse-stat-value">{detail.total_starts}</div>
-                  <div className="horse-stat-label">總出賽次數</div>
+                  <div className="horse-stat-label">總出賽</div>
                 </div>
                 <div className="horse-stat-card">
                   <div className="horse-stat-value" style={{ color: '#10b981' }}>{detail.total_wins}</div>
-                  <div className="horse-stat-label">冠軍次數</div>
+                  <div className="horse-stat-label">冠軍 (W)</div>
+                </div>
+                <div className="horse-stat-card">
+                  <div className="horse-stat-value" style={{ color: '#3b82f6' }}>{detail.total_places}</div>
+                  <div className="horse-stat-label">亞軍 (P)</div>
+                </div>
+                <div className="horse-stat-card">
+                  <div className="horse-stat-value" style={{ color: '#f59e0b' }}>{detail.total_shows}</div>
+                  <div className="horse-stat-label">季軍 (S)</div>
+                </div>
+                <div className="horse-stat-card">
+                  <div className="horse-stat-value">{detail.total_fourth}</div>
+                  <div className="horse-stat-label">第四</div>
                 </div>
                 <div className="horse-stat-card">
                   <div className="horse-stat-value">{detail.win_rate.toFixed(1)}%</div>
@@ -95,8 +120,13 @@ export function HorseDetailDrawer({ horseId, horseName, onClose }: HorseDetailDr
                   <div className="horse-stat-value" style={{ color: '#f59e0b' }}>{detail.top3_rate.toFixed(1)}%</div>
                   <div className="horse-stat-label">前三率</div>
                 </div>
+                <div className="horse-stat-card">
+                  <div className="horse-stat-value">{detail.avg_odds > 0 ? detail.avg_odds.toFixed(1) : '-'}</div>
+                  <div className="horse-stat-label">平均賠率</div>
+                </div>
               </div>
 
+              {/* Recent Form */}
               {detail.recent_form.length > 0 && (
                 <div className="drawer-section">
                   <h3 className="drawer-section-title">近 6 場往績</h3>
@@ -118,19 +148,69 @@ export function HorseDetailDrawer({ horseId, horseName, onClose }: HorseDetailDr
                 </div>
               )}
 
+              {/* Venue Stats */}
+              {detail.venue_stats.length > 0 && (
+                <div className="drawer-section">
+                  <h3 className="drawer-section-title">場地戰績</h3>
+                  <div className="venue-stats-row">
+                    {detail.venue_stats.map(vs => (
+                      <div key={vs.venue} className="venue-stat-card">
+                        <div className="venue-stat-name">{VENUE_LABEL[vs.venue] ?? vs.venue}</div>
+                        <div className="venue-stat-detail">
+                          {vs.starts} 場 / {vs.wins} 勝
+                        </div>
+                        <div className="venue-stat-rates">
+                          勝率 <strong>{vs.win_rate.toFixed(1)}%</strong>
+                          {' | '}
+                          前三 <strong>{vs.top3_rate.toFixed(1)}%</strong>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {detail.best_distance && (
+                    <div className="best-distance-tag">
+                      最佳路程: <strong>{detail.best_distance}</strong>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Jockey Partners */}
+              {detail.jockey_partners.length > 0 && (
+                <div className="drawer-section">
+                  <h3 className="drawer-section-title">主要騎師組合</h3>
+                  <div className="jockey-partners-grid">
+                    {detail.jockey_partners.map((jp, i) => (
+                      <div key={i} className="jockey-partner-card">
+                        <div className="jp-name">{jp.name}</div>
+                        <div className="jp-stats">
+                          {jp.rides} 次策騎 / {jp.wins} 勝
+                          <span className="jp-wr"> ({jp.rides > 0 ? (jp.wins / jp.rides * 100).toFixed(1) : 0}%)</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Detailed Race History */}
               {detail.race_history.length > 0 && (
                 <div className="drawer-section">
-                  <h3 className="drawer-section-title">完整賽績紀錄</h3>
+                  <h3 className="drawer-section-title">近 10 場詳細賽績</h3>
                   <div className="race-history-table-wrap">
-                    <table className="race-history-table">
+                    <table className="race-history-table race-history-table-detailed">
                       <thead>
                         <tr>
                           <th>日期</th>
                           <th>場地</th>
                           <th>路程</th>
+                          <th>場地狀況</th>
                           <th>名次</th>
                           <th>騎師</th>
+                          <th>檔位</th>
+                          <th>負磅</th>
                           <th>賠率</th>
+                          <th>時間</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -139,10 +219,11 @@ export function HorseDetailDrawer({ horseId, horseName, onClose }: HorseDetailDr
                             <td>{race.race_date ?? '-'}</td>
                             <td>
                               <span className={`venue-tag venue-${(race.venue ?? '').toLowerCase()}`}>
-                                {race.venue === 'ST' ? '沙田' : race.venue === 'HV' ? '跑馬地' : race.venue ?? '-'}
+                                {race.venue ? (VENUE_LABEL[race.venue] ?? race.venue) : '-'}
                               </span>
                             </td>
                             <td>{race.distance ? `${race.distance}m` : '-'}</td>
+                            <td>{race.going ?? '-'}</td>
                             <td>
                               <span
                                 className="finish-badge"
@@ -155,7 +236,10 @@ export function HorseDetailDrawer({ horseId, horseName, onClose }: HorseDetailDr
                               </span>
                             </td>
                             <td>{race.jockey ?? '-'}</td>
+                            <td>{race.draw ?? '-'}</td>
+                            <td>{race.weight_carried ? `${race.weight_carried} lbs` : '-'}</td>
                             <td className="tabular-nums">{race.win_odds ? race.win_odds.toFixed(1) : '-'}</td>
+                            <td className="tabular-nums">{fmtTime(race.finish_time)}</td>
                           </tr>
                         ))}
                       </tbody>

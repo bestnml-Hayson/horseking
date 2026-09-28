@@ -159,21 +159,25 @@ export async function fetchHorseDetail(horseId: string): Promise<HorseDetail | n
 
   const raceHistory = (results ?? []).map((r: any) => ({
     race_id: r.race_id,
-    race_date: r.race_date,
-    venue: r.venue,
-    race_no: r.race_no,
-    distance: r.distance,
-    going: r.going,
-    finish_position: r.finish_position,
+    race_date: r.race_date ?? null,
+    venue: r.venue ?? null,
+    race_no: r.race_no ?? null,
+    distance: r.distance ?? null,
+    going: r.going ?? null,
+    finish_position: r.finish_position ?? null,
     horse_no: r.horse_no,
     win_odds: r.win_odds,
     jockey: r.jockey,
     trainer: r.trainer,
+    weight_carried: null,
+    draw: null,
+    finish_time: null,
+    form_history: null,
   }))
 
   const totalStarts = raceHistory.length
   const totalWins = raceHistory.filter(r => r.finish_position === 1).length
-  const top3Count = raceHistory.filter(r => r.finish_position <= 3).length
+  const top3Count = raceHistory.filter(r => r.finish_position != null && r.finish_position <= 3).length
 
   const recentForm = raceHistory.slice(0, 6).map(r => r.finish_position).filter((p): p is number => p != null)
 
@@ -185,7 +189,15 @@ export async function fetchHorseDetail(horseId: string): Promise<HorseDetail | n
     race_history: raceHistory,
     total_starts: totalStarts,
     total_wins: totalWins,
+    total_places: 0,
+    total_shows: 0,
+    total_fourth: 0,
     win_rate: totalStarts > 0 ? (totalWins / totalStarts) * 100 : 0,
     top3_rate: totalStarts > 0 ? (top3Count / totalStarts) * 100 : 0,
+    top4_rate: 0,
+    avg_odds: 0,
+    venue_stats: [],
+    best_distance: null,
+    jockey_partners: [],
   }
 }
