@@ -1,0 +1,394 @@
+'use client'
+
+import { useState, useEffect, useCallback } from 'react'
+
+interface PerfSummary {
+  win_rate: number
+  top3_rate: number
+  avg_roi: number
+  total_bets: number
+  total_returns: number
+  top1_hits: number
+  top3_total_hits: number
+}
+
+interface PerfRecord {
+  race_id: string
+  analysis_date: string
+  top1_pick_runner_id: string
+  top1_pick_finish_pos: number
+  top1_hit: boolean
+  top3_hit_count: number
+  total_bets: number
+  total_returns: number
+  roi_percent: number
+  pace_analysis: string
+  draw_bias: string
+  market_move: string
+}
+
+interface ComparisonRow {
+  rank: number
+  runner_id: string
+  horse_no: number
+  horse_id: string
+  jockey: string | null
+  draw: number | null
+  win_odds: number | null
+  finish_position: number | null
+  predicted_prob: number | null
+  expected_value: number | null
+  kelly_fraction: number | null
+  is_top3_pick: boolean
+  finished_in_top3: boolean
+  is_winner: boolean
+}
+
+interface KeyFactor {
+  type: string
+  description: string
+  impact: string
+}
+
+interface RaceDetail {
+  ok: boolean
+  race_id: string
+  race_info: any
+  results: any
+  performance: any
+  comparison: ComparisonRow[]
+  key_factors: KeyFactor[]
+  top3_picks: any[]
+}
+
+export function AIPerformance() {
+  const [loading, setLoading] = useState(true)
+  const [summary, setSummary] = useState<PerfSummary | null>(null)
+  const [records, setRecords] = useState<PerfRecord[]>([])
+  const [selectedRaceId, setSelectedRaceId] = useState<string | null>(null)
+  const [raceDetail, setRaceDetail] = useState<RaceDetail | null>(null)
+  const [detailLoading, setDetailLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const [tableMissing, setTableMissing] = useState(false)
+
+  const fetchSummary = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await fetch('/api/performance')
+      const json = await res.json()
+      if (json.ok) {
+        setSummary(json.summary)
+        setRecords(json.records ?? [])
+        setTableMissing(!!json.table_missing)
+        if (json.records?.length > 0 && !selectedRaceId) {
+          setSelectedRaceId(json.records[0].race_id)
+        }
+      } else {
+        setError(json.error ?? 'Failed to load performance data')
+      }
+    } catch (e: any) {
+      setError(e.message ?? 'Network error')
+    } finally {
+      setLoading(false)
+    }
+  }, [selectedRaceId])
+
+  const fetchRaceDetail = useCallback(async (raceId: string) => {
+    setDetailLoading(true)
+    try {
+      const res = await fetch(`/api/performance/${raceId}`)
+      const json = await res.json()
+      if (json.ok) {
+        setRaceDetail(json)
+      } else {
+        setRaceDetail(null)
+      }
+    } catch {
+      setRaceDetail(null)
+    } finally {
+      setDetailLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchSummary()
+  }, [fetchSummary])
+
+  useEffect(() => {
+    if (selectedRaceId) {
+      fetchRaceDetail(selectedRaceId)
+    }
+  }, [selectedRaceId, fetchRaceDetail])
+
+  const allRaceIds = Array.from(new Set(records.map(r => r.race_id)))
+
+  return (
+    <div className="ai-perf-root">
+      {/* KPI Header */}
+      <div className="perf-kpi-section animate-fade-in">
+        <div className="perf-section-header">
+          <span className="perf-badge ai-badge">AI</span>
+          <span className="perf-badge-label">歷史預測準確度</span>
+          <span className="perf-sublabel">Post-Race Performance Analysis</span>
+        </div>
+
+        {loading ? (
+          <div className="perf-kpi-loading">載入中...</div>
+        ) : tableMissing ? (
+          <div className="perf-empty">
+            <div className="perf-empty-icon">&#x1F4CA;</div>
+            <div>尚未建立分析數據表</div>
+            <div className="perf-empty-sub">
+              請先在 Supabase SQL Editor 執行 migrations/add_race_results_and_ai_performance.sql
+            </div>
+          </div>
+        ) : !summary || (summary.top1_hits === 0 && summary.top3_total_hits === 0 && records.length === 0) ? (
+          <div className="perf-empty">
+            <div className="perf-empty-icon">&#x1F4CA;</div>
+            <div>暫無歷史分析數據</div>
+            <div className="perf-empty-sub">完成賽事後執行 post_race_analyzer.py 即可生成數據</div>
+          </div>
+        ) : (
+          <div className="perf-kpi-grid">
+            <KPICard
+              label="獨贏命中率"
+              value={`${summary.win_rate.toFixed(1)}%`}
+              sub={`${summary.top1_hits} / ${records.length} 場`}
+              color={summary.win_rate >= 30 ? 'green' : summary.win_rate >= 15 ? 'amber' : 'red'}
+              icon="&#x1F3AF;"
+            />
+            <KPICard
+              label="前三命中率"
+              value={`${summary.top3_rate.toFixed(1)}%`}
+              sub={`${summary.top3_total_hits} / ${records.length * 3} 匹`}
+              color={summary.top3_rate >= 50 ? 'green' : summary.top3_rate >= 30 ? 'amber' : 'red'}
+              icon="&#x1F3C6;"
+            />
+            <KPICard
+              label="平均 ROI"
+              value={`${summary.avg_roi >= 0 ? '+' : ''}${summary.avg_roi.toFixed(1)}%`}
+              sub={`總投注 $${summary.total_bets.toLocaleString()}`}
+              color={summary.avg_roi > 0 ? 'green' : summary.avg_roi > -20 ? 'amber' : 'red'}
+              icon="&#x1F4B0;"
+            />
+            <KPICard
+              label="總回報"
+              value={`$${summary.total_returns.toLocaleString()}`}
+              sub={`淨${summary.total_returns - summary.total_bets >= 0 ? '+' : ''}$${(summary.total_returns - summary.total_bets).toLocaleString()}`}
+              color={summary.total_returns >= summary.total_bets ? 'green' : 'red'}
+              icon="&#x1F4B5;"
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Race Selector + Detail */}
+      {records.length > 0 && (
+        <div className="perf-detail-section animate-fade-in">
+          <div className="perf-race-selector">
+            <span className="perf-selector-label">選擇賽事:</span>
+            <div className="perf-race-pills">
+              {allRaceIds.map(raceId => {
+                const rec = records.find(r => r.race_id === raceId)
+                const raceNo = raceId.split('-').pop()?.replace(/^0+/, '') ?? '?'
+                return (
+                  <button
+                    key={raceId}
+                    className={`perf-race-pill ${raceId === selectedRaceId ? 'active' : ''} ${rec?.top1_hit ? 'hit' : ''}`}
+                    onClick={() => setSelectedRaceId(raceId)}
+                  >
+                    R{raceNo}
+                    {rec?.top1_hit && <span className="pill-hit">&#x2713;</span>}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {detailLoading ? (
+            <div className="perf-detail-loading">載入賽事詳情...</div>
+          ) : raceDetail ? (
+            <>
+              {/* Factor Analysis */}
+              {raceDetail.key_factors.length > 0 && (
+                <div className="perf-factors">
+                  <div className="perf-factors-title">&#x1F50D; 致勝因素分析</div>
+                  <div className="perf-factors-grid">
+                    {raceDetail.key_factors.map((factor, idx) => (
+                      <FactorCard key={idx} factor={factor} />
+                    ))}
+                  </div>
+                  {(raceDetail.performance.pace_analysis || raceDetail.performance.draw_bias || raceDetail.performance.market_move) && (
+                    <div className="perf-factor-summary">
+                      {raceDetail.performance.draw_bias && (
+                        <div className="factor-summary-item">
+                          <span className="factor-icon">&#x1F3CF;</span>
+                          <span>{raceDetail.performance.draw_bias}</span>
+                        </div>
+                      )}
+                      {raceDetail.performance.market_move && (
+                        <div className="factor-summary-item">
+                          <span className="factor-icon">&#x1F4C8;</span>
+                          <span>{raceDetail.performance.market_move}</span>
+                        </div>
+                      )}
+                      {raceDetail.performance.pace_analysis && (
+                        <div className="factor-summary-item">
+                          <span className="factor-icon">&#x1F3C3;</span>
+                          <span>{raceDetail.performance.pace_analysis}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Comparison Table */}
+              <div className="perf-comparison">
+                <div className="perf-comparison-header">
+                  <span className="perf-comparison-title">&#x1F4CB; AI 預測 vs 實際結果</span>
+                  <span className="perf-comparison-sub">
+                    命中: <span className="hit-count">{raceDetail.performance.top3_hit_count}/3</span>
+                    {' | '}ROI: <span className={raceDetail.performance.roi_percent >= 0 ? 'roi-positive' : 'roi-negative'}>
+                      {raceDetail.performance.roi_percent >= 0 ? '+' : ''}{raceDetail.performance.roi_percent.toFixed(1)}%
+                    </span>
+                  </span>
+                </div>
+                <div className="perf-table-wrap">
+                  <table className="data-table perf-table">
+                    <thead>
+                      <tr>
+                        <th>AI 排名</th>
+                        <th>馬號</th>
+                        <th>騎師</th>
+                        <th>檔位</th>
+                        <th>賠率</th>
+                        <th>AI 勝率</th>
+                        <th>EV</th>
+                        <th>實際名次</th>
+                        <th>結果</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {raceDetail.comparison.map((row) => (
+                        <ComparisonRow key={row.runner_id} row={row} />
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="perf-empty">
+              <div>無法載入賽事詳情</div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {error && <div className="error-banner">{error}</div>}
+    </div>
+  )
+}
+
+function KPICard({ label, value, sub, color, icon }: {
+  label: string; value: string; sub: string; color: 'green' | 'amber' | 'red'; icon: string
+}) {
+  const colorClass = color === 'green' ? 'kpi-green' : color === 'amber' ? 'kpi-amber' : 'kpi-red'
+  return (
+    <div className={`perf-kpi-card ${colorClass}`}>
+      <div className="kpi-icon" dangerouslySetInnerHTML={{ __html: icon }} />
+      <div className="kpi-body">
+        <div className="kpi-label">{label}</div>
+        <div className="kpi-value">{value}</div>
+        <div className="kpi-sub">{sub}</div>
+      </div>
+    </div>
+  )
+}
+
+function FactorCard({ factor }: { factor: KeyFactor }) {
+  const impactClass = factor.impact.includes('good') || factor.impact === 'positive' || factor.impact === 'expected'
+    ? 'factor-good'
+    : factor.impact.includes('bad') || factor.impact === 'upset'
+    ? 'factor-bad'
+    : factor.impact === 'remarkable'
+    ? 'factor-remarkable'
+    : 'factor-neutral'
+
+  const typeLabel: Record<string, string> = {
+    draw_bias: '檔位',
+    upset: '冷門',
+    favorite_wins: '熱門',
+    pace: '步速',
+    ai_accuracy: 'AI 準確',
+    ai_miss: 'AI 落空',
+  }
+
+  return (
+    <div className={`perf-factor-card ${impactClass}`}>
+      <div className="factor-type">{typeLabel[factor.type] ?? factor.type}</div>
+      <div className="factor-desc">{factor.description}</div>
+    </div>
+  )
+}
+
+function ComparisonRow({ row }: { row: ComparisonRow }) {
+  const isTopPick = row.rank <= 3
+  const hit = row.is_top3_pick && row.finished_in_top3
+  const winner = row.is_winner
+
+  let rowClass = ''
+  if (winner) rowClass = 'row-winner'
+  else if (hit) rowClass = 'row-hit'
+  else if (row.is_top3_pick && !row.finished_in_top3) rowClass = 'row-miss'
+
+  return (
+    <tr className={rowClass}>
+      <td>
+        <span className={`ai-rank rank-${row.rank}`}>
+          {row.rank}
+          {isTopPick && <span className="rank-star">&#x2605;</span>}
+        </span>
+      </td>
+      <td>
+        <span className="horse-no-badge">{row.horse_no}</span>
+      </td>
+      <td className="jockey-name">{row.jockey ?? '-'}</td>
+      <td className="draw-cell">{row.draw ?? '-'}</td>
+      <td>{row.win_odds ? `${row.win_odds.toFixed(1)}` : '-'}</td>
+      <td>
+        <span className="badge badge-prob">
+          {row.predicted_prob != null ? `${(row.predicted_prob * 100).toFixed(1)}%` : '-'}
+        </span>
+      </td>
+      <td>
+        {row.expected_value != null ? (
+          <span className={row.expected_value > 1.15 ? 'ev-positive' : 'ev-neutral'}>
+            {row.expected_value.toFixed(2)}
+          </span>
+        ) : '-'}
+      </td>
+      <td>
+        <span className={`finish-pos ${row.finish_position != null && row.finish_position <= 3 ? 'finish-top3' : ''}`}>
+          {row.finish_position ?? '-'}
+        </span>
+      </td>
+      <td>
+        {row.is_winner ? (
+          <span className="result-badge result-win">&#x1F3C6; 冠軍</span>
+        ) : row.is_top3_pick && row.finished_in_top3 ? (
+          <span className="result-badge result-hit">&#x2713; 命中</span>
+        ) : row.is_top3_pick && !row.finished_in_top3 ? (
+          <span className="result-badge result-miss">&#x2717; 落空</span>
+        ) : row.finished_in_top3 ? (
+          <span className="result-badge result-surprise">&#x26A0; 黑馬</span>
+        ) : (
+          <span className="result-badge result-na">-</span>
+        )}
+      </td>
+    </tr>
+  )
+}
