@@ -17,7 +17,8 @@ interface TopPicksCardsProps {
 }
 
 const PICK_LABELS = ['1號膽', '2號膽', '3號膽', '4號膽']
-const PICK_COLORS = ['#f59e0b', '#3b82f6', '#10b981', '#8b5cf6']
+const PICK_COLORS = ['#f59e0b', '#94a3b8', '#d97706', '#38bdf8']
+const RANK_CLASSES = ['rank-gold', 'rank-silver', 'rank-bronze', 'rank-sky']
 
 function fmtPct(p: number | null): string {
   if (p == null) return '-'
@@ -63,7 +64,7 @@ export function TopPicksCards({ picks, totalRunners, paceLabel, onHorseClick }: 
               } as React.CSSProperties}
             >
               <div className="pick-card-top">
-                <div className="pick-rank" style={{ background: color }}>
+                <div className={`pick-rank ${RANK_CLASSES[idx]}`}>
                   {PICK_LABELS[idx]}
                 </div>
                 <div className="pick-horse-no">
