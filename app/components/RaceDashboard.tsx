@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { fetchLatestRaces, fetchRaceRunners, fetchPredictions, fetchHorses } from '@/lib/supabase-client'
 import type { Race, RaceRunner, ModelPrediction, Horse, RaceRow } from '@/lib/types'
-import { getTopPicks, estimateRaceTime } from '@/lib/race-utils'
+import { getTopPicks, estimateRaceTime, predictPace } from '@/lib/race-utils'
 import { PacingBriefing } from './PacingBriefing'
 import { AIRaceAnalysis } from './AIRaceAnalysis'
 import { TopPicksCards } from './TopPicksCards'
@@ -23,6 +23,7 @@ export function RaceDashboard() {
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
   const [drawerHorseId, setDrawerHorseId] = useState<string | null>(null)
   const [drawerHorseName, setDrawerHorseName] = useState<string>('')
+  const [drawerRaceRow, setDrawerRaceRow] = useState<RaceRow | null>(null)
 
   const loadRaceData = useCallback(async (raceId: string) => {
     setLoading(true)
@@ -100,15 +101,19 @@ export function RaceDashboard() {
   const selectedRace = races.find(r => r.race_id === selectedRaceId)
   const topPicks = useMemo(() => getTopPicks(rows, 4), [rows])
   const topPickId = topPicks.length > 0 ? topPicks[0].runner_id : null
+  const paceInfo = useMemo(() => predictPace(rows), [rows])
 
   const handleHorseClick = useCallback((horseId: string, horseName: string) => {
     setDrawerHorseId(horseId)
     setDrawerHorseName(horseName)
-  }, [])
+    const match = rows.find(r => r.horse_id === horseId)
+    setDrawerRaceRow(match ?? null)
+  }, [rows])
 
   const handleCloseDrawer = useCallback(() => {
     setDrawerHorseId(null)
     setDrawerHorseName('')
+    setDrawerRaceRow(null)
   }, [])
 
   const venueLabel = selectedRace?.venue === 'ST' ? '沙田' : selectedRace?.venue === 'HV' ? '跑馬地' : selectedRace?.venue ?? ''
@@ -207,7 +212,7 @@ export function RaceDashboard() {
       <AIRaceAnalysis race={selectedRace} rows={rows} />
 
       {/* Section 3: AI Top 4 Picks */}
-      <TopPicksCards picks={topPicks} />
+      <TopPicksCards picks={topPicks} totalRunners={rows.length} paceLabel={paceInfo.label} />
 
       {/* Section 4: Betting Strategy */}
       <BettingStrategy rows={rows} />
@@ -230,6 +235,7 @@ export function RaceDashboard() {
       <HorseDetailDrawer
         horseId={drawerHorseId}
         horseName={drawerHorseName}
+        raceRow={drawerRaceRow}
         onClose={handleCloseDrawer}
       />
     </div>

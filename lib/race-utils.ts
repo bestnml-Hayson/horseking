@@ -314,3 +314,201 @@ export function generateRaceAnalysis(rows: RaceRow[], race: Race | undefined, to
     modelLogic,
   }
 }
+
+function analyzeFormTrend(form: number[]): { trend: 'improving' | 'declining' | 'consistent' | 'mixed'; avg: number; recent3Avg: number } {
+  if (form.length === 0) return { trend: 'consistent', avg: 0, recent3Avg: 0 }
+  const avg = form.reduce((s, p) => s + p, 0) / form.length
+  const recent = form.slice(0, 3)
+  const recent3Avg = recent.length > 0 ? recent.reduce((s, p) => s + p, 0) / recent.length : avg
+  const older = form.slice(3)
+  const olderAvg = older.length > 0 ? older.reduce((s, p) => s + p, 0) / older.length : avg
+
+  if (recent3Avg < olderAvg - 2) return { trend: 'improving', avg, recent3Avg }
+  if (recent3Avg > olderAvg + 2) return { trend: 'declining', avg, recent3Avg }
+  if (form.every(p => Math.abs(p - avg) <= 3)) return { trend: 'consistent', avg, recent3Avg }
+  return { trend: 'mixed', avg, recent3Avg }
+}
+
+export function generateHorseInsight(
+  row: RaceRow,
+  rank: number,
+  totalRunners: number,
+  paceLabel?: string
+): string {
+  const parts: string[] = []
+  const pred = row.prediction
+  const pFinal = pred?.final_prob ?? null
+  const ev = pred?.expected_value ?? null
+  const kelly = pred?.kelly_fraction ?? null
+  const draw = row.draw
+  const weight = row.actual_weight
+  const jockey = row.jockey
+  const jockeyWr = row.jockey_win_rate
+  const trainerWr = row.trainer_win_rate
+  const odds = row.win_odds
+  const form = parseFormHistory(row.form_history)
+  const formTrend = analyzeFormTrend(form)
+
+  if (rank === 1) {
+    parts.push('Benter 模型計算奪魁機會最高')
+  } else if (rank === 2) {
+    parts.push('模型評估爭勝能力第二')
+  } else if (rank === 3) {
+    parts.push('模型評分第三選擇')
+  } else if (rank <= 6) {
+    parts.push('中規中矩')
+  } else {
+    parts.push('模型評分偏低')
+  }
+
+  if (draw != null) {
+    if (draw <= 3) {
+      parts.push(`排 ${draw} 檔好檔，內欄有利搶先`)
+    } else if (draw <= 7) {
+      parts.push(`排 ${draw} 檔中規中矩`)
+    } else if (draw <= 10) {
+      parts.push(`排 ${draw} 檔偏外，需多走路程`)
+    } else {
+      parts.push(`排 ${draw} 檔大外檔，形勢不利`)
+    }
+  }
+
+  if (form.length >= 3) {
+    if (formTrend.trend === 'improving') {
+      parts.push('近績走勢回升，狀態上揚')
+    } else if (formTrend.trend === 'declining') {
+      parts.push('近期走勢下滑，狀態存疑')
+    } else if (formTrend.trend === 'consistent' && formTrend.avg <= 5) {
+      parts.push('近績穩定在前列，水準可靠')
+    }
+    if (form[0] <= 3) {
+      parts.push('上場表現出色')
+    }
+  }
+
+  if (jockeyWr != null && jockeyWr >= 0.15) {
+    parts.push(`騎師 ${jockey ?? ''} 近績 ${(jockeyWr * 100).toFixed(0)}% 勝率，狀態正佳`)
+  }
+
+  if (weight != null) {
+    if (weight <= 118) {
+      parts.push('負磅輕巧，有減磅優勢')
+    } else if (weight >= 132) {
+      parts.push('頂磅出擊，負擔較重')
+    }
+  }
+
+  if (ev != null && ev > 0.15 && kelly != null && kelly > 0) {
+    parts.push('EV 正期望，具投注價值')
+  } else if (odds != null && odds > 0 && pFinal != null) {
+    const impliedProb = 1 / odds
+    if (pFinal > impliedProb * 1.2) {
+      parts.push('模型勝率高於市場預期')
+    }
+  }
+
+  if (paceLabel) {
+    if (paceLabel === '慢步速' && draw != null && draw <= 5) {
+      parts.push('慢步速形勢下內檔可前領')
+    } else if (paceLabel === '快步速' && formTrend.trend === 'improving') {
+      parts.push('快步速有利後上馬發力')
+    }
+  }
+
+  if (parts.length > 3) {
+    return parts.slice(0, 3).join('；') + '。'
+  }
+  return parts.join('；') + '。'
+}
+
+export function generateHorseComprehensiveInsight(
+  detail: {
+    horse_name: string
+    total_starts: number
+    total_wins: number
+    win_rate: number
+    top3_rate: number
+    recent_form: number[]
+    venue_stats: { venue: string; starts: number; wins: number; win_rate: number; top3_rate: number }[]
+    best_distance: string | null
+    jockey_partners: { name: string; rides: number; wins: number }[]
+    avg_odds: number
+  },
+  raceRow?: RaceRow | null
+): string {
+  const parts: string[] = []
+  const d = detail
+
+  if (d.total_starts >= 5 && d.win_rate >= 15) {
+    parts.push(`${d.horse_name} 生涯 ${d.total_starts} 戰 ${d.total_wins} 勝，勝率 ${d.win_rate.toFixed(1)}%，前三率 ${d.top3_rate.toFixed(1)}%，屬穩定型賽馬`)
+  } else if (d.total_starts >= 5) {
+    parts.push(`${d.horse_name} 生涯 ${d.total_starts} 戰，勝率 ${d.win_rate.toFixed(1)}%，前三率 ${d.top3_rate.toFixed(1)}%`)
+  } else if (d.total_starts > 0) {
+    parts.push(`${d.horse_name} 出賽經驗尚淺（${d.total_starts} 場）`)
+  } else {
+    parts.push(`${d.horse_name} 暫無歷史賽績記錄`)
+  }
+
+  const formTrend = analyzeFormTrend(d.recent_form)
+  if (d.recent_form.length >= 3) {
+    if (formTrend.trend === 'improving') {
+      parts.push('近期走勢明顯回升，狀態進入巔峰期')
+    } else if (formTrend.trend === 'declining') {
+      parts.push('近績走勢下滑，需留意狀態是否見頂')
+    } else if (formTrend.trend === 'consistent' && formTrend.avg <= 4) {
+      parts.push('近績穩定靠前，表現一貫可靠')
+    } else {
+      parts.push('近績表現起伏不定')
+    }
+  }
+
+  if (d.best_distance) {
+    parts.push(`最佳路程為${d.best_distance}，留意今場路程是否配合`)
+  }
+
+  if (d.venue_stats.length > 0) {
+    const st = d.venue_stats.find(v => v.venue === 'ST')
+    const hv = d.venue_stats.find(v => v.venue === 'HV')
+    if (st && st.starts >= 3 && st.win_rate >= 15) {
+      parts.push('沙田戰績出色，適應該場地')
+    }
+    if (hv && hv.starts >= 3 && hv.win_rate >= 15) {
+      parts.push('跑馬地戰績優異，擅長此場地')
+    }
+  }
+
+  if (d.jockey_partners.length > 0) {
+    const top = d.jockey_partners[0]
+    if (top.rides >= 3 && top.wins >= 1) {
+      parts.push(`與騎師 ${top.name} 合作 ${top.rides} 次贏 ${top.wins} 場，默契不俗`)
+    }
+  }
+
+  if (raceRow) {
+    const draw = raceRow.draw
+    const weight = raceRow.actual_weight
+    const pFinal = raceRow.prediction?.final_prob
+    const ev = raceRow.prediction?.expected_value
+
+    if (draw != null && draw <= 4) {
+      parts.push(`今場排 ${draw} 檔內檔有利`)
+    } else if (draw != null && draw >= 11) {
+      parts.push(`今場排 ${draw} 檔大外檔需克服`)
+    }
+
+    if (weight != null && weight <= 118) {
+      parts.push('負磅輕，有減磅優勢')
+    } else if (weight != null && weight >= 132) {
+      parts.push('頂磅出擊，負擔較重')
+    }
+
+    if (pFinal != null && pFinal >= 0.18) {
+      parts.push(`Benter 模型計算奪魁機會 ${(pFinal * 100).toFixed(1)}%`)
+    }
+    if (ev != null && ev > 0.15) {
+      parts.push('期望值正，具投注價值')
+    }
+  }
+
+  return parts.join('。') + '。'
+}

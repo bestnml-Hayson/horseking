@@ -1,7 +1,7 @@
 'use client'
 
 import type { RaceRow } from '@/lib/types'
-import { fmtOdds, fmtEV, fmtKelly, parseFormHistory, getFormColor } from '@/lib/race-utils'
+import { fmtOdds, fmtEV, fmtKelly, parseFormHistory, getFormColor, generateHorseInsight } from '@/lib/race-utils'
 
 const VALUE_THRESHOLD = 0.15
 
@@ -50,6 +50,7 @@ export function RaceTable({ rows, topPickId, onHorseClick }: RaceTableProps) {
             <th style={{ textAlign: 'right', width: 72 }}>EV</th>
             <th style={{ textAlign: 'right', width: 72 }}>Kelly%</th>
             <th style={{ width: 110 }}>標籤</th>
+            <th style={{ minWidth: 220 }}>AI 評語</th>
           </tr>
         </thead>
         <tbody>
@@ -156,6 +157,9 @@ export function RaceTable({ rows, topPickId, onHorseClick }: RaceTableProps) {
                       <span className="badge badge-cold">冷門</span>
                     )}
                   </div>
+                </td>
+                <td className="ai-insight-cell">
+                  {generateHorseInsight(row, idx + 1, rows.length)}
                 </td>
               </tr>
             )

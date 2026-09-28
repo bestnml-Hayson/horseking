@@ -2,7 +2,7 @@
 
 import type { RaceRow } from '@/lib/types'
 import {
-  generateExpertAnalysis,
+  generateHorseInsight,
   fmtOdds,
   fmtEV,
   fmtKelly,
@@ -11,6 +11,8 @@ import {
 
 interface TopPicksCardsProps {
   picks: RaceRow[]
+  totalRunners?: number
+  paceLabel?: string
 }
 
 const PICK_LABELS = ['1號膽', '2號膽', '3號膽', '4號膽']
@@ -21,7 +23,7 @@ function fmtPct(p: number | null): string {
   return (p * 100).toFixed(1) + '%'
 }
 
-export function TopPicksCards({ picks }: TopPicksCardsProps) {
+export function TopPicksCards({ picks, totalRunners, paceLabel }: TopPicksCardsProps) {
   if (picks.length === 0) {
     return (
       <div className="picks-empty">
@@ -123,6 +125,10 @@ export function TopPicksCards({ picks }: TopPicksCardsProps) {
                     <span className="form-position" style={{ color: '#64748b' }}>暫無數據</span>
                   )}
                 </div>
+              </div>
+
+              <div className="pick-ai-insight">
+                {generateHorseInsight(row, idx, totalRunners ?? picks.length, paceLabel)}
               </div>
             </div>
           )

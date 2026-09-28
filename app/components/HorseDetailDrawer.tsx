@@ -1,12 +1,13 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import type { HorseDetail } from '@/lib/types'
-import { getFormColor } from '@/lib/race-utils'
+import type { HorseDetail, RaceRow } from '@/lib/types'
+import { getFormColor, generateHorseComprehensiveInsight } from '@/lib/race-utils'
 
 interface HorseDetailDrawerProps {
   horseId: string | null
   horseName: string
+  raceRow?: RaceRow | null
   onClose: () => void
 }
 
@@ -19,7 +20,7 @@ function fmtTime(seconds: number | null): string {
   return min > 0 ? `${min}:${sec.padStart(5, '0')}` : `${sec}s`
 }
 
-export function HorseDetailDrawer({ horseId, horseName, onClose }: HorseDetailDrawerProps) {
+export function HorseDetailDrawer({ horseId, horseName, raceRow, onClose }: HorseDetailDrawerProps) {
   const [detail, setDetail] = useState<HorseDetail | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -90,6 +91,31 @@ export function HorseDetailDrawer({ horseId, horseName, onClose }: HorseDetailDr
 
           {detail && !loading && (
             <>
+              {/* AI Comprehensive Insight */}
+              <div className="drawer-ai-insight">
+                <div className="drawer-ai-insight-header">
+                  <span className="drawer-ai-insight-icon">&#x1F9E0;</span>
+                  <span className="drawer-ai-insight-title">AI 賽事前瞻綜合短評</span>
+                </div>
+                <p className="drawer-ai-insight-text">
+                  {generateHorseComprehensiveInsight(
+                    {
+                      horse_name: detail.horse_name,
+                      total_starts: detail.total_starts,
+                      total_wins: detail.total_wins,
+                      win_rate: detail.win_rate,
+                      top3_rate: detail.top3_rate,
+                      recent_form: detail.recent_form,
+                      venue_stats: detail.venue_stats,
+                      best_distance: detail.best_distance,
+                      jockey_partners: detail.jockey_partners,
+                      avg_odds: detail.avg_odds,
+                    },
+                    raceRow
+                  )}
+                </p>
+              </div>
+
               {/* Career Stats Grid */}
               <div className="horse-stats-grid">
                 <div className="horse-stat-card">

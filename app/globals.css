@@ -471,6 +471,17 @@ html, body {
   border-top: 1px solid var(--border-primary);
 }
 
+.pick-ai-insight {
+  margin-top: 10px;
+  padding: 10px 12px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(59, 130, 246, 0.06));
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: 10px;
+  font-size: 12.5px;
+  line-height: 1.7;
+  color: var(--text-secondary);
+}
+
 .picks-empty {
   text-align: center;
   padding: 32px;
@@ -1855,6 +1866,46 @@ html, body {
 
 .th-final {
   color: #10b981 !important;
+}
+
+.ai-insight-cell {
+  font-size: 0.78rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  max-width: 280px;
+  white-space: normal;
+}
+
+.drawer-ai-insight {
+  margin-bottom: 20px;
+  padding: 16px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(59, 130, 246, 0.06));
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  border-radius: 14px;
+}
+
+.drawer-ai-insight-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.drawer-ai-insight-icon {
+  font-size: 20px;
+}
+
+.drawer-ai-insight-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #818cf8;
+}
+
+.drawer-ai-insight-text {
+  font-size: 13.5px;
+  line-height: 1.8;
+  color: var(--text-secondary);
+  margin: 0;
 }
 
 /* =====================================================================
