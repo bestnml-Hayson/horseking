@@ -37,6 +37,22 @@ except ImportError:
     sys.exit(1)
 
 
+def _load_dotenv():
+    """Load .env.local for Supabase credentials"""
+    env_path = os.path.join(os.path.dirname(__file__), '..', '.env.local')
+    if os.path.exists(env_path):
+        with open(env_path, 'r', encoding='utf-8') as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith('#') or '=' not in line:
+                    continue
+                key, _, value = line.partition('=')
+                os.environ.setdefault(key.strip(), value.strip())
+
+
+_load_dotenv()
+
+
 BASE_URL = "https://racing.hkjc.com/racing/information/Chinese/Racing/LocalResults.aspx"
 
 HEADERS = {
