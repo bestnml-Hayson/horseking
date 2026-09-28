@@ -27,8 +27,11 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Tuple
 
-import requests
-from bs4 import BeautifulSoup
+try:
+    from playwright.sync_api import sync_playwright
+except ImportError:
+    print("[FAIL] playwright not installed. Run: pip install playwright && playwright install chromium")
+    sys.exit(1)
 
 try:
     from supabase import create_client, Client
@@ -53,15 +56,6 @@ def _load_dotenv():
 _load_dotenv()
 
 
-BASE_URL = "https://racing.hkjc.com/racing/information/Chinese/Racing/LocalResults.aspx"
-
-HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-    "Accept-Language": "zh-TW,zh;q=0.9,en;q=0.8",
-}
-
-
 # =====================================================================
 # Supabase
 # =====================================================================
@@ -75,41 +69,59 @@ def get_supabase() -> Client:
 
 
 # =====================================================================
-# 1. Fetch race dates from HKJC
+# 1. Fetch race dates from HKJC (Playwright)
 # =====================================================================
 def fetch_race_dates() -> List[str]:
     print("[Step 1] Fetching available race dates from HKJC...")
-    params = {"RaceDate": "2026/09/27", "Racecourse": "ST", "RaceNo": "1"}
-    try:
-        resp = requests.get(BASE_URL, params=params, headers=HEADERS, timeout=30)
-        resp.raise_for_status()
-    except Exception as e:
-        print(f"  [WARN] HKJC request failed: {e}, using fallback dates")
-        return _generate_fallback_dates()
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True, args=['--no-sandbox', '--disable-gpu'])
+        page = browser.new_page()
+        try:
+            url = "https://racing.hkjc.com/racing/information/Chinese/Racing/LocalResults.aspx?RaceDate=2026/09/27&Racecourse=ST&RaceNo=1"
+            page.goto(url, wait_until='domcontentloaded', timeout=30000)
+            page.wait_for_timeout(2000)
 
-    soup = BeautifulSoup(resp.text, "lxml")
-    date_select = soup.find("select", {"name": re.compile(r"RaceDate|date", re.I)})
-    if not date_select:
-        for sel in soup.find_all("select"):
-            opts = sel.find_all("option")
-            if len(opts) > 20:
-                date_select = sel
-                break
+            dates = page.evaluate(r'''() => {
+                const dates = [];
+                const selects = document.querySelectorAll('select');
+                let targetSelect = null;
+                for (const sel of selects) {
+                    const name = (sel.getAttribute('name') || '').toLowerCase();
+                    if (name.includes('date') || name.includes('racedate')) {
+                        targetSelect = sel;
+                        break;
+                    }
+                }
+                if (!targetSelect && selects.length > 0) {
+                    for (const sel of selects) {
+                        if (sel.options.length > 20) {
+                            targetSelect = sel;
+                            break;
+                        }
+                    }
+                }
+                if (!targetSelect) return dates;
+                for (const opt of targetSelect.options) {
+                    const text = opt.value.trim();
+                    if (/^\d{2}\/\d{2}\/\d{4}$/.test(text)) {
+                        const parts = text.split('/');
+                        dates.push(`${parts[2]}-${parts[1]}-${parts[0]}`);
+                    }
+                }
+                return dates;
+            }''')
 
-    if not date_select:
-        print("  [WARN] No date dropdown found, using fallback dates")
-        return _generate_fallback_dates()
-
-    dates = []
-    for opt in date_select.find_all("option"):
-        text = opt.text.strip()
-        if re.match(r"\d{2}/\d{2}/\d{4}", text):
-            d, m, y = text.split("/")
-            dates.append(f"{y}-{m}-{d}")
-
-    dates.sort(reverse=True)
-    print(f"  Found {len(dates)} race dates ({dates[-1]} to {dates[0]})")
-    return dates
+            dates.sort(reverse=True)
+            if not dates:
+                print("  [WARN] No dates parsed from page, using fallback")
+                return _generate_fallback_dates()
+            print(f"  Found {len(dates)} race dates ({dates[-1]} to {dates[0]})")
+            return dates
+        except Exception as e:
+            print(f"  [WARN] Playwright fetch failed: {e}, using fallback dates")
+            return _generate_fallback_dates()
+        finally:
+            browser.close()
 
 
 def _generate_fallback_dates(months: int = 3) -> List[str]:
@@ -135,147 +147,191 @@ def filter_dates_by_months(dates: List[str], months: int) -> List[str]:
 
 
 # =====================================================================
-# 2. Scrape single race result
+# 2. Scrape single race result (Playwright)
 # =====================================================================
-def fetch_race_results(date_str: str, venue: str, race_no: int,
-                       session: requests.Session) -> Optional[Dict]:
+def scrape_hkjc_race(date_str: str, venue: str, race_no: int) -> Optional[Dict]:
+    """Scrape a single race result using Playwright."""
     y, m, d = date_str.split("-")
-    params = {"RaceDate": f"{y}/{m}/{d}", "Racecourse": venue, "RaceNo": str(race_no)}
-    try:
-        resp = session.get(BASE_URL, params=params, headers=HEADERS, timeout=30)
-        if resp.status_code != 200:
+    url = f"https://racing.hkjc.com/racing/information/Chinese/Racing/LocalResults.aspx?RaceDate={y}/{m}/{d}&Racecourse={venue}&RaceNo={race_no}"
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True, args=['--no-sandbox', '--disable-gpu'])
+        page = browser.new_page()
+        try:
+            page.goto(url, wait_until='domcontentloaded', timeout=20000)
+            page.wait_for_timeout(2000)
+
+            # Check if race exists
+            has_content = page.evaluate(r'''() => {
+                const text = document.body.innerText;
+                return text.includes('場地狀況') || text.includes('名次');
+            }''')
+
+            if not has_content:
+                return None
+
+            # Extract race metadata
+            race_meta = page.evaluate(r'''() => {
+                const text = document.body.innerText;
+                const lines = text.split('\\n');
+
+                let startIdx = -1;
+                for (let i = 0; i < lines.length; i++) {
+                    if (/第\\s*\\d+\\s*場/.test(lines[i])) {
+                        startIdx = i;
+                        break;
+                    }
+                }
+
+                let endIdx = lines.length;
+                if (startIdx >= 0) {
+                    for (let i = startIdx + 1; i < lines.length; i++) {
+                        if (lines[i].includes('馬匹編號') || lines[i].includes('排位表')) {
+                            endIdx = i;
+                            break;
+                        }
+                    }
+                } else {
+                    startIdx = 0;
+                }
+
+                const block = lines.slice(startIdx, endIdx).join(' ');
+
+                const distMatch = block.match(/(\\d{3,4})米/);
+                const goingMatch = block.match(/好至黏快|好至快地|好至黏地|好地|快地|慢地|軟地|黏地/);
+                const classMatch = block.match(/第[一二三四五六七八九十]+班/);
+
+                return {
+                    distance: distMatch ? parseInt(distMatch[1]) : null,
+                    going: goingMatch ? goingMatch[0] : null,
+                    class_level: classMatch ? classMatch[0] : null,
+                };
+            }''')
+
+            # Extract results table
+            horses = page.evaluate(r'''() => {
+                const tables = document.querySelectorAll('table');
+                let resultsTable = null;
+
+                for (const table of tables) {
+                    const text = table.innerText;
+                    if (text.includes('名次') && text.includes('獨贏')) {
+                        resultsTable = table;
+                        break;
+                    }
+                }
+
+                if (!resultsTable) return [];
+
+                const rows = resultsTable.querySelectorAll('tr');
+                const horses = [];
+
+                for (const row of rows) {
+                    const cells = row.querySelectorAll('td');
+                    if (cells.length < 10) continue;
+
+                    const texts = Array.from(cells).map(c => c.textContent.trim());
+
+                    // Position
+                    let position;
+                    try {
+                        position = parseInt(texts[0]);
+                        if (isNaN(position) || position < 1) continue;
+                    } catch (e) { continue; }
+
+                    // Horse number
+                    let horseNo;
+                    try {
+                        horseNo = parseInt(texts[1]);
+                        if (isNaN(horseNo)) continue;
+                    } catch (e) { continue; }
+
+                    // Horse name
+                    let horseNameRaw = texts[2] || '';
+                    const horseCodeMatch = horseNameRaw.match(/\(([A-Z]\d+)\)/);
+                    const horseCode = horseCodeMatch ? horseCodeMatch[1] : `H${horseNo.toString().padStart(4, '0')}`;
+                    horseNameRaw = horseNameRaw.replace(/\([A-Z]\d+\)/g, '').trim();
+
+                    // Jockey & Trainer
+                    const jockey = texts[3] || '';
+                    const trainer = texts[4] || '';
+
+                    // Weight
+                    let weight = null;
+                    try {
+                        weight = parseFloat(texts[5]);
+                        if (isNaN(weight)) weight = null;
+                    } catch (e) {}
+
+                    // Draw
+                    let draw = null;
+                    try {
+                        draw = parseInt(texts[7]);
+                        if (isNaN(draw)) draw = null;
+                    } catch (e) {}
+
+                    // Finish time
+                    let finishTime = null;
+                    if (texts.length > 10) {
+                        let ftStr = texts[10].trim().replace(/[()]/g, '');
+                        if (ftStr && ftStr !== '---' && ftStr !== '-') {
+                            const tm = ftStr.match(/(\\d+):(\\d+\\.\\d+)/);
+                            if (tm) {
+                                finishTime = parseInt(tm[1]) * 60 + parseFloat(tm[2]);
+                            } else {
+                                try {
+                                    finishTime = parseFloat(ftStr);
+                                } catch (e) {}
+                            }
+                        }
+                    }
+
+                    // Win odds
+                    let winOdds = null;
+                    try {
+                        winOdds = parseFloat(texts[11]);
+                        if (isNaN(winOdds)) winOdds = null;
+                    } catch (e) {}
+
+                    horses.push({
+                        horse_no: horseNo,
+                        horse_name: horseNameRaw,
+                        horse_code: horseCode,
+                        jockey: jockey,
+                        trainer: trainer,
+                        weight: weight,
+                        draw: draw,
+                        finish_position: position,
+                        finish_time: finishTime,
+                        win_odds: winOdds,
+                    });
+                }
+
+                return horses;
+            }''')
+
+            if not horses:
+                return None
+
+            race_id = f"{venue}-{date_str.replace('-', '')}-{race_no:02d}"
+            race_data = {
+                "race_id": race_id[:32],
+                "race_date": date_str,
+                "venue": venue,
+                "race_no": race_no,
+                "distance": race_meta.get('distance'),
+                "going": str(race_meta.get('going', ''))[:32] if race_meta.get('going') else None,
+                "class_level": str(race_meta.get('class_level', ''))[:32] if race_meta.get('class_level') else None,
+                "horses": horses,
+            }
+
+            return race_data
+
+        except Exception as e:
+            print(f"    [ERROR] {date_str} {venue} R{race_no}: {e}")
             return None
-        return parse_race_html(resp.text, date_str, venue, race_no)
-    except Exception as e:
-        print(f"    [ERROR] {date_str} {venue} R{race_no}: {e}")
-        return None
-
-
-def parse_race_html(html: str, date_str: str, venue: str, race_no: int) -> Optional[Dict]:
-    soup = BeautifulSoup(html, "lxml")
-    tables = soup.find_all("table")
-    if len(tables) < 2:
-        return None
-
-    info_table = None
-    results_table = None
-    for t in tables:
-        text = t.get_text()
-        if "場地狀況" in text and "米" in text:
-            info_table = t
-        if "名次" in text and "獨贏" in text:
-            results_table = t
-
-    if not results_table:
-        return None
-
-    race_id = f"{venue}-{date_str.replace('-', '')}-{race_no:02d}"
-    race_meta = {
-        "race_id": race_id[:32],
-        "race_date": date_str,
-        "venue": venue,
-        "race_no": race_no,
-        "distance": None,
-        "going": None,
-        "class_level": None,
-    }
-
-    if info_table:
-        text = info_table.get_text(" ", strip=True)
-        dist_match = re.search(r"(\d+)\s*米", text)
-        if dist_match:
-            race_meta["distance"] = int(dist_match.group(1))
-        class_match = re.search(r"第([一二三四五六])班", text)
-        if class_match:
-            cn_map = {"一": "1", "二": "2", "三": "3", "四": "4", "五": "5", "六": "6"}
-            race_meta["class_level"] = f"Class {cn_map.get(class_match.group(1), class_match.group(1))}"
-        if "場地狀況" in text:
-            for cell in info_table.find_all(["td", "th"]):
-                ct = cell.get_text(strip=True)
-                if ct and ct not in ("場地狀況", ":", "："):
-                    going = ct.replace(":", "").replace("：", "").strip()
-                    if going and going != "場地狀況":
-                        race_meta["going"] = going[:32]
-                        break
-
-    horses = _parse_results_table(results_table)
-    if not horses:
-        return None
-
-    race_meta["horses"] = horses
-    return race_meta
-
-
-def _parse_results_table(table) -> List[Dict]:
-    horses = []
-    for row in table.find_all("tr"):
-        cells = row.find_all("td")
-        if len(cells) < 10:
-            continue
-        texts = [c.get_text(strip=True) for c in cells]
-
-        try:
-            position = int(texts[0])
-        except (ValueError, IndexError):
-            continue
-        if position < 1:
-            continue
-
-        try:
-            horse_no = int(texts[1])
-        except (ValueError, IndexError):
-            continue
-
-        horse_name_raw = texts[2]
-        horse_name = re.sub(r"\([A-Z]\d+\)", "", horse_name_raw).strip()
-        horse_code_match = re.search(r"\(([A-Z]\d+)\)", horse_name_raw)
-        horse_code = horse_code_match.group(1) if horse_code_match else f"H{horse_no:04d}"
-
-        jockey = texts[3] if len(texts) > 3 else ""
-        trainer = texts[4] if len(texts) > 4 else ""
-
-        try:
-            weight = float(texts[5]) if len(texts) > 5 else None
-        except (ValueError, IndexError):
-            weight = None
-
-        try:
-            draw = int(texts[7]) if len(texts) > 7 else None
-        except (ValueError, IndexError):
-            draw = None
-
-        finish_time = None
-        if len(texts) > 10:
-            ft_str = texts[10].strip().strip("()")
-            if ft_str and ft_str not in ("---", "-"):
-                tm = re.match(r"(\d+):(\d+\.\d+)", ft_str)
-                if tm:
-                    finish_time = int(tm.group(1)) * 60 + float(tm.group(2))
-                else:
-                    try:
-                        finish_time = float(ft_str)
-                    except ValueError:
-                        pass
-
-        try:
-            win_odds = float(texts[11]) if len(texts) > 11 else None
-        except (ValueError, IndexError):
-            win_odds = None
-
-        horses.append({
-            "horse_no": horse_no,
-            "horse_name": horse_name,
-            "horse_code": horse_code,
-            "jockey": jockey,
-            "trainer": trainer,
-            "weight": weight,
-            "draw": draw,
-            "finish_position": position,
-            "finish_time": finish_time,
-            "win_odds": win_odds,
-        })
-
-    return horses
+        finally:
+            browser.close()
 
 
 # =====================================================================
@@ -669,31 +725,25 @@ def main():
         return 1
 
     # Step 2: Scrape
-    print(f"\n[Step 2] Scraping {len(dates)} race dates...")
-    session = requests.Session()
+    print(f"\n[Step 2] Scraping {len(dates)} race dates with Playwright...")
     all_races = []
 
     for di, date_str in enumerate(dates):
         date_races = 0
         for venue in ["ST", "HV"]:
             for race_no in range(1, 12):
-                result = fetch_race_results(date_str, venue, race_no, session)
+                result = scrape_hkjc_race(date_str, venue, race_no)
                 if result and result.get("horses"):
                     all_races.append(result)
                     date_races += 1
+                    print(f"      [OK] R{race_no}: {len(result['horses'])} horses")
                 else:
                     if race_no == 1:
                         continue
                     break
-                time.sleep(0.3)
 
         if (di + 1) % 5 == 0 or di == 0:
             print(f"  [{di + 1}/{len(dates)}] {date_str}: {date_races} races (total: {len(all_races)})")
-
-        if date_races == 0:
-            time.sleep(0.3)
-        else:
-            time.sleep(0.5)
 
     print(f"\n  Scraped {len(all_races)} races total")
     total_horses = sum(len(r.get("horses", [])) for r in all_races)
