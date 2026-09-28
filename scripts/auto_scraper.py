@@ -252,12 +252,108 @@ def write_to_supabase(supabase: Client, races: List[Dict], dry_run: bool = False
 # =====================================================================
 def auto_detect_venue(today: datetime) -> str:
     weekday = today.weekday()
-    if weekday in (2, 6):
+    if weekday in (2, 5):
         return 'ST'
-    elif weekday in (1, 3, 5):
+    elif weekday in (1, 3, 6):
         return 'HV'
-    else:
-        return 'ST'
+    return None
+
+
+# =====================================================================
+# Race time estimation (HKJC typical schedule)
+# =====================================================================
+RACE_INTERVALS_MIN = [0, 25, 25, 30, 25, 30, 25, 30, 25, 30, 25, 30]
+
+def estimate_race_times(date_str: str, venue: str, num_races: int = 11) -> List[Dict]:
+    """Estimate race start times. Day session ~13:00 (ST), Night session ~19:00 (HV)."""
+    from datetime import time as dtime
+    d = datetime.strptime(date_str, '%Y-%m-%d').date()
+    first_race_time = dtime(19, 0) if venue == 'HV' else dtime(13, 0)
+    races = []
+    for i in range(num_races):
+        offset = sum(RACE_INTERVALS_MIN[:i]) if i < len(RACE_INTERVALS_MIN) else i * 28
+        start = datetime.combine(d, first_race_time) + timedelta(minutes=offset)
+        races.append({'race_no': i + 1, 'start_time': start})
+    return races
+
+
+# =====================================================================
+# Odds-only update (for high-frequency mode — no clear, no full rewrite)
+# =====================================================================
+def scrape_odds_only(date_str: str, venue: str) -> Dict[int, Dict[int, float]]:
+    """Scrape current win_odds for all races. Returns {race_no: {horse_no: win_odds}}."""
+    try:
+        from playwright.sync_api import sync_playwright
+    except ImportError:
+        print("[FAIL] playwright not installed")
+        return {}
+
+    date_path = date_str.replace('-', '')
+    base_url = f"https://bet.hkjc.com/ch/racing/wp/{date_str}/{venue}/{{race_no}}"
+    all_odds = {}
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True, args=['--no-sandbox', '--disable-gpu'])
+        page = browser.new_page()
+
+        for race_no in range(1, 13):
+            url = base_url.format(race_no=race_no)
+            try:
+                page.goto(url, wait_until='domcontentloaded', timeout=20000)
+                page.wait_for_timeout(2000)
+
+                odds_data = page.evaluate('''() => {
+                    const odds = {};
+                    const rows = document.querySelectorAll('.rc-odds-row');
+                    rows.forEach(row => {
+                        const cells = row.querySelectorAll('td');
+                        if (cells.length >= 8) {
+                            const horseNo = parseInt(cells[0].textContent.trim());
+                            if (!isNaN(horseNo) && horseNo > 0 && horseNo <= 20) {
+                                const winOdds = parseFloat(cells[7].textContent.trim()) || 0;
+                                odds[horseNo] = winOdds;
+                            }
+                        }
+                    });
+                    return odds;
+                }''')
+
+                if odds_data:
+                    all_odds[race_no] = odds_data
+                    print(f"  [Odds] R{race_no}: {len(odds_data)} horses")
+                else:
+                    if race_no > 1:
+                        break
+
+            except Exception as e:
+                print(f"  [Odds] R{race_no} failed: {e}")
+                if race_no > 1:
+                    break
+
+        browser.close()
+
+    return all_odds
+
+
+def update_odds_in_supabase(supabase: Client, date_str: str, venue: str, odds_map: Dict[int, Dict[int, float]]):
+    """Upsert win_odds into race_runners without clearing data."""
+    date_path = date_str.replace('-', '')
+    total_updated = 0
+
+    for race_no, horse_odds in odds_map.items():
+        race_id = f"{venue}-{date_path}-{race_no:02d}"
+        for horse_no, win_odds in horse_odds.items():
+            runner_id = f"{race_id}_H{horse_no:02d}"
+            supabase.table('race_runners').upsert({
+                'runner_id': runner_id[:48],
+                'race_id': race_id[:32],
+                'horse_no': horse_no,
+                'win_odds': win_odds,
+            }, on_conflict='runner_id').execute()
+            total_updated += 1
+
+    print(f"  [OK] Updated {total_updated} odds entries")
+    return total_updated
 
 
 # =====================================================================
@@ -270,6 +366,7 @@ def main():
     parser.add_argument('--dry-run', action='store_true', help='Scrape but do not write to Supabase')
     parser.add_argument('--fetch-live', action='store_true', help='Auto-detect date/venue and write live data to Supabase')
     parser.add_argument('--clear-only', action='store_true', help='Only clear old data, do not scrape')
+    parser.add_argument('--odds-only', action='store_true', help='Scrape and update odds only (no clear, no full rewrite)')
     args = parser.parse_args()
 
     today = datetime.now()
@@ -290,6 +387,15 @@ def main():
 
     if args.clear_only:
         print("\n[OK] Clear only done!")
+        return
+
+    if args.odds_only:
+        print(f"\n[Odds-Only] Scraping live odds for {date_str} {venue}...")
+        odds_map = scrape_odds_only(date_str, venue)
+        if odds_map:
+            update_odds_in_supabase(supabase, date_str, venue, odds_map)
+        else:
+            print("[WARN] No odds scraped")
         return
 
     races = scrape_hkjc_races(date_str, venue)

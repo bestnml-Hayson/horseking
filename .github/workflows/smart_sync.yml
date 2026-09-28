@@ -1,15 +1,15 @@
-name: Live Sync & Benter Predict
+name: Smart Sync (Dynamic Frequency)
 
 on:
   schedule:
-    - cron: '*/5 * * * *'
+    - cron: '*/15 * * * *'
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: live-sync-predict
+  group: smart-sync
   cancel-in-progress: true
 
 env:
@@ -17,9 +17,9 @@ env:
   SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
 
 jobs:
-  sync-and-predict:
+  smart-sync:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 25
 
     steps:
       - name: Checkout repository
@@ -38,24 +38,18 @@ jobs:
           pip install --quiet --upgrade pip
           pip install --quiet -r requirements.txt
           playwright install --with-deps chromium
-          python -c "from supabase import create_client; import requests; from bs4 import BeautifulSoup; from playwright.sync_api import sync_playwright; print('[OK] deps loaded')"
+          python -c "from playwright.sync_api import sync_playwright; import supabase; print('[OK] deps loaded')"
 
-      - name: Step 1 - Scrape live race data & odds
+      - name: Run Smart Sync
         run: |
-          echo "=== [SCRAPER] Fetching today's race cards & live odds ==="
-          python scripts/auto_scraper.py --fetch-live || echo "[WARN] Scraper exited with code $?"
-          echo "=== [SCRAPER] Done ==="
-
-      - name: Step 2 - Benter model prediction
-        run: |
-          echo "=== [BENTER] Running model: Softmax + Odds Fusion + Kelly ==="
-          python scripts/benter_model.py supabase || echo "[WARN] Benter model exited with code $?"
-          echo "=== [BENTER] Done ==="
+          echo "=== [SmartSync] $(date -u '+%Y-%m-%d %H:%M:%S UTC') ==="
+          python scripts/smart_sync.py
+          echo "=== [SmartSync] Done ==="
 
       - name: Summary
         if: always()
         run: |
-          echo "## Live Sync & Predict Summary" >> $GITHUB_STEP_SUMMARY
+          echo "## Smart Sync Summary" >> $GITHUB_STEP_SUMMARY
           echo "- Trigger: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
           echo "- Time: $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
           echo "- Status: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
