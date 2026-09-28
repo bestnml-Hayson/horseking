@@ -1,14 +1,17 @@
 'use client'
 
 import type { RaceRow } from '@/lib/types'
+import { computeAIScore, fmtOdds, fmtEV, fmtKelly } from '@/lib/race-utils'
 
 const VALUE_THRESHOLD = 0.15
 
 export function RaceTable({ rows, topPickId }: { rows: RaceRow[], topPickId: string | null }) {
   if (rows.length === 0) {
     return (
-      <div style={{ padding: 48, textAlign: 'center', color: 'var(--text-muted)', fontSize: 14 }}>
-        No runners data for this race
+      <div className="table-empty">
+        <div className="table-empty-icon">&#x1F4CA;</div>
+        <div className="table-empty-text">暫無此場次數據</div>
+        <div className="table-empty-sub">No runners data for this race</div>
       </div>
     )
   }
@@ -23,17 +26,15 @@ export function RaceTable({ rows, topPickId }: { rows: RaceRow[], topPickId: str
     <table className="data-table">
       <thead>
         <tr>
-          <th style={{ width: 48 }}>No.</th>
-          <th>Horse</th>
-          <th>Jockey</th>
-          <th>Trainer</th>
-          <th style={{ textAlign: 'right', width: 56 }}>Wt</th>
-          <th style={{ textAlign: 'right', width: 56 }}>Draw</th>
-          <th style={{ textAlign: 'right', width: 72 }}>Odds</th>
-          <th style={{ textAlign: 'right', width: 80 }}>P_final</th>
+          <th style={{ width: 44 }}>No.</th>
+          <th>馬名</th>
+          <th>騎師 / 練馬師</th>
+          <th style={{ textAlign: 'center', width: 52 }}>檔位</th>
+          <th style={{ textAlign: 'right', width: 72 }}>賠率</th>
+          <th style={{ textAlign: 'right', width: 80 }}>P_win</th>
           <th style={{ textAlign: 'right', width: 80 }}>EV</th>
           <th style={{ textAlign: 'right', width: 80 }}>Kelly%</th>
-          <th style={{ width: 140 }}>Tag</th>
+          <th style={{ width: 120 }}>標籤</th>
         </tr>
       </thead>
       <tbody>
@@ -44,6 +45,7 @@ export function RaceTable({ rows, topPickId }: { rows: RaceRow[], topPickId: str
           const kelly = row.prediction?.kelly_fraction ?? null
           const isTopPick = row.runner_id === topPickId
           const isValueBet = isValue && kelly !== null && kelly > 0
+          const aiScore = computeAIScore(row)
 
           let evClass = 'ev-negative'
           if (ev !== null && ev > 0 && ev <= VALUE_THRESHOLD) evClass = 'ev-neutral'
@@ -53,25 +55,31 @@ export function RaceTable({ rows, topPickId }: { rows: RaceRow[], topPickId: str
             <tr
               key={row.runner_id}
               className={isValueBet ? 'value-row' : ''}
-              style={{
-                animationDelay: `${idx * 30}ms`,
-              }}
+              style={{ animationDelay: `${idx * 25}ms` }}
             >
-              <td style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{row.horse_no}</td>
+              <td className="horse-no-cell">
+                <span className="horse-no-badge">{row.horse_no}</span>
+              </td>
               <td>
-                <span className="horse-name">{row.horse_name}</span>
+                <div className="horse-name-cell">
+                  <span className="horse-name">{row.horse_name}</span>
+                  <span className="horse-ai-score" style={{
+                    color: aiScore >= 70 ? '#10b981' : aiScore >= 50 ? '#f59e0b' : '#64748b'
+                  }}>
+                    {aiScore}
+                  </span>
+                </div>
               </td>
-              <td style={{ color: 'var(--text-secondary)' }}>{row.jockey ?? '-'}</td>
-              <td style={{ color: 'var(--text-secondary)' }}>{row.trainer ?? '-'}</td>
-              <td style={{ textAlign: 'right', color: 'var(--text-secondary)' }} className="tabular-nums">
-                {row.actual_weight ?? '-'}
+              <td className="jt-cell">
+                <div className="jockey-name">{row.jockey ?? '-'}</div>
+                <div className="trainer-name">{row.trainer ?? '-'}</div>
               </td>
-              <td style={{ textAlign: 'right', color: 'var(--text-secondary)' }} className="tabular-nums">
+              <td style={{ textAlign: 'center' }} className="tabular-nums draw-cell">
                 {row.draw ?? '-'}
               </td>
               <td style={{ textAlign: 'right' }} className="tabular-nums">
                 <span className="badge badge-odds">
-                  {row.win_odds ? row.win_odds.toFixed(1) : '-'}
+                  {fmtOdds(row.win_odds)}
                 </span>
               </td>
               <td style={{ textAlign: 'right' }} className="tabular-nums">
@@ -80,23 +88,26 @@ export function RaceTable({ rows, topPickId }: { rows: RaceRow[], topPickId: str
                 </span>
               </td>
               <td style={{ textAlign: 'right' }} className={`tabular-nums ${evClass}`}>
-                {ev !== null ? (ev > 0 ? '+' : '') + (ev * 100).toFixed(1) + '%' : '-'}
+                {fmtEV(ev)}
               </td>
               <td style={{ textAlign: 'right' }} className="tabular-nums">
-                <span style={{ color: kelly !== null && kelly > 0 ? 'var(--accent-green)' : 'var(--text-muted)' }}>
-                  {kelly !== null && kelly > 0 ? (kelly * 100).toFixed(2) + '%' : '-'}
+                <span className="kelly-display" style={{
+                  color: kelly !== null && kelly > 0 ? '#10b981' : '#64748b',
+                  fontWeight: kelly !== null && kelly > 0 ? 700 : 400,
+                }}>
+                  {fmtKelly(kelly)}
                 </span>
               </td>
               <td>
-                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                <div className="tag-group">
                   {isTopPick && (
-                    <span className="badge badge-ai-pick">AI &#x9996;&#x9078;</span>
+                    <span className="badge badge-ai-pick">AI 首選</span>
                   )}
                   {isValueBet && (
-                    <span className="badge badge-value">VALUE &#x5C0A;&#x4EAB;&#x50F9;&#x503C;</span>
+                    <span className="badge badge-value">VALUE</span>
                   )}
                   {!isTopPick && !isValueBet && pFinal !== null && pFinal < 0.05 && (
-                    <span className="badge badge-cold">&#x51B7;&#x9580;</span>
+                    <span className="badge badge-cold">冷門</span>
                   )}
                 </div>
               </td>
