@@ -35,10 +35,10 @@ W_DRAW = 0.15         # 檔位優勢
 
 
 def get_supabase_client() -> Client:
-    url = os.environ.get('SUPABASE_URL')
-    key = os.environ.get('SUPABASE_SERVICE_KEY')
+    url = os.environ.get('SUPABASE_URL') or os.environ.get('NEXT_PUBLIC_SUPABASE_URL')
+    key = os.environ.get('SUPABASE_SERVICE_KEY') or os.environ.get('NEXT_PUBLIC_SUPABASE_ANON_KEY')
     if not url or not key:
-        raise EnvironmentError("Missing SUPABASE_URL or SUPABASE_SERVICE_KEY")
+        raise EnvironmentError("Missing SUPABASE_URL/SUPABASE_SERVICE_KEY or NEXT_PUBLIC_SUPABASE_URL/NEXT_PUBLIC_SUPABASE_ANON_KEY")
     return create_client(url, key)
 
 
