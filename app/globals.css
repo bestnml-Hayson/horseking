@@ -221,6 +221,8 @@ html, body {
 
 .race-info-label { color: var(--text-muted); }
 .race-info-value { font-weight: 600; color: var(--text-primary); }
+.odds-status-ready { color: var(--accent-emerald); }
+.odds-status-pending { color: var(--accent-amber); }
 .race-info-sep { color: var(--border-secondary); }
 
 /* ===== Error Banner ===== */
@@ -471,6 +473,7 @@ html, body {
 }
 
 .odds-value { color: var(--text-secondary); }
+.odds-pending { color: var(--accent-amber); font-size: 14px; font-style: italic; }
 
 .pick-form {
   margin-bottom: 12px;
@@ -934,6 +937,14 @@ html, body {
   background: var(--bg-elevated);
   color: var(--text-secondary);
   border: 1px solid var(--border-primary);
+}
+
+.badge-odds-pending {
+  background: rgba(251, 191, 36, 0.08);
+  color: var(--accent-amber);
+  border: 1px solid rgba(251, 191, 36, 0.2);
+  font-style: italic;
+  font-size: 10px;
 }
 
 .badge-prob {
@@ -2260,6 +2271,40 @@ html, body {
 .bf-weight {
   font-size: 10px;
   color: var(--text-muted);
+}
+
+.bf-sub-metrics {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px dashed rgba(51, 65, 85, 0.4);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.bf-sub-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+}
+
+.bf-sub-label {
+  color: var(--text-muted);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bf-sub-value {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  font-family: 'JetBrains Mono', 'SF Mono', ui-monospace, monospace;
+  font-size: 11px;
+  flex-shrink: 0;
+  margin-left: 6px;
 }
 
 .benter-summary-row {

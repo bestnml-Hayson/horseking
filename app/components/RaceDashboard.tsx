@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { fetchLatestRaces, fetchRaceRunners, fetchPredictions, fetchHorses } from '@/lib/supabase-client'
 import type { Race, RaceRunner, ModelPrediction, Horse, RaceRow } from '@/lib/types'
-import { getTopPicks, estimateRaceTime, predictPace } from '@/lib/race-utils'
+import { getTopPicks, estimateRaceTime, predictPace, isOddsPending } from '@/lib/race-utils'
 import { PacingBriefing } from './PacingBriefing'
 import { AIRaceAnalysis } from './AIRaceAnalysis'
 import { TopPicksCards } from './TopPicksCards'
@@ -119,6 +119,10 @@ export function RaceDashboard() {
   const venueLabel = selectedRace?.venue === 'ST' ? '沙田' : selectedRace?.venue === 'HV' ? '跑馬地' : selectedRace?.venue ?? ''
   const surfaceLabel = '草地'
 
+  const oddsReady = rows.length > 0 ? rows.filter(r => !isOddsPending(r.win_odds)).length : 0
+  const oddsTotal = rows.length
+  const oddsAllReady = oddsTotal > 0 && oddsReady === oddsTotal
+
   const selectedRaceTime = selectedRace?.race_time ?? estimateRaceTime(selectedRace?.venue, selectedRace?.race_no ?? 1)
 
   return (
@@ -194,6 +198,13 @@ export function RaceDashboard() {
           <span className="race-info-item">
             <span className="race-info-label">出賽馬匹</span>
             <span className="race-info-value">{rows.length} 匹</span>
+          </span>
+          <span className="race-info-sep">|</span>
+          <span className="race-info-item">
+            <span className="race-info-label">即時賠率</span>
+            <span className={`race-info-value ${oddsAllReady ? 'odds-status-ready' : 'odds-status-pending'}`}>
+              {oddsAllReady ? '✓ 已同步' : `${oddsReady}/${oddsTotal} 已同步`}
+            </span>
           </span>
         </div>
       )}

@@ -120,10 +120,41 @@ export function HorseDetailDrawer({ horseId, horseName, raceRow, onClose }: Hors
               {raceRow && (() => {
                 const bd = computeBenterBreakdown(raceRow)
                 const factors = [
-                  { label: '近況走勢分', sublabel: 'Form Score', score: bd.formScore, weight: '30%', color: '#818cf8' },
-                  { label: '檔位偏差分', sublabel: 'Draw Bias', score: bd.drawScore, weight: '15%', color: '#f59e0b' },
-                  { label: '騎練組合分', sublabel: 'Jockey/Trainer', score: bd.jockeyTrainerScore, weight: '35%', color: '#10b981' },
-                  { label: '途程場地分', sublabel: 'Course/Distance', score: bd.courseDistanceScore, weight: '20%', color: '#3b82f6' },
+                  {
+                    label: '近況走勢分', sublabel: 'Form Score', score: bd.formScore, weight: '30%', color: '#818cf8',
+                    subs: [
+                      { label: '近 6 場平均名次', value: bd.formSub.avgFinish != null ? bd.formSub.avgFinish.toFixed(1) : '-' },
+                      { label: '最佳名次', value: bd.formSub.bestFinish != null ? `第 ${bd.formSub.bestFinish} 名` : '-' },
+                      { label: '上場名次', value: bd.formSub.lastRacePos != null ? `第 ${bd.formSub.lastRacePos} 名` : '-' },
+                      { label: '走勢趨勢', value: bd.formSub.trendLabel },
+                      { label: '走勢評分', value: bd.formSub.trendScore },
+                    ],
+                  },
+                  {
+                    label: '檔位偏差分', sublabel: 'Draw Bias', score: bd.drawScore, weight: '15%', color: '#f59e0b',
+                    subs: [
+                      { label: '檔位利弊係數', value: bd.drawSub.drawBiasCoeff.toFixed(2) },
+                      { label: '場地偏差指數', value: bd.drawSub.trackBiasIndex.toFixed(2) },
+                      { label: '檔位判定', value: bd.drawSub.drawAdvantage },
+                    ],
+                  },
+                  {
+                    label: '騎練組合分', sublabel: 'Jockey/Trainer', score: bd.jockeyTrainerScore, weight: '35%', color: '#10b981',
+                    subs: [
+                      { label: `騎師 ${bd.jtSub.jockeyLabel}`, value: `${bd.jtSub.jockeyWinRate.toFixed(1)}%` },
+                      { label: `練馬師 ${bd.jtSub.trainerLabel}`, value: `${bd.jtSub.trainerWinRate.toFixed(1)}%` },
+                      { label: '人馬默契得分', value: bd.jtSub.synergyScore },
+                    ],
+                  },
+                  {
+                    label: '途程場地分', sublabel: 'Course/Distance', score: bd.courseDistanceScore, weight: '20%', color: '#3b82f6',
+                    subs: [
+                      { label: '負磅影響', value: bd.cdSub.weightEffect > 0 ? `+${bd.cdSub.weightEffect}` : `${bd.cdSub.weightEffect}` },
+                      { label: '班次估算', value: bd.cdSub.classEstimate },
+                      { label: '場地適應度', value: bd.cdSub.goingAdaptability },
+                      { label: '場地狀況', value: bd.cdSub.goingLabel },
+                    ],
+                  },
                 ]
                 return (
                   <div className="drawer-benter-breakdown">
@@ -147,6 +178,14 @@ export function HorseDetailDrawer({ horseId, horseName, raceRow, onClose }: Hors
                           <div className="bf-footer">
                             <span className="bf-score" style={{ color: f.color }}>{f.score}</span>
                             <span className="bf-weight">權重 {f.weight}</span>
+                          </div>
+                          <div className="bf-sub-metrics">
+                            {f.subs.map(s => (
+                              <div key={s.label} className="bf-sub-row">
+                                <span className="bf-sub-label">{s.label}</span>
+                                <span className="bf-sub-value" style={{ color: f.color }}>{s.value}</span>
+                              </div>
+                            ))}
                           </div>
                         </div>
                       ))}

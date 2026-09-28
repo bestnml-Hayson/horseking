@@ -154,8 +154,12 @@ export function getTrioCombination(rows: RaceRow[]): RaceRow[] | null {
  * Format odds display.
  */
 export function fmtOdds(odds: number | null): string {
-  if (!odds || odds <= 0) return '-'
-  return odds.toFixed(1) + 'x'
+  if (odds == null || odds <= 0) return '待定'
+  return odds.toFixed(1)
+}
+
+export function isOddsPending(odds: number | null): boolean {
+  return odds == null || odds <= 0
 }
 
 /**
@@ -513,6 +517,35 @@ export function generateHorseComprehensiveInsight(
   return parts.join('。') + '。'
 }
 
+export interface FormSubIndices {
+  avgFinish: number | null
+  bestFinish: number | null
+  trendLabel: '上升' | '下滑' | '穩定' | '起伏'
+  trendScore: number
+  lastRacePos: number | null
+}
+
+export interface DrawSubIndices {
+  drawBiasCoeff: number
+  trackBiasIndex: number
+  drawAdvantage: '內檔有利' | '中檔中性' | '外檔不利'
+}
+
+export interface JockeyTrainerSubIndices {
+  jockeyWinRate: number
+  trainerWinRate: number
+  synergyScore: number
+  jockeyLabel: string
+  trainerLabel: string
+}
+
+export interface CourseDistanceSubIndices {
+  weightEffect: number
+  classEstimate: string
+  goingAdaptability: number
+  goingLabel: string
+}
+
 export interface BenterBreakdown {
   formScore: number
   drawScore: number
@@ -521,6 +554,10 @@ export interface BenterBreakdown {
   totalScore: number
   pFinal: number | null
   summary: string
+  formSub: FormSubIndices
+  drawSub: DrawSubIndices
+  jtSub: JockeyTrainerSubIndices
+  cdSub: CourseDistanceSubIndices
 }
 
 export function computeBenterBreakdown(row: RaceRow): BenterBreakdown {
@@ -559,6 +596,64 @@ export function computeBenterBreakdown(row: RaceRow): BenterBreakdown {
     courseDistanceScore * 0.20
   )
 
+  // --- Sub-indices ---
+
+  // Form sub-indices
+  const formTrend = analyzeFormTrend(form)
+  const trendMap = { improving: '上升' as const, declining: '下滑' as const, consistent: '穩定' as const, mixed: '起伏' as const }
+  const trendScoreVal = formTrend.trend === 'improving' ? 85 : formTrend.trend === 'consistent' ? 70 : formTrend.trend === 'mixed' ? 55 : 35
+  const formSub: FormSubIndices = {
+    avgFinish: form.length > 0 ? Math.round(formAvg * 10) / 10 : null,
+    bestFinish: form.length > 0 ? Math.min(...form) : null,
+    trendLabel: trendMap[formTrend.trend],
+    trendScore: trendScoreVal,
+    lastRacePos: form.length > 0 ? form[0] : null,
+  }
+
+  // Draw sub-indices
+  const drawBiasCoeff = draw != null ? Math.round((1 - (draw - 1) / drawMax) * 100) / 100 : 0.5
+  const totalRunnersEst = 12
+  const innerRatio = draw != null ? (draw - 1) / Math.min(totalRunnersEst - 1, drawMax - 1) : 0.5
+  const trackBiasIndex = draw != null ? Math.round((1 - innerRatio * 0.6) * 100) / 100 : 0.7
+  const drawAdvantage: '內檔有利' | '中檔中性' | '外檔不利' =
+    draw != null && draw <= 5 ? '內檔有利' : draw != null && draw >= 10 ? '外檔不利' : '中檔中性'
+  const drawSub: DrawSubIndices = {
+    drawBiasCoeff,
+    trackBiasIndex,
+    drawAdvantage,
+  }
+
+  // Jockey/Trainer sub-indices
+  const synergyScore = Math.round((jockeyWr * 0.6 + trainerWr * 0.4) * 500)
+  const jtSub: JockeyTrainerSubIndices = {
+    jockeyWinRate: Math.round(jockeyWr * 1000) / 10,
+    trainerWinRate: Math.round(trainerWr * 1000) / 10,
+    synergyScore: Math.max(0, Math.min(100, synergyScore)),
+    jockeyLabel: row.jockey ?? '-',
+    trainerLabel: row.trainer ?? '-',
+  }
+
+  // Course/Distance sub-indices
+  let weightEffect = 0
+  if (weight != null) {
+    if (weight <= 118) weightEffect = 20
+    else if (weight <= 124) weightEffect = 10
+    else if (weight <= 128) weightEffect = 0
+    else if (weight <= 132) weightEffect = -10
+    else weightEffect = -20
+  }
+  const goingAdaptability = 70
+  const goingLabel = '好地 (標準)'
+  const classEstimate = weight != null
+    ? weight >= 130 ? '高班' : weight >= 122 ? '中班' : '低班'
+    : '未知'
+  const cdSub: CourseDistanceSubIndices = {
+    weightEffect,
+    classEstimate,
+    goingAdaptability,
+    goingLabel,
+  }
+
   const summary = generateBenterSummary(row, formScore, drawScore, jockeyTrainerScore, courseDistanceScore, totalScore)
 
   return {
@@ -569,6 +664,10 @@ export function computeBenterBreakdown(row: RaceRow): BenterBreakdown {
     totalScore,
     pFinal: pFinal ?? null,
     summary,
+    formSub,
+    drawSub,
+    jtSub,
+    cdSub,
   }
 }
 

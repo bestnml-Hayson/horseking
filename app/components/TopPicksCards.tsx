@@ -7,6 +7,7 @@ import {
   fmtEV,
   fmtKelly,
   getFormColor,
+  isOddsPending,
 } from '@/lib/race-utils'
 
 interface TopPicksCardsProps {
@@ -108,8 +109,8 @@ export function TopPicksCards({ picks, totalRunners, paceLabel, onHorseClick }: 
               <div className="pick-stats-mini">
                 <div className="pick-stat">
                   <div className="pick-stat-label">賠率</div>
-                  <div className="pick-stat-value odds-value">
-                    {odds}
+                  <div className={`pick-stat-value ${isOddsPending(row.win_odds) ? 'odds-pending' : 'odds-value'}`}>
+                    {isOddsPending(row.win_odds) ? '待定' : odds}
                   </div>
                 </div>
               </div>

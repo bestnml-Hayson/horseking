@@ -1,7 +1,7 @@
 'use client'
 
 import type { RaceRow } from '@/lib/types'
-import { fmtOdds, fmtEV, fmtKelly, parseFormHistory, getFormColor, generateHorseInsight } from '@/lib/race-utils'
+import { fmtOdds, fmtEV, fmtKelly, parseFormHistory, getFormColor, generateHorseInsight, isOddsPending } from '@/lib/race-utils'
 
 const VALUE_THRESHOLD = 0.15
 
@@ -121,8 +121,8 @@ export function RaceTable({ rows, topPickId, onHorseClick }: RaceTableProps) {
                   {row.draw ?? '-'}
                 </td>
                 <td style={{ textAlign: 'right' }} className="tabular-nums">
-                  <span className="badge badge-odds">
-                    {fmtOdds(row.win_odds)}
+                  <span className={`badge ${isOddsPending(row.win_odds) ? 'badge-odds-pending' : 'badge-odds'}`}>
+                    {isOddsPending(row.win_odds) ? '待定' : fmtOdds(row.win_odds)}
                   </span>
                 </td>
                 <td style={{ textAlign: 'right' }} className="tabular-nums prob-model-cell">
