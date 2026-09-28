@@ -81,13 +81,13 @@ export function RaceTable({ rows, topPickId, onHorseClick }: RaceTableProps) {
                 </td>
                 <td>
                   <div className="horse-name-cell">
-                    <span
-                      className="horse-name horse-name-clickable"
+                    <button
+                      className="horse-name horse-name-link"
                       onClick={() => onHorseClick?.(row.horse_id, row.horse_name)}
                       title="點擊查看馬匹詳情"
                     >
                       {row.horse_name}
-                    </span>
+                    </button>
                   </div>
                 </td>
                 <td>

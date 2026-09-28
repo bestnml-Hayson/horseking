@@ -13,6 +13,7 @@ interface TopPicksCardsProps {
   picks: RaceRow[]
   totalRunners?: number
   paceLabel?: string
+  onHorseClick?: (horseId: string, horseName: string) => void
 }
 
 const PICK_LABELS = ['1號膽', '2號膽', '3號膽', '4號膽']
@@ -23,7 +24,7 @@ function fmtPct(p: number | null): string {
   return (p * 100).toFixed(1) + '%'
 }
 
-export function TopPicksCards({ picks, totalRunners, paceLabel }: TopPicksCardsProps) {
+export function TopPicksCards({ picks, totalRunners, paceLabel, onHorseClick }: TopPicksCardsProps) {
   if (picks.length === 0) {
     return (
       <div className="picks-empty">
@@ -70,9 +71,13 @@ export function TopPicksCards({ picks, totalRunners, paceLabel }: TopPicksCardsP
                 </div>
               </div>
 
-              <div className="pick-horse-name">
+              <button
+                className="pick-horse-name horse-name-link"
+                onClick={() => onHorseClick?.(row.horse_id, row.horse_name)}
+                title="點擊查看馬匹詳情"
+              >
                 {row.horse_name}
-              </div>
+              </button>
 
               <div className="pick-benter-stats">
                 <div className="benter-stat-row">

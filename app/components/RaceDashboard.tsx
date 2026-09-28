@@ -212,7 +212,7 @@ export function RaceDashboard() {
       <AIRaceAnalysis race={selectedRace} rows={rows} />
 
       {/* Section 3: AI Top 4 Picks */}
-      <TopPicksCards picks={topPicks} totalRunners={rows.length} paceLabel={paceInfo.label} />
+      <TopPicksCards picks={topPicks} totalRunners={rows.length} paceLabel={paceInfo.label} onHorseClick={handleHorseClick} />
 
       {/* Section 4: Betting Strategy */}
       <BettingStrategy rows={rows} />
