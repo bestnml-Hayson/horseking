@@ -195,3 +195,122 @@ export function parseFormHistory(form: string | null | undefined): number[] {
     .filter(n => !isNaN(n) && n > 0)
     .slice(0, 6)
 }
+
+/**
+ * Estimate race start time based on venue and race number.
+ * Shatin: first race 13:00 (day) / 19:15 (night), ~35 min apart
+ * Happy Valley: first race 19:15, ~30 min apart
+ */
+export function estimateRaceTime(venue: string | undefined, raceNo: number, raceDate?: string | null): string {
+  const isHV = venue === 'HV'
+  const baseHour = isHV ? 19 : 13
+  const baseMin = isHV ? 15 : 0
+  const interval = isHV ? 30 : 35
+
+  const totalMin = baseHour * 60 + baseMin + (raceNo - 1) * interval
+  const h = Math.floor(totalMin / 60)
+  const m = totalMin % 60
+  return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`
+}
+
+/**
+ * Generate comprehensive AI race analysis text.
+ */
+export function generateRaceAnalysis(rows: RaceRow[], race: Race | undefined, topPicks: RaceRow[]): {
+  paceLabel: string
+  paceDetail: string
+  keyFactors: { type: string; text: string; impact: 'positive' | 'negative' | 'neutral' }[]
+  modelLogic: string
+} {
+  const pace = predictPace(rows)
+  const going = getGoingInfo(race)
+
+  const keyFactors: { type: string; text: string; impact: 'positive' | 'negative' | 'neutral' }[] = []
+
+  // Draw bias analysis
+  const avgDraw = rows.length > 0
+    ? rows.reduce((s, r) => s + (r.draw ?? 7), 0) / rows.length
+    : 7
+  const lowDrawCount = rows.filter(r => (r.draw ?? 99) <= 4).length
+  if (lowDrawCount > rows.length * 0.4) {
+    keyFactors.push({
+      type: 'draw_bias',
+      text: `內檔馬偏多 (${lowDrawCount}/${rows.length} 匹 ≤ 4 檔)，有利前領/跟前馬搶佔內欄位置`,
+      impact: 'neutral',
+    })
+  }
+
+  // Distance/class factor
+  const dist = race?.distance ?? 0
+  if (dist <= 1200) {
+    keyFactors.push({
+      type: 'distance',
+      text: `短途賽 (${dist}m)，速度型馬匹佔優，起步反應至關重要`,
+      impact: 'positive',
+    })
+  } else if (dist >= 2000) {
+    keyFactors.push({
+      type: 'distance',
+      text: `長途賽 (${dist}m)，耐力與氣量為關鍵，後勁充沛馬匹看俏`,
+      impact: 'positive',
+    })
+  }
+
+  // Going bias
+  if (going.bias !== '場地均勻，無明顯偏差') {
+    keyFactors.push({
+      type: 'going',
+      text: going.bias,
+      impact: 'neutral',
+    })
+  }
+
+  // Jockey/trainer combo strength
+  const topJockeys = rows.filter(r => (r.jockey_win_rate ?? 0) > 0.15).length
+  if (topJockeys >= 3) {
+    keyFactors.push({
+      type: 'jockey',
+      text: `${topJockeys} 位騎師近績 > 15% 勝率，頂尖騎練組合集中`,
+      impact: 'positive',
+    })
+  }
+
+  // Value bets presence
+  const valueBets = rows.filter(r => (r.prediction?.expected_value ?? 0) > 0.15 && (r.prediction?.kelly_fraction ?? 0) > 0)
+  if (valueBets.length > 0) {
+    keyFactors.push({
+      type: 'value',
+      text: `${valueBets.length} 匹馬具正期望值 (EV > 15%)，市場可能低估`,
+      impact: 'positive',
+    })
+  }
+
+  // Model logic explanation
+  const top1 = topPicks[0]
+  const top2 = topPicks[1]
+  const logicParts: string[] = []
+
+  if (top1) {
+    const p1 = top1.prediction?.final_prob ?? 0
+    const ev1 = top1.prediction?.expected_value ?? 0
+    logicParts.push(
+      `首選「${top1.horse_name}」融合勝率 ${(p1 * 100).toFixed(1)}%` +
+      (ev1 > 0 ? `，EV +${(ev1 * 100).toFixed(1)}% 具價值` : '')
+    )
+  }
+  if (top2) {
+    const p2 = top2.prediction?.final_prob ?? 0
+    logicParts.push(`次選「${top2.horse_name}」勝率 ${(p2 * 100).toFixed(1)}%`)
+  }
+
+  const modelLogic = logicParts.length > 0
+    ? `Benter 模型以 25% .self評 + 75% 市場賠率融合計算。${logicParts.join('；')}。`
+    : 'Benter 模型以 25% .self評分 + 75% 市場賠率融合計算，輸出各馬勝率及期望值。'
+
+  return {
+    paceLabel: pace.label,
+    paceDetail: pace.detail,
+    keyFactors,
+    modelLogic,
+  }
+}

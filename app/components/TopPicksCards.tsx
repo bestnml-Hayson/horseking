@@ -2,9 +2,10 @@
 
 import type { RaceRow } from '@/lib/types'
 import {
-  computeAIScore,
   generateExpertAnalysis,
   fmtOdds,
+  fmtEV,
+  fmtKelly,
   getFormColor,
 } from '@/lib/race-utils'
 
@@ -14,6 +15,11 @@ interface TopPicksCardsProps {
 
 const PICK_LABELS = ['1號膽', '2號膽', '3號膽', '4號膽']
 const PICK_COLORS = ['#f59e0b', '#3b82f6', '#10b981', '#8b5cf6']
+
+function fmtPct(p: number | null): string {
+  if (p == null) return '-'
+  return (p * 100).toFixed(1) + '%'
+}
 
 export function TopPicksCards({ picks }: TopPicksCardsProps) {
   if (picks.length === 0) {
@@ -33,9 +39,13 @@ export function TopPicksCards({ picks }: TopPicksCardsProps) {
 
       <div className="picks-grid">
         {picks.map((row, idx) => {
-          const score = computeAIScore(row)
+          const pred = row.prediction
+          const pModel = pred?.raw_model_prob ?? null
+          const pMarket = pred?.market_implied_prob ?? null
+          const pFinal = pred?.final_prob ?? null
+          const ev = pred?.expected_value ?? null
+          const kelly = pred?.kelly_fraction ?? null
           const form = row.form_history ?? ''
-          const analysis = generateExpertAnalysis(row, idx + 1)
           const odds = fmtOdds(row.win_odds)
           const color = PICK_COLORS[idx]
           const formPositions = form ? form.split('-').map(Number).filter(n => !isNaN(n)) : []
@@ -62,15 +72,34 @@ export function TopPicksCards({ picks }: TopPicksCardsProps) {
                 {row.horse_name}
               </div>
 
-              <div className="pick-stats">
-                <div className="pick-stat">
-                  <div className="pick-stat-label">AI 評分</div>
-                  <div className="pick-stat-value" style={{ color }}>
-                    {score}
-                  </div>
+              <div className="pick-benter-stats">
+                <div className="benter-stat-row">
+                  <span className="benter-label">P_model</span>
+                  <span className="benter-value model-val">{fmtPct(pModel)}</span>
                 </div>
+                <div className="benter-stat-row">
+                  <span className="benter-label">P_market</span>
+                  <span className="benter-value market-val">{fmtPct(pMarket)}</span>
+                </div>
+                <div className="benter-stat-row highlight">
+                  <span className="benter-label">P_final</span>
+                  <span className="benter-value final-val">{fmtPct(pFinal)}</span>
+                </div>
+                <div className="benter-stat-row">
+                  <span className="benter-label">EV</span>
+                  <span className={`benter-value ${ev !== null && ev > 0 ? 'ev-pos' : 'ev-neg'}`}>
+                    {fmtEV(ev)}
+                  </span>
+                </div>
+                <div className="benter-stat-row">
+                  <span className="benter-label">Kelly</span>
+                  <span className="benter-value kelly-val">{fmtKelly(kelly)}</span>
+                </div>
+              </div>
+
+              <div className="pick-stats-mini">
                 <div className="pick-stat">
-                  <div className="pick-stat-label">獨贏賠率</div>
+                  <div className="pick-stat-label">賠率</div>
                   <div className="pick-stat-value odds-value">
                     {odds}
                   </div>
@@ -94,10 +123,6 @@ export function TopPicksCards({ picks }: TopPicksCardsProps) {
                     <span className="form-position" style={{ color: '#64748b' }}>暫無數據</span>
                   )}
                 </div>
-              </div>
-
-              <div className="pick-analysis">
-                {analysis}
               </div>
             </div>
           )

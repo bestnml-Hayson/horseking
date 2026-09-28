@@ -1629,3 +1629,283 @@ html, body {
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+/* =====================================================================
+   Race Pills with Time
+   ===================================================================== */
+.race-pill {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 14px;
+}
+
+.pill-race-no {
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.pill-race-time {
+  font-size: 0.65rem;
+  opacity: 0.7;
+  font-variant-numeric: tabular-nums;
+}
+
+/* =====================================================================
+   Race Info Bar - Enhanced
+   ===================================================================== */
+.race-time-highlight .race-info-value {
+  color: #f59e0b;
+  font-weight: 800;
+  font-size: 1.05rem;
+}
+
+.race-time-value {
+  font-variant-numeric: tabular-nums;
+}
+
+/* =====================================================================
+   AI Race Analysis Section
+   ===================================================================== */
+.ai-analysis-section {
+  margin: 1.5rem 0;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.06) 0%, rgba(139, 92, 246, 0.04) 100%);
+  border: 1px solid rgba(99, 102, 241, 0.15);
+  border-radius: 12px;
+  padding: 1.25rem;
+}
+
+.ai-analysis-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 1rem;
+}
+
+.ai-analysis-badge {
+  font-weight: 700;
+  font-size: 1rem;
+  color: #818cf8;
+}
+
+.ai-analysis-sublabel {
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.ai-analysis-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr 1.5fr;
+  gap: 1rem;
+}
+
+@media (max-width: 900px) {
+  .ai-analysis-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ai-analysis-card {
+  display: flex;
+  gap: 12px;
+  padding: 1rem;
+  background: rgba(15, 23, 42, 0.6);
+  border-radius: 10px;
+  border: 1px solid rgba(99, 102, 241, 0.1);
+}
+
+.ai-card-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+  width: 36px;
+  text-align: center;
+}
+
+.ai-card-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.ai-card-label {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.ai-card-value {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #e2e8f0;
+  margin-bottom: 4px;
+}
+
+.ai-card-detail {
+  font-size: 0.8rem;
+  color: #94a3b8;
+  line-height: 1.5;
+}
+
+.logic-text {
+  margin-bottom: 8px;
+}
+
+/* AI Factors List */
+.ai-factors-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ai-factor-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.ai-factor-item .factor-icon {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+}
+
+.ai-factor-item .factor-text {
+  color: #cbd5e1;
+}
+
+.factor-positive .factor-text { color: #86efac; }
+.factor-negative .factor-text { color: #fca5a5; }
+.factor-neutral .factor-text { color: #94a3b8; }
+
+/* Model Legend */
+.ai-model-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(99, 102, 241, 0.1);
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.7rem;
+  color: #94a3b8;
+}
+
+.legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.dot-model { background: #818cf8; }
+.dot-market { background: #f59e0b; }
+.dot-final { background: #10b981; }
+
+/* =====================================================================
+   Benter Table - Model Columns
+   ===================================================================== */
+.benter-table {
+  font-size: 0.82rem;
+}
+
+.race-table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.prob-pill {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.prob-model {
+  background: rgba(129, 140, 248, 0.12);
+  color: #a5b4fc;
+}
+
+.prob-market {
+  background: rgba(245, 158, 11, 0.12);
+  color: #fbbf24;
+}
+
+.badge-final {
+  background: rgba(16, 185, 129, 0.15) !important;
+  color: #34d399 !important;
+  font-weight: 700 !important;
+}
+
+.th-model {
+  color: #818cf8 !important;
+}
+
+.th-market {
+  color: #f59e0b !important;
+}
+
+.th-final {
+  color: #10b981 !important;
+}
+
+/* =====================================================================
+   Top Picks Cards - Benter Stats
+   ===================================================================== */
+.pick-benter-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  margin: 8px 0;
+}
+
+.benter-stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2px 0;
+}
+
+.benter-stat-row.highlight {
+  background: rgba(16, 185, 129, 0.08);
+  border-radius: 4px;
+  padding: 4px 6px;
+  margin: 0 -6px;
+}
+
+.benter-label {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.benter-value {
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.model-val { color: #a5b4fc; }
+.market-val { color: #fbbf24; }
+.final-val { color: #34d399; font-weight: 700; }
+.ev-pos { color: #34d399; }
+.ev-neg { color: #94a3b8; }
+.kelly-val { color: #38bdf8; }
+
+.pick-stats-mini {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  padding: 6px 0;
+}

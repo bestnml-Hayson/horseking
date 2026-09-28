@@ -3,8 +3,9 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { fetchLatestRaces, fetchRaceRunners, fetchPredictions, fetchHorses } from '@/lib/supabase-client'
 import type { Race, RaceRunner, ModelPrediction, Horse, RaceRow } from '@/lib/types'
-import { getTopPicks, computeAIScore } from '@/lib/race-utils'
+import { getTopPicks, estimateRaceTime } from '@/lib/race-utils'
 import { PacingBriefing } from './PacingBriefing'
+import { AIRaceAnalysis } from './AIRaceAnalysis'
 import { TopPicksCards } from './TopPicksCards'
 import { BettingStrategy } from './BettingStrategy'
 import { RaceTable } from './RaceTable'
@@ -111,6 +112,9 @@ export function RaceDashboard() {
   }, [])
 
   const venueLabel = selectedRace?.venue === 'ST' ? '沙田' : selectedRace?.venue === 'HV' ? '跑馬地' : selectedRace?.venue ?? ''
+  const surfaceLabel = '草地'
+
+  const selectedRaceTime = selectedRace?.race_time ?? estimateRaceTime(selectedRace?.venue, selectedRace?.race_no ?? 1)
 
   return (
     <div className="dashboard-root">
@@ -135,15 +139,19 @@ export function RaceDashboard() {
         </div>
 
         <div className="race-pills">
-          {races.map(race => (
-            <button
-              key={race.race_id}
-              className={`race-pill ${race.race_id === selectedRaceId ? 'active' : ''}`}
-              onClick={() => setSelectedRaceId(race.race_id)}
-            >
-              R{race.race_no}
-            </button>
-          ))}
+          {races.map(race => {
+            const raceTime = race.race_time ?? estimateRaceTime(race.venue, race.race_no)
+            return (
+              <button
+                key={race.race_id}
+                className={`race-pill ${race.race_id === selectedRaceId ? 'active' : ''}`}
+                onClick={() => setSelectedRaceId(race.race_id)}
+              >
+                <span className="pill-race-no">R{race.race_no}</span>
+                <span className="pill-race-time">{raceTime}</span>
+              </button>
+            )
+          })}
           {races.length === 0 && !loading && (
             <span className="no-races-text">No races found</span>
           )}
@@ -153,24 +161,34 @@ export function RaceDashboard() {
       {/* Race Info Bar */}
       {selectedRace && (
         <div className="race-info-bar animate-fade-in">
+          <span className="race-info-item race-time-highlight">
+            <span className="race-info-label">&#x23F0; 開跑時間</span>
+            <span className="race-info-value race-time-value">{selectedRaceTime}</span>
+          </span>
+          <span className="race-info-sep">|</span>
           <span className="race-info-item">
-            <span className="race-info-label">Distance</span>
+            <span className="race-info-label">場地</span>
+            <span className="race-info-value">{venueLabel} {surfaceLabel}</span>
+          </span>
+          <span className="race-info-sep">|</span>
+          <span className="race-info-item">
+            <span className="race-info-label">路程</span>
             <span className="race-info-value">{selectedRace.distance ?? '?'}m</span>
           </span>
           <span className="race-info-sep">|</span>
           <span className="race-info-item">
-            <span className="race-info-label">Class</span>
+            <span className="race-info-label">班次</span>
             <span className="race-info-value">{selectedRace.class_level ?? '-'}</span>
           </span>
           <span className="race-info-sep">|</span>
           <span className="race-info-item">
-            <span className="race-info-label">Going</span>
+            <span className="race-info-label">場地狀況</span>
             <span className="race-info-value">{selectedRace.going ?? '-'}</span>
           </span>
           <span className="race-info-sep">|</span>
           <span className="race-info-item">
-            <span className="race-info-label">Runners</span>
-            <span className="race-info-value">{rows.length}</span>
+            <span className="race-info-label">出賽馬匹</span>
+            <span className="race-info-value">{rows.length} 匹</span>
           </span>
         </div>
       )}
@@ -185,20 +203,23 @@ export function RaceDashboard() {
       {/* Section 1: Pacing Briefing */}
       <PacingBriefing race={selectedRace} rows={rows} />
 
-      {/* Section 2: AI Top 4 Picks */}
+      {/* Section 2: AI Race Analysis (NEW) */}
+      <AIRaceAnalysis race={selectedRace} rows={rows} />
+
+      {/* Section 3: AI Top 4 Picks */}
       <TopPicksCards picks={topPicks} />
 
-      {/* Section 3: Betting Strategy */}
+      {/* Section 4: Betting Strategy */}
       <BettingStrategy rows={rows} />
 
-      {/* Section 4: Full Analysis Table */}
+      {/* Section 5: Full Analysis Table */}
       <div className="full-table-section animate-fade-in">
         <div className="full-table-header">
           <span className="full-table-title">
-            &#x1F4CA; 全馬匹模型精算數據
+            &#x1F4CA; 全馬匹 Benter 模型精算數據
           </span>
           <span className="full-table-sub">
-            Sorted by P_win (model probability)
+            P_model (模型評分) × P_market (市場賠率) → P_final (融合勝率) · Sorted by P_final
           </span>
         </div>
         <div className="full-table-body">

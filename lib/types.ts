@@ -6,6 +6,7 @@ export interface Race {
   distance: number | null
   going: string | null
   class_level: string | null
+  race_time?: string | null
 }
 
 export interface RaceRunner {
