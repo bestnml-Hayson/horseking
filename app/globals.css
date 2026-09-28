@@ -1310,10 +1310,10 @@ html, body {
 }
 
 .perf-table tbody tr.row-hit {
-  background: rgba(88, 166, 255, 0.06);
+  background: rgba(16, 185, 129, 0.06);
 }
 .perf-table tbody tr.row-hit:hover {
-  background: rgba(88, 166, 255, 0.1);
+  background: rgba(16, 185, 129, 0.1);
 }
 
 .perf-table tbody tr.row-miss {
@@ -1384,9 +1384,9 @@ html, body {
   color: #fff;
 }
 .result-hit {
-  background: rgba(88, 166, 255, 0.15);
-  color: #79c0ff;
-  border: 1px solid rgba(88, 166, 255, 0.3);
+  background: rgba(16, 185, 129, 0.15);
+  color: #3fb950;
+  border: 1px solid rgba(16, 185, 129, 0.3);
 }
 .result-miss {
   background: rgba(248, 81, 73, 0.1);
