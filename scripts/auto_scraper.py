@@ -39,10 +39,10 @@ except ImportError:
 # Supabase
 # =====================================================================
 def get_supabase_client() -> Optional[Client]:
-    url = os.environ.get('SUPABASE_URL')
-    key = os.environ.get('SUPABASE_SERVICE_KEY')
+    url = os.environ.get('SUPABASE_URL') or os.environ.get('NEXT_PUBLIC_SUPABASE_URL')
+    key = os.environ.get('SUPABASE_SERVICE_KEY') or os.environ.get('NEXT_PUBLIC_SUPABASE_ANON_KEY')
     if not url or not key:
-        print("[FAIL] Missing SUPABASE_URL or SUPABASE_SERVICE_KEY env vars")
+        print("[FAIL] Missing SUPABASE_URL/SUPABASE_SERVICE_KEY or NEXT_PUBLIC_SUPABASE_URL/NEXT_PUBLIC_SUPABASE_ANON_KEY env vars")
         return None
     return create_client(url, key)
 
@@ -103,9 +103,30 @@ def scrape_hkjc_races(date_str: str, venue: str) -> List[Dict]:
                                 const placeOddsText = cells[8] ? cells[8].textContent.trim() : '0';
                                 const winOdds = parseFloat(winOddsText) || 0;
                                 const placeOdds = parseFloat(placeOddsText) || 0;
+                                const horseCodeEl = row.querySelector('[data-horse-code], [data-horsecode], a[href*="horse="]');
+                                let horseCode = '';
+                                if (horseCodeEl) {
+                                    horseCode = horseCodeEl.getAttribute('data-horse-code')
+                                        || horseCodeEl.getAttribute('data-horsecode')
+                                        || '';
+                                    if (!horseCode) {
+                                        const href = horseCodeEl.getAttribute('href') || '';
+                                        const m = href.match(/horse=(\\w+)/);
+                                        if (m) horseCode = m[1];
+                                    }
+                                }
+                                if (!horseCode) {
+                                    const nameLink = cells[2] ? cells[2].querySelector('a') : null;
+                                    if (nameLink) {
+                                        const href = nameLink.getAttribute('href') || '';
+                                        const m = href.match(/horse=(\\w+)/);
+                                        if (m) horseCode = m[1];
+                                    }
+                                }
                                 horses.push({
                                     horse_no: horseNo,
                                     horse_name: cells[2].textContent.trim(),
+                                    horse_code: horseCode,
                                     draw: parseInt(cells[3].textContent.trim()) || 0,
                                     weight: parseFloat(cells[4].textContent.trim()) || 0,
                                     jockey: cells[5].textContent.trim(),
@@ -175,24 +196,28 @@ def write_to_supabase(supabase: Client, races: List[Dict], dry_run: bool = False
 
     for race in races:
         race_row = {
-            'race_id': race['race_id'],
+            'race_id': race['race_id'][:32],
             'race_date': race['race_date'],
             'race_no': race['race_no'],
-            'venue': race['venue'],
+            'venue': race['venue'][:4],
             'distance': race.get('distance'),
-            'class_level': race.get('class_level'),
-            'going': race.get('going'),
+            'class_level': str(race.get('class_level', ''))[:32] if race.get('class_level') else None,
+            'going': str(race.get('going', ''))[:32] if race.get('going') else None,
         }
         supabase.table('races').upsert(race_row, on_conflict='race_id').execute()
 
         for horse in race['horses']:
             horse_name = horse['horse_name']
             if horse_name not in horse_id_map:
-                horse_id = f"H{len(horse_id_map) + 1:04d}"
+                horse_code = horse.get('horse_code', '')
+                if horse_code:
+                    horse_id = horse_code[:16]
+                else:
+                    horse_id = f"H{len(horse_id_map) + 1:04d}"
                 horse_id_map[horse_name] = horse_id
                 supabase.table('horses').upsert({
-                    'horse_id': horse_id,
-                    'horse_name': horse_name,
+                    'horse_id': horse_id[:16],
+                    'horse_name': horse_name[:64],
                 }, on_conflict='horse_id').execute()
 
             jockey = horse.get('jockey', '')
@@ -200,16 +225,15 @@ def write_to_supabase(supabase: Client, races: List[Dict], dry_run: bool = False
 
             runner_id = f"{race['race_id']}_H{horse['horse_no']:02d}"
             supabase.table('race_runners').upsert({
-                'runner_id': runner_id,
-                'race_id': race['race_id'],
-                'horse_id': horse_id_map[horse_name],
+                'runner_id': runner_id[:48],
+                'race_id': race['race_id'][:32],
+                'horse_id': horse_id_map[horse_name][:16],
                 'horse_no': horse['horse_no'],
-                'jockey': jockey,
-                'trainer': horse.get('trainer', ''),
+                'jockey': jockey[:64],
+                'trainer': horse.get('trainer', '')[:64],
                 'actual_weight': horse.get('weight'),
                 'draw': horse.get('draw'),
                 'win_odds': horse.get('win_odds', 0),
-                'place_odds': horse.get('place_odds', 0),
                 'past_rating': 50.0,
                 'recent_form_score': 50.0,
                 'jockey_win_rate': 0.10,

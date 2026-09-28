@@ -10,38 +10,84 @@ function getSupabase() {
 
 export async function fetchLatestRaces(): Promise<Race[]> {
   const supabase = getSupabase()
+  const today = new Date().toISOString().split('T')[0]
 
-  const { data: latestRace, error: latestError } = await supabase
+  const { data: allCandidateRaces, error: candidateError } = await supabase
     .from('races')
-    .select('race_date, venue')
-    .order('race_date', { ascending: false })
-    .order('race_id', { ascending: false })
-    .limit(1)
-    .maybeSingle()
+    .select('race_id, race_date, venue')
+    .gte('race_date', today)
+    .order('race_date', { ascending: true })
+    .order('race_no', { ascending: true })
 
-  if (latestError) {
-    console.error('[fetchLatestRaces] latest race query error:', latestError)
-    throw latestError
+  if (candidateError) {
+    console.error('[fetchLatestRaces] candidate query error:', candidateError)
+    throw candidateError
   }
-  if (!latestRace?.race_date || !latestRace?.venue) {
-    console.warn('[fetchLatestRaces] No races found in database')
+
+  let targetDate: string | null = null
+  let targetVenue: string | null = null
+
+  if (allCandidateRaces && allCandidateRaces.length > 0) {
+    const raceIds = allCandidateRaces.map(r => r.race_id)
+    const { data: existingRunners } = await supabase
+      .from('race_runners')
+      .select('race_id')
+      .in('race_id', raceIds)
+
+    const validRaceIds = new Set(existingRunners?.map(r => r.race_id) ?? [])
+    for (const race of allCandidateRaces) {
+      if (validRaceIds.has(race.race_id)) {
+        targetDate = race.race_date
+        targetVenue = race.venue
+        break
+      }
+    }
+  }
+
+  if (!targetDate) {
+    const { data: latestRaces } = await supabase
+      .from('races')
+      .select('race_id, race_date, venue')
+      .order('race_date', { ascending: false })
+      .order('race_no', { ascending: true })
+
+    if (latestRaces && latestRaces.length > 0) {
+      const raceIds = latestRaces.map(r => r.race_id)
+      const { data: existingRunners } = await supabase
+        .from('race_runners')
+        .select('race_id')
+        .in('race_id', raceIds)
+
+      const validRaceIds = new Set(existingRunners?.map(r => r.race_id) ?? [])
+      for (const race of latestRaces) {
+        if (validRaceIds.has(race.race_id)) {
+          targetDate = race.race_date
+          targetVenue = race.venue
+          break
+        }
+      }
+    }
+  }
+
+  if (!targetDate || !targetVenue) {
+    console.warn('[fetchLatestRaces] No races with runners found')
     return []
   }
 
-  console.log(`[fetchLatestRaces] Locking to ${latestRace.race_date} ${latestRace.venue}`)
+  console.log(`[fetchLatestRaces] Locking to ${targetDate} ${targetVenue}`)
 
   const { data, error } = await supabase
     .from('races')
     .select('*')
-    .eq('race_date', latestRace.race_date)
-    .eq('venue', latestRace.venue)
+    .eq('race_date', targetDate)
+    .eq('venue', targetVenue)
     .order('race_no', { ascending: true })
 
   if (error) {
     console.error('[fetchLatestRaces] races query error:', error)
     throw error
   }
-  console.log(`[fetchLatestRaces] Found ${data?.length ?? 0} races at ${latestRace.venue}`)
+  console.log(`[fetchLatestRaces] Found ${data?.length ?? 0} races at ${targetVenue}`)
   return data ?? []
 }
 
