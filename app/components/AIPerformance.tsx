@@ -211,21 +211,21 @@ export function AIPerformance() {
               label="獨贏命中率"
               value={`${summary.win_rate.toFixed(1)}%`}
               sub={`${summary.top1_hits} / ${records.length} 場`}
-              color={summary.win_rate >= 30 ? 'green' : summary.win_rate >= 15 ? 'amber' : 'red'}
+              color={summary.win_rate > 0 ? 'green' : 'red'}
               icon="&#x1F3AF;"
             />
             <KPICard
               label="前三命中率"
               value={`${summary.top3_rate.toFixed(1)}%`}
               sub={`${summary.top3_total_hits} / ${records.length * 3} 匹`}
-              color={summary.top3_rate >= 50 ? 'green' : summary.top3_rate >= 30 ? 'amber' : 'red'}
+              color={summary.top3_rate > 0 ? 'green' : 'red'}
               icon="&#x1F3C6;"
             />
             <KPICard
               label="平均 ROI"
               value={`${summary.avg_roi >= 0 ? '+' : ''}${summary.avg_roi.toFixed(1)}%`}
               sub={`總投注 $${summary.total_bets.toLocaleString()}`}
-              color={summary.avg_roi > 0 ? 'green' : summary.avg_roi > -20 ? 'amber' : 'red'}
+              color={summary.avg_roi >= 0 ? 'green' : 'red'}
               icon="&#x1F4B0;"
             />
             <KPICard
@@ -358,9 +358,9 @@ export function AIPerformance() {
 }
 
 function KPICard({ label, value, sub, color, icon }: {
-  label: string; value: string; sub: string; color: 'green' | 'amber' | 'red'; icon: string
+  label: string; value: string; sub: string; color: 'green' | 'red'; icon: string
 }) {
-  const colorClass = color === 'green' ? 'kpi-green' : color === 'amber' ? 'kpi-amber' : 'kpi-red'
+  const colorClass = color === 'green' ? 'kpi-green' : 'kpi-red'
   return (
     <div className={`perf-kpi-card ${colorClass}`}>
       <div className="kpi-icon" dangerouslySetInnerHTML={{ __html: icon }} />
