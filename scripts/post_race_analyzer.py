@@ -34,6 +34,10 @@ def get_supabase() -> Client:
 def analyze_race(supabase: Client, race_id: str) -> Optional[Dict]:
     """Analyze a single race: compare predictions vs results."""
     
+    # Get race metadata
+    race_info = supabase.table('races').select('race_date, venue, race_no').eq('race_id', race_id).single().execute()
+    race_meta = race_info.data or {}
+    
     # Get runners with finish positions
     runners_resp = supabase.table('race_runners').select('*').eq('race_id', race_id).execute()
     runners = runners_resp.data or []
@@ -125,6 +129,9 @@ def analyze_race(supabase: Client, race_id: str) -> Optional[Dict]:
     # AI performance record
     ai_perf = {
         'race_id': race_id,
+        'race_date': race_meta.get('race_date'),
+        'venue': race_meta.get('venue'),
+        'race_no': race_meta.get('race_no'),
         'top1_pick_runner_id': top1_pred['runner_id'],
         'top1_pick_finish_pos': top1_finish,
         'top1_hit': top1_hit,
@@ -134,14 +141,21 @@ def analyze_race(supabase: Client, race_id: str) -> Optional[Dict]:
         'total_returns': total_returns,
         'roi_percent': roi_percent,
         'key_factors': json.dumps(key_factors, ensure_ascii=False),
-        'pace_analysis': key_factors.get('pace', ''),
-        'draw_bias': key_factors.get('draw', ''),
-        'market_move': key_factors.get('market', ''),
     }
+    
+    # Optional columns (may not exist in all schemas)
+    if key_factors.get('pace'):
+        ai_perf['pace_analysis'] = key_factors['pace']
+    if key_factors.get('draw'):
+        ai_perf['draw_bias'] = key_factors['draw']
+    if key_factors.get('market'):
+        ai_perf['market_move'] = key_factors['market']
     
     return {
         'race_result': race_result,
         'ai_performance': ai_perf,
+        'race_meta': race_meta,
+        'runners': runners,
         'summary': {
             'race_id': race_id,
             'top1_hit': top1_hit,
@@ -245,18 +259,51 @@ def analyze_factors(runners: List[Dict], sorted_preds: List[Dict],
     return factors
 
 
-def write_results(supabase: Client, analysis: Dict):
+def write_results(supabase: Client, analysis: Dict, runners: List[Dict]):
     """Write analysis results to Supabase."""
     race_result = analysis['race_result']
     ai_perf = analysis['ai_performance']
+    race_meta = analysis['race_meta']
     
-    # Upsert race_results
-    supabase.table('race_results').upsert(race_result, on_conflict='race_id').execute()
+    # Get race metadata for race_results
+    race_id = race_result['race_id']
     
-    # Upsert ai_performance
-    supabase.table('ai_performance').upsert(ai_perf, on_conflict='race_id').execute()
+    # Insert race_results (per-runner schema)
+    finished_runners = [r for r in runners if r.get('finish_position') is not None]
+    for r in finished_runners:
+        horse_name = r.get('horse_name') or r.get('horse_id') or f"Horse_{r.get('horse_no', 'unknown')}"
+        result_row = {
+            'race_id': race_id,
+            'race_date': race_meta.get('race_date'),
+            'venue': race_meta.get('venue'),
+            'race_no': race_meta.get('race_no'),
+            'finish_position': r['finish_position'],
+            'horse_no': r.get('horse_no'),
+            'horse_name': horse_name,
+            'jockey': r.get('jockey'),
+            'trainer': r.get('trainer'),
+            'win_odds': r.get('win_odds'),
+            'plc_odds': r.get('plc_odds'),
+        }
+        # Upsert on unique constraint (race_id, horse_no)
+        try:
+            supabase.table('race_results').upsert(result_row, on_conflict='race_id,horse_no').execute()
+        except Exception as e:
+            print(f"    [WARN] Failed to insert {horse_name}: {e}")
     
-    print(f"  [OK] Written to race_results + ai_performance")
+    # Upsert ai_performance (per-race summary)
+    try:
+        supabase.table('ai_performance').upsert(ai_perf, on_conflict='race_id').execute()
+    except Exception as e:
+        # If optional columns don't exist, retry without them
+        if 'column' in str(e).lower():
+            ai_perf_core = {k: v for k, v in ai_perf.items() 
+                           if k not in ['pace_analysis', 'draw_bias', 'market_move']}
+            supabase.table('ai_performance').upsert(ai_perf_core, on_conflict='race_id').execute()
+        else:
+            raise
+    
+    print(f"  [OK] Written {len(finished_runners)} runners to race_results + ai_performance")
 
 
 def main():
@@ -290,7 +337,7 @@ def main():
         print(f"\n  Analyzing {race_id}...")
         analysis = analyze_race(supabase, race_id)
         if analysis:
-            write_results(supabase, analysis)
+            write_results(supabase, analysis, analysis['runners'])
             results.append(analysis['summary'])
     
     # Print summary
