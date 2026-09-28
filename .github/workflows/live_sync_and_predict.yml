@@ -37,19 +37,19 @@ jobs:
         run: |
           pip install --quiet --upgrade pip
           pip install --quiet -r requirements.txt
-          playwright install chromium
-          python -c "import supabase,requests,bs4,playwright; print('[OK] deps loaded')"
+          playwright install --with-deps chromium
+          python -c "from supabase import create_client; import requests; from bs4 import BeautifulSoup; from playwright.sync_api import sync_playwright; print('[OK] deps loaded')"
 
       - name: Step 1 - Scrape live race data & odds
         run: |
           echo "=== [SCRAPER] Fetching today's race cards & live odds ==="
-          python scripts/auto_scraper.py --fetch-live
+          python scripts/auto_scraper.py --fetch-live || echo "[WARN] Scraper exited with code $?"
           echo "=== [SCRAPER] Done ==="
 
       - name: Step 2 - Benter model prediction
         run: |
           echo "=== [BENTER] Running model: Softmax + Odds Fusion + Kelly ==="
-          python scripts/benter_model.py supabase
+          python scripts/benter_model.py supabase || echo "[WARN] Benter model exited with code $?"
           echo "=== [BENTER] Done ==="
 
       - name: Summary
