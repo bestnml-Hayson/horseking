@@ -50,3 +50,37 @@ export interface RaceRow extends RaceRunner {
   horse_name: string
   prediction: ModelPrediction | null
 }
+
+export interface FormEntry {
+  position: number
+  race_date?: string
+  distance?: number
+  going?: string
+  venue?: string
+}
+
+export interface HorseRaceHistory {
+  race_id: string
+  race_date: string
+  venue: string
+  race_no: number
+  distance: number | null
+  going: string | null
+  finish_position: number
+  horse_no: number
+  win_odds: number | null
+  jockey: string | null
+  trainer: string | null
+}
+
+export interface HorseDetail {
+  horse_id: string
+  horse_name: string
+  country: string | null
+  recent_form: number[]
+  race_history: HorseRaceHistory[]
+  total_starts: number
+  total_wins: number
+  win_rate: number
+  top3_rate: number
+}

@@ -1,5 +1,5 @@
 import { createBrowserClient } from '@supabase/ssr'
-import type { Race, RaceRunner, ModelPrediction, Horse } from './types'
+import type { Race, RaceRunner, ModelPrediction, Horse, HorseDetail } from './types'
 
 function getSupabase() {
   return createBrowserClient(
@@ -133,4 +133,59 @@ export async function fetchHorses(horseIds: string[]): Promise<Horse[]> {
     throw error
   }
   return data ?? []
+}
+
+export async function fetchHorseDetail(horseId: string): Promise<HorseDetail | null> {
+  const supabase = getSupabase()
+
+  const { data: horse, error: horseError } = await supabase
+    .from('horses')
+    .select('horse_id, horse_name, country')
+    .eq('horse_id', horseId)
+    .single()
+
+  if (horseError || !horse) return null
+
+  const { data: results, error: resultsError } = await supabase
+    .from('race_results')
+    .select('*')
+    .eq('horse_no', horseId)
+    .order('race_date', { ascending: false })
+    .limit(20)
+
+  if (resultsError) {
+    console.error('[fetchHorseDetail] race_results error:', resultsError)
+  }
+
+  const raceHistory = (results ?? []).map((r: any) => ({
+    race_id: r.race_id,
+    race_date: r.race_date,
+    venue: r.venue,
+    race_no: r.race_no,
+    distance: r.distance,
+    going: r.going,
+    finish_position: r.finish_position,
+    horse_no: r.horse_no,
+    win_odds: r.win_odds,
+    jockey: r.jockey,
+    trainer: r.trainer,
+  }))
+
+  const totalStarts = raceHistory.length
+  const totalWins = raceHistory.filter(r => r.finish_position === 1).length
+  const top3Count = raceHistory.filter(r => r.finish_position <= 3).length
+
+  const recentForm = raceHistory.slice(0, 6).map(r => r.finish_position).filter((p): p is number => p != null)
+
+  return {
+    horse_id: horse.horse_id,
+    horse_name: horse.horse_name,
+    country: horse.country,
+    recent_form: recentForm,
+    race_history: raceHistory,
+    total_starts: totalStarts,
+    total_wins: totalWins,
+    win_rate: totalStarts > 0 ? (totalWins / totalStarts) * 100 : 0,
+    top3_rate: totalStarts > 0 ? (top3Count / totalStarts) * 100 : 0,
+  }
 }

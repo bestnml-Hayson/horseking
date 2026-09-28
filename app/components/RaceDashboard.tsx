@@ -9,6 +9,7 @@ import { TopPicksCards } from './TopPicksCards'
 import { BettingStrategy } from './BettingStrategy'
 import { RaceTable } from './RaceTable'
 import { SkeletonTable } from './SkeletonTable'
+import { HorseDetailDrawer } from './HorseDetailDrawer'
 
 const REFRESH_INTERVAL = 15000
 
@@ -19,6 +20,8 @@ export function RaceDashboard() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
+  const [drawerHorseId, setDrawerHorseId] = useState<string | null>(null)
+  const [drawerHorseName, setDrawerHorseName] = useState<string>('')
 
   const loadRaceData = useCallback(async (raceId: string) => {
     setLoading(true)
@@ -96,6 +99,16 @@ export function RaceDashboard() {
   const selectedRace = races.find(r => r.race_id === selectedRaceId)
   const topPicks = useMemo(() => getTopPicks(rows, 4), [rows])
   const topPickId = topPicks.length > 0 ? topPicks[0].runner_id : null
+
+  const handleHorseClick = useCallback((horseId: string, horseName: string) => {
+    setDrawerHorseId(horseId)
+    setDrawerHorseName(horseName)
+  }, [])
+
+  const handleCloseDrawer = useCallback(() => {
+    setDrawerHorseId(null)
+    setDrawerHorseName('')
+  }, [])
 
   const venueLabel = selectedRace?.venue === 'ST' ? '沙田' : selectedRace?.venue === 'HV' ? '跑馬地' : selectedRace?.venue ?? ''
 
@@ -189,9 +202,15 @@ export function RaceDashboard() {
           </span>
         </div>
         <div className="full-table-body">
-          {loading && rows.length === 0 ? <SkeletonTable /> : <RaceTable rows={rows} topPickId={topPickId} />}
+          {loading && rows.length === 0 ? <SkeletonTable /> : <RaceTable rows={rows} topPickId={topPickId} onHorseClick={handleHorseClick} />}
         </div>
       </div>
+
+      <HorseDetailDrawer
+        horseId={drawerHorseId}
+        horseName={drawerHorseName}
+        onClose={handleCloseDrawer}
+      />
     </div>
   )
 }

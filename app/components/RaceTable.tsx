@@ -1,11 +1,17 @@
 'use client'
 
 import type { RaceRow } from '@/lib/types'
-import { computeAIScore, fmtOdds, fmtEV, fmtKelly } from '@/lib/race-utils'
+import { computeAIScore, fmtOdds, fmtEV, fmtKelly, parseFormHistory, getFormColor } from '@/lib/race-utils'
 
 const VALUE_THRESHOLD = 0.15
 
-export function RaceTable({ rows, topPickId }: { rows: RaceRow[], topPickId: string | null }) {
+interface RaceTableProps {
+  rows: RaceRow[]
+  topPickId: string | null
+  onHorseClick?: (horseId: string, horseName: string) => void
+}
+
+export function RaceTable({ rows, topPickId, onHorseClick }: RaceTableProps) {
   if (rows.length === 0) {
     return (
       <div className="table-empty">
@@ -28,6 +34,7 @@ export function RaceTable({ rows, topPickId }: { rows: RaceRow[], topPickId: str
         <tr>
           <th style={{ width: 44 }}>No.</th>
           <th>馬名</th>
+          <th style={{ width: 180 }}>近 6 場往績</th>
           <th>騎師 / 練馬師</th>
           <th style={{ textAlign: 'center', width: 52 }}>檔位</th>
           <th style={{ textAlign: 'right', width: 72 }}>賠率</th>
@@ -46,6 +53,7 @@ export function RaceTable({ rows, topPickId }: { rows: RaceRow[], topPickId: str
           const isTopPick = row.runner_id === topPickId
           const isValueBet = isValue && kelly !== null && kelly > 0
           const aiScore = computeAIScore(row)
+          const formPositions = parseFormHistory(row.form_history)
 
           let evClass = 'ev-negative'
           if (ev !== null && ev > 0 && ev <= VALUE_THRESHOLD) evClass = 'ev-neutral'
@@ -62,12 +70,39 @@ export function RaceTable({ rows, topPickId }: { rows: RaceRow[], topPickId: str
               </td>
               <td>
                 <div className="horse-name-cell">
-                  <span className="horse-name">{row.horse_name}</span>
+                  <span
+                    className="horse-name horse-name-clickable"
+                    onClick={() => onHorseClick?.(row.horse_id, row.horse_name)}
+                    title="點擊查看馬匹詳情"
+                  >
+                    {row.horse_name}
+                  </span>
                   <span className="horse-ai-score" style={{
                     color: aiScore >= 70 ? '#10b981' : aiScore >= 50 ? '#f59e0b' : '#64748b'
                   }}>
                     {aiScore}
                   </span>
+                </div>
+              </td>
+              <td>
+                <div className="form-badges-cell">
+                  {formPositions.length > 0 ? (
+                    formPositions.map((pos, i) => (
+                      <span
+                        key={i}
+                        className="form-badge"
+                        style={{
+                          backgroundColor: getFormColor(pos) + '20',
+                          color: getFormColor(pos),
+                          borderColor: getFormColor(pos) + '40',
+                        }}
+                      >
+                        {pos}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="form-na">-</span>
+                  )}
                 </div>
               </td>
               <td className="jt-cell">

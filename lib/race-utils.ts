@@ -183,3 +183,15 @@ export function getFormColor(pos: number): string {
   if (pos <= 6) return '#f59e0b'
   return '#ef4444'
 }
+
+/**
+ * Parse form_history string (e.g. "12-8-9-9-11-5") into number array.
+ */
+export function parseFormHistory(form: string | null | undefined): number[] {
+  if (!form) return []
+  return form
+    .split(/[-\/\s,]+/)
+    .map(s => parseInt(s.trim()))
+    .filter(n => !isNaN(n) && n > 0)
+    .slice(0, 6)
+}
