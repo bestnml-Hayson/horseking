@@ -328,7 +328,11 @@ export function AIPerformance() {
                       </tr>
                     </thead>
                     <tbody>
-                      {raceDetail.comparison.map((row) => (
+                      {[...raceDetail.comparison].sort((a, b) => {
+                        const pa = a.finish_position ?? 999
+                        const pb = b.finish_position ?? 999
+                        return pa - pb
+                      }).map((row) => (
                         <ComparisonRow key={row.runner_id} row={row} onHorseClick={(id, name) => { setDrawerHorseId(id); setDrawerHorseName(name) }} />
                       ))}
                     </tbody>
@@ -427,8 +431,10 @@ function ComparisonRow({ row, onHorseClick }: { row: ComparisonRow; onHorseClick
         </button>
       </td>
       <td className="jockey-trainer-cell">
-        <div className="jt-jockey">{row.jockey ?? '-'}</div>
-        <div className="jt-trainer">{row.trainer ?? '-'}</div>
+        <div className="jt-badge-row">
+          <span className="jt-badge jt-jockey-badge">{row.jockey ?? '-'}</span>
+          <span className="jt-badge jt-trainer-badge">{row.trainer ?? '-'}</span>
+        </div>
       </td>
       <td>
         <span className="odds-cell">{row.win_odds ? `${row.win_odds.toFixed(1)}` : '-'}</span>

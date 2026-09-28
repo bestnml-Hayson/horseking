@@ -833,6 +833,36 @@ html, body {
 .jockey-name { font-size: 12px; color: var(--text-secondary); font-weight: 500; }
 .trainer-name { font-size: 11px; color: var(--text-muted); }
 
+.jt-badge-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.jt-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.5;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.jt-jockey-badge {
+  background: rgba(59, 130, 246, 0.1);
+  color: #93c5fd;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+.jt-trainer-badge {
+  background: rgba(148, 163, 184, 0.08);
+  color: var(--text-muted);
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  font-size: 10px;
+  font-weight: 500;
+}
+
 .draw-cell { font-weight: 600; color: var(--text-secondary); }
 
 .tag-group { display: flex; gap: 6px; flex-wrap: wrap; }
@@ -2085,4 +2115,135 @@ html, body {
   white-space: nowrap;
   padding: 6px 8px;
   font-size: 12px;
+}
+
+/* =====================================================================
+   Benter Factor Breakdown (Drawer)
+   ===================================================================== */
+.drawer-benter-breakdown {
+  margin-bottom: 20px;
+  padding: 16px;
+  background: linear-gradient(135deg, rgba(129, 140, 248, 0.08), rgba(59, 130, 246, 0.05));
+  border: 1px solid rgba(129, 140, 248, 0.2);
+  border-radius: 14px;
+}
+
+.drawer-benter-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.drawer-benter-icon {
+  font-size: 20px;
+}
+
+.drawer-benter-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #818cf8;
+}
+
+.benter-factors-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.benter-factor-card {
+  background: rgba(15, 23, 42, 0.5);
+  border: 1px solid rgba(129, 140, 248, 0.1);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.bf-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 6px;
+}
+
+.bf-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.bf-sublabel {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.bf-bar-track {
+  height: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+
+.bf-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.5s ease;
+}
+
+.bf-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.bf-score {
+  font-size: 14px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.bf-weight {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.benter-summary-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.benter-total-card {
+  flex: 1;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(129, 140, 248, 0.15);
+  border-radius: 10px;
+  padding: 10px 14px;
+  text-align: center;
+}
+
+.bt-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 4px;
+}
+
+.bt-value {
+  font-size: 22px;
+  font-weight: 900;
+  color: #818cf8;
+  font-variant-numeric: tabular-nums;
+}
+
+.benter-summary-text {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  background: rgba(99, 102, 241, 0.06);
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--text-secondary);
 }

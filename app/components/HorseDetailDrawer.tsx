@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import type { HorseDetail, RaceRow } from '@/lib/types'
-import { getFormColor, generateHorseComprehensiveInsight } from '@/lib/race-utils'
+import { getFormColor, generateHorseComprehensiveInsight, computeBenterBreakdown } from '@/lib/race-utils'
 
 interface HorseDetailDrawerProps {
   horseId: string | null
@@ -115,6 +115,58 @@ export function HorseDetailDrawer({ horseId, horseName, raceRow, onClose }: Hors
                   )}
                 </p>
               </div>
+
+              {/* Benter Factor Breakdown */}
+              {raceRow && (() => {
+                const bd = computeBenterBreakdown(raceRow)
+                const factors = [
+                  { label: '近況走勢分', sublabel: 'Form Score', score: bd.formScore, weight: '30%', color: '#818cf8' },
+                  { label: '檔位偏差分', sublabel: 'Draw Bias', score: bd.drawScore, weight: '15%', color: '#f59e0b' },
+                  { label: '騎練組合分', sublabel: 'Jockey/Trainer', score: bd.jockeyTrainerScore, weight: '35%', color: '#10b981' },
+                  { label: '途程場地分', sublabel: 'Course/Distance', score: bd.courseDistanceScore, weight: '20%', color: '#3b82f6' },
+                ]
+                return (
+                  <div className="drawer-benter-breakdown">
+                    <div className="drawer-benter-header">
+                      <span className="drawer-benter-icon">&#x1F9EE;</span>
+                      <span className="drawer-benter-title">Benter 演算法評分拆解</span>
+                    </div>
+                    <div className="benter-factors-grid">
+                      {factors.map(f => (
+                        <div key={f.label} className="benter-factor-card">
+                          <div className="bf-header">
+                            <span className="bf-label">{f.label}</span>
+                            <span className="bf-sublabel">{f.sublabel}</span>
+                          </div>
+                          <div className="bf-bar-track">
+                            <div
+                              className="bf-bar-fill"
+                              style={{ width: `${f.score}%`, backgroundColor: f.color }}
+                            />
+                          </div>
+                          <div className="bf-footer">
+                            <span className="bf-score" style={{ color: f.color }}>{f.score}</span>
+                            <span className="bf-weight">權重 {f.weight}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="benter-summary-row">
+                      <div className="benter-total-card">
+                        <div className="bt-label">總評分 Total Score</div>
+                        <div className="bt-value">{bd.totalScore}</div>
+                      </div>
+                      {bd.pFinal != null && (
+                        <div className="benter-total-card">
+                          <div className="bt-label">Benter P_final</div>
+                          <div className="bt-value" style={{ color: '#34d399' }}>{(bd.pFinal * 100).toFixed(1)}%</div>
+                        </div>
+                      )}
+                    </div>
+                    <p className="benter-summary-text">{bd.summary}</p>
+                  </div>
+                )
+              })()}
 
               {/* Career Stats Grid */}
               <div className="horse-stats-grid">

@@ -512,3 +512,109 @@ export function generateHorseComprehensiveInsight(
 
   return parts.join('。') + '。'
 }
+
+export interface BenterBreakdown {
+  formScore: number
+  drawScore: number
+  jockeyTrainerScore: number
+  courseDistanceScore: number
+  totalScore: number
+  pFinal: number | null
+  summary: string
+}
+
+export function computeBenterBreakdown(row: RaceRow): BenterBreakdown {
+  const form = parseFormHistory(row.form_history)
+  const draw = row.draw
+  const jockeyWr = row.jockey_win_rate ?? 0.1
+  const trainerWr = row.trainer_win_rate ?? 0.1
+  const weight = row.actual_weight
+  const pFinal = row.prediction?.final_prob
+
+  const formAvg = form.length > 0 ? form.reduce((s, p) => s + p, 0) / form.length : 10
+  const formScore = Math.max(0, Math.min(100, Math.round((1 - (formAvg - 1) / 13) * 100)))
+
+  const drawMax = 14
+  const drawScore = draw != null
+    ? Math.max(0, Math.min(100, Math.round((1 - (draw - 1) / drawMax) * 100)))
+    : 50
+
+  const jockeyScore = Math.max(0, Math.min(100, Math.round(jockeyWr * 500)))
+  const trainerScore = Math.max(0, Math.min(100, Math.round(trainerWr * 500)))
+  const jockeyTrainerScore = Math.round(jockeyScore * 0.6 + trainerScore * 0.4)
+
+  let courseDistanceScore = 60
+  if (weight != null) {
+    if (weight <= 118) courseDistanceScore += 20
+    else if (weight <= 124) courseDistanceScore += 10
+    else if (weight >= 132) courseDistanceScore -= 15
+    else if (weight >= 128) courseDistanceScore -= 5
+  }
+  courseDistanceScore = Math.max(0, Math.min(100, courseDistanceScore))
+
+  const totalScore = Math.round(
+    formScore * 0.30 +
+    drawScore * 0.15 +
+    jockeyTrainerScore * 0.35 +
+    courseDistanceScore * 0.20
+  )
+
+  const summary = generateBenterSummary(row, formScore, drawScore, jockeyTrainerScore, courseDistanceScore, totalScore)
+
+  return {
+    formScore,
+    drawScore,
+    jockeyTrainerScore,
+    courseDistanceScore,
+    totalScore,
+    pFinal: pFinal ?? null,
+    summary,
+  }
+}
+
+function generateBenterSummary(
+  row: RaceRow,
+  formScore: number,
+  drawScore: number,
+  jockeyTrainerScore: number,
+  courseDistanceScore: number,
+  totalScore: number
+): string {
+  const parts: string[] = []
+  const name = row.horse_name
+
+  const strengths: string[] = []
+  const weaknesses: string[] = []
+
+  if (formScore >= 75) strengths.push('近況走勢強勁')
+  else if (formScore < 50) weaknesses.push('近績稍遜')
+
+  if (drawScore >= 75) strengths.push('檔位優越')
+  else if (drawScore < 40) weaknesses.push('外檔不利')
+
+  if (jockeyTrainerScore >= 75) strengths.push('騎練組合出色')
+  else if (jockeyTrainerScore < 50) weaknesses.push('騎練配合一般')
+
+  if (courseDistanceScore >= 75) strengths.push('途程負磅配合得宜')
+  else if (courseDistanceScore < 50) weaknesses.push('負磅偏重')
+
+  if (strengths.length > 0) {
+    parts.push(`${name}${strengths.join('、')}`)
+  }
+
+  if (weaknesses.length > 0) {
+    parts.push(`唯${weaknesses.join('、')}`)
+  }
+
+  if (totalScore >= 75) {
+    parts.push('綜合評分極高，為首選之馬')
+  } else if (totalScore >= 60) {
+    parts.push('綜合評分不俗，可作膽材考量')
+  } else if (totalScore >= 45) {
+    parts.push('綜合評分中等，適合作冷門配腳')
+  } else {
+    parts.push('綜合評分偏低，建議觀望')
+  }
+
+  return parts.join('，') + '。'
+}

@@ -112,8 +112,10 @@ export function RaceTable({ rows, topPickId, onHorseClick }: RaceTableProps) {
                   </div>
                 </td>
                 <td className="jt-cell">
-                  <div className="jockey-name">{row.jockey ?? '-'}</div>
-                  <div className="trainer-name">{row.trainer ?? '-'}</div>
+                  <div className="jt-badge-row">
+                    <span className="jt-badge jt-jockey-badge">{row.jockey ?? '-'}</span>
+                    <span className="jt-badge jt-trainer-badge">{row.trainer ?? '-'}</span>
+                  </div>
                 </td>
                 <td style={{ textAlign: 'center' }} className="tabular-nums draw-cell">
                   {row.draw ?? '-'}
