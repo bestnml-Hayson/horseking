@@ -28,6 +28,18 @@ import argparse
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 
+def _load_dotenv():
+    env_path = os.path.join(os.path.dirname(__file__), '..', '.env.local')
+    if os.path.exists(env_path):
+        with open(env_path, 'r') as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith('#') or '=' not in line:
+                    continue
+                key, _, value = line.partition('=')
+                os.environ.setdefault(key.strip(), value.strip())
+_load_dotenv()
+
 try:
     from supabase import create_client, Client
 except ImportError:
@@ -164,14 +176,35 @@ def scrape_hkjc_races(date_str: str, venue: str) -> List[Dict]:
                         break
                     continue
 
-                race_meta = page.evaluate('''() => {
+                race_meta = page.evaluate(r'''() => {
                     const text = document.body.innerText;
-                    const distMatch = text.match(/(\\d{3,4})米/);
-                    const goingMatch = text.match(/(好地|快地|慢地|軟地|黏地|好至快地|好至黏地|好至黏快|黏地|快地)/);
-                    const classMatch = text.match(/第([一二三四五六七八九十]+)班/);
+                    const lines = text.split('\n');
+
+                    let startIdx = -1;
+                    for (let i = 0; i < lines.length; i++) {
+                        if (/第\s*\d+\s*場/.test(lines[i])) { startIdx = i; break; }
+                    }
+
+                    let endIdx = lines.length;
+                    if (startIdx >= 0) {
+                        for (let i = startIdx + 1; i < lines.length; i++) {
+                            if (lines[i].includes('馬匹編號') || lines[i].includes('排位表')) {
+                                endIdx = i; break;
+                            }
+                        }
+                    } else {
+                        startIdx = 0;
+                    }
+
+                    const block = lines.slice(startIdx, endIdx).join(' ');
+
+                    const distMatch = block.match(/(\d{3,4})米/);
+                    const goingMatch = block.match(/好至黏快|好至快地|好至黏地|好地|快地|慢地|軟地|黏地/);
+                    const classMatch = block.match(/第[一二三四五六七八九十]+班/);
+
                     return {
                         distance: distMatch ? parseInt(distMatch[1]) : null,
-                        going: goingMatch ? goingMatch[1] : null,
+                        going: goingMatch ? goingMatch[0] : null,
                         class_level: classMatch ? classMatch[0] : null,
                     };
                 }''')
@@ -191,7 +224,7 @@ def scrape_hkjc_races(date_str: str, venue: str) -> List[Dict]:
                     'horses': horses,
                 }
                 all_races.append(race_data)
-                print(f"    [OK] {len(horses)} horses (form: {horses[0].get('form_history', 'N/A')})")
+                print(f"    [OK] {len(horses)} horses | dist={race_meta.get('distance')} going={race_meta.get('going')} class={race_meta.get('class_level')}")
 
             except Exception as e:
                 print(f"    [FAIL] R{race_no}: {e}")
@@ -237,6 +270,54 @@ def scrape_hkjc_races(date_str: str, venue: str) -> List[Dict]:
 
     print(f"\n[Scraper] Total: {len(all_races)} races scraped")
     return all_races
+
+
+# =====================================================================
+# Data Validation
+# =====================================================================
+def validate_scraped_data(races: List[Dict]) -> bool:
+    """Validate scraped data quality. Returns True if all checks pass."""
+    all_ok = True
+    for race in races:
+        race_id = race['race_id']
+        horses = race['horses']
+        n = len(horses)
+
+        if n < 4:
+            print(f"  [WARN] {race_id}: only {n} horses (expected >= 4)")
+            all_ok = False
+
+        if n > 20:
+            print(f"  [WARN] {race_id}: {n} horses exceeds max 20")
+            all_ok = False
+
+        horse_nos = sorted(h['horse_no'] for h in horses)
+        expected = list(range(1, n + 1))
+        if horse_nos != expected:
+            print(f"  [WARN] {race_id}: horse numbers {horse_nos} != expected {expected}")
+            all_ok = False
+
+        dupes = [x for x in horse_nos if horse_nos.count(x) > 1]
+        if dupes:
+            print(f"  [WARN] {race_id}: duplicate horse numbers {set(dupes)}")
+            all_ok = False
+
+        for h in horses:
+            if not h.get('horse_name'):
+                print(f"  [WARN] {race_id}: horse #{h['horse_no']} has empty name")
+                all_ok = False
+            if not h.get('jockey'):
+                print(f"  [WARN] {race_id}: horse #{h['horse_no']} ({h.get('horse_name','')}) has empty jockey")
+                all_ok = False
+            wt = h.get('weight', 0)
+            if wt > 0 and (wt < 100 or wt > 145):
+                print(f"  [WARN] {race_id}: horse #{h['horse_no']} weight {wt} out of range [100-145]")
+                all_ok = False
+
+    if all_ok:
+        total = sum(len(r['horses']) for r in races)
+        print(f"  [OK] Validation passed: {len(races)} races, {total} horses")
+    return all_ok
 
 
 # =====================================================================
@@ -439,10 +520,10 @@ def main():
     print("=" * 60)
 
     supabase = get_supabase_client()
-    if not supabase:
+    if not supabase and not args.dry_run:
         sys.exit(1)
 
-    if not args.clear_only:
+    if supabase and not args.dry_run and not args.clear_only:
         clear_old_data(supabase, date_str, venue)
 
     if args.clear_only:
@@ -463,6 +544,9 @@ def main():
     if not races:
         print("\n[WARN] No races scraped. No races today or HKJC page structure changed.")
         sys.exit(0)
+
+    print(f"\n[Validate] Checking data quality...")
+    validate_scraped_data(races)
 
     write_to_supabase(supabase, races, dry_run=args.dry_run)
 
