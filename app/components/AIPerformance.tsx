@@ -75,8 +75,11 @@ export function AIPerformance() {
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
 
   const [tableMissing, setTableMissing] = useState(false)
+  const [hasLoadedDates, setHasLoadedDates] = useState(false)
+  const [hasLoadedSummary, setHasLoadedSummary] = useState(false)
 
   const fetchDates = useCallback(async () => {
+    if (hasLoadedDates) return
     try {
       const res = await fetch('/api/performance/dates')
       const json = await res.json()
@@ -85,13 +88,15 @@ export function AIPerformance() {
         if (!selectedDate) {
           setSelectedDate(json.dates[0])
         }
+        setHasLoadedDates(true)
       }
     } catch (e: any) {
       console.error('Failed to fetch dates:', e)
     }
-  }, [selectedDate])
+  }, [hasLoadedDates, selectedDate])
 
   const fetchSummary = useCallback(async () => {
+    if (hasLoadedSummary) return
     setLoading(true)
     setError(null)
     try {
@@ -105,6 +110,7 @@ export function AIPerformance() {
         if (json.records?.length > 0 && !selectedRaceId) {
           setSelectedRaceId(json.records[0].race_id)
         }
+        setHasLoadedSummary(true)
       } else {
         setError(json.error ?? 'Failed to load performance data')
       }
@@ -113,9 +119,10 @@ export function AIPerformance() {
     } finally {
       setLoading(false)
     }
-  }, [selectedDate, selectedRaceId])
+  }, [selectedDate, hasLoadedSummary, selectedRaceId])
 
   const fetchRaceDetail = useCallback(async (raceId: string) => {
+    if (raceDetail?.race_id === raceId) return
     setDetailLoading(true)
     try {
       const res = await fetch(`/api/performance/${raceId}`)
@@ -130,7 +137,7 @@ export function AIPerformance() {
     } finally {
       setDetailLoading(false)
     }
-  }, [])
+  }, [raceDetail?.race_id])
 
   useEffect(() => {
     fetchDates()
@@ -138,7 +145,9 @@ export function AIPerformance() {
 
   useEffect(() => {
     if (selectedDate) {
+      setHasLoadedSummary(false)
       setSelectedRaceId(null)
+      setRaceDetail(null)
       fetchSummary()
     }
   }, [selectedDate, fetchSummary])
