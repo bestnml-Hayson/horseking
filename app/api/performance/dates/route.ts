@@ -17,7 +17,7 @@ export async function GET() {
       return NextResponse.json({ ok: false, error: error.message }, { status: 500 })
     }
 
-    const uniqueDates = Array.from(new Set((dates ?? []).map((d: any) => d.race_date)))
+    const uniqueDates = Array.from(new Set(((dates ?? []) as any[]).map((d: any) => d.race_date)))
       .filter(Boolean)
       .sort()
       .reverse()
