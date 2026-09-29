@@ -212,10 +212,10 @@ export function AIPerformance() {
               icon="&#x1F4B0;"
             />
             <KPICard
-              label="總回報"
-              value={`$${summary.total_returns.toLocaleString()}`}
-              sub={`淨${summary.total_returns - summary.total_bets >= 0 ? '+' : ''}$${(summary.total_returns - summary.total_bets).toLocaleString()}`}
-              color={summary.total_returns >= summary.total_bets ? 'green' : 'red'}
+              label="淨利潤"
+              value={`${summary.total_returns - summary.total_bets >= 0 ? '+' : ''}$${(summary.total_returns - summary.total_bets).toLocaleString()}`}
+              sub={`派彩 $${summary.total_returns.toLocaleString()} / 總投注 $${summary.total_bets.toLocaleString()}`}
+              color={summary.total_returns - summary.total_bets >= 0 ? 'green' : 'red'}
               icon="&#x1F4B5;"
             />
           </div>
