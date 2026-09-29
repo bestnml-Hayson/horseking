@@ -242,7 +242,7 @@ def analyze_race(runners: List[Dict]) -> List[Dict]:
             'win_odds': r.get('win_odds'),
         })
 
-    results.sort(key=lambda x: x['expected_value'], reverse=True)
+    results.sort(key=lambda x: x['expected_value'] if x['expected_value'] is not None else -999, reverse=True)
     return results
 
 
@@ -364,10 +364,15 @@ def run_local_test():
             print(f"  {'No':>3} {'P_model':>8} {'P_market':>9} {'P_final':>8} {'Odds':>6} {'EV':>7} {'Kelly':>7} {'Value?'}")
             for p in predictions[:5]:
                 tag = " *** VALUE" if p['is_value_bet'] else ""
+                pm = f"{p['market_implied_prob']:>9.4f}" if p['market_implied_prob'] is not None else "       N/A"
+                pf = f"{p['final_prob']:>8.4f}" if p['final_prob'] is not None else "     N/A"
+                ev = f"{p['expected_value']:>+7.4f}" if p['expected_value'] is not None else "    N/A"
+                kl = f"{p['kelly_fraction']:>7.4f}" if p['kelly_fraction'] is not None else "    N/A"
+                odds = f"{p['win_odds']:>6.1f}" if p['win_odds'] is not None else "   N/A"
                 print(f"  {p['horse_no']:>3} {p['raw_model_prob']:>8.4f} "
-                      f"{p['market_implied_prob']:>9.4f} {p['final_prob']:>8.4f} "
-                      f"{p['win_odds']:>6.1f} {p['expected_value']:>+7.4f} "
-                      f"{p['kelly_fraction']:>7.4f}{tag}")
+                      f"{pm} {pf} "
+                      f"{odds} {ev} "
+                      f"{kl}{tag}")
             print()
             sample_shown += 1
 
