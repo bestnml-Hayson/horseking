@@ -153,8 +153,9 @@ def filter_dates_by_months(dates: List[str], months: int) -> List[str]:
     if months <= 0:
         return dates
     cutoff = (datetime.now() - timedelta(days=months * 30)).strftime("%Y-%m-%d")
-    filtered = [d for d in dates if d >= cutoff]
-    print(f"  Filtered to {len(filtered)} dates within past {months} months (>= {cutoff})")
+    today = datetime.now().strftime("%Y-%m-%d")
+    filtered = [d for d in dates if d >= cutoff and d < today]
+    print(f"  Filtered to {len(filtered)} dates within past {months} months (>= {cutoff}, < {today})")
     return filtered
 
 
