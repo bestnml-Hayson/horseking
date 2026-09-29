@@ -75,35 +75,68 @@ export async function GET(
       (a, b) => (b.final_prob ?? 0) - (a.final_prob ?? 0)
     )
 
-    const comparison: ComparisonRow[] = sortedPreds.map((pred, idx) => {
-      const runner = runnerMap.get(pred.runner_id)
-      const horseId = runner?.horse_id
-      const horseNo = runner?.horse_no
-      const finishPos = finishPosMap.get(horseNo!) ?? runner?.finish_position ?? null
-      return {
-        rank: idx + 1,
-        runner_id: pred.runner_id,
-        horse_no: horseNo!,
-        horse_id: horseId!,
-        horse_name: horseNameMap.get(horseId!) || horseId! || `馬${horseNo || '?'}`,
-        jockey: runner?.jockey ?? null,
-        trainer: runner?.trainer ?? null,
-        draw: runner?.draw ?? null,
-        win_odds: runner?.win_odds ?? null,
-        finish_position: finishPos,
-        predicted_prob: pred.final_prob,
-        expected_value: pred.expected_value,
-        kelly_fraction: pred.kelly_fraction,
-        is_top3_pick: idx < 3,
-        finished_in_top3: finishPos != null && finishPos <= 3,
-        is_winner: finishPos === 1,
-        official_rating: runner?.official_rating ?? null,
-        jockey_win_rate: runner?.jockey_win_rate ?? null,
-        trainer_win_rate: runner?.trainer_win_rate ?? null,
-        weight_carried_diff: runner?.weight_carried_diff ?? null,
-        declared_weight: runner?.declared_weight ?? null,
-      }
-    })
+    let comparison: ComparisonRow[]
+    
+    if (sortedPreds.length > 0) {
+      comparison = sortedPreds.map((pred, idx) => {
+        const runner = runnerMap.get(pred.runner_id)
+        const horseId = runner?.horse_id
+        const horseNo = runner?.horse_no
+        const finishPos = finishPosMap.get(horseNo!) ?? runner?.finish_position ?? null
+        return {
+          rank: idx + 1,
+          runner_id: pred.runner_id,
+          horse_no: horseNo!,
+          horse_id: horseId!,
+          horse_name: horseNameMap.get(horseId!) || horseId! || `馬${horseNo || '?'}`,
+          jockey: runner?.jockey ?? null,
+          trainer: runner?.trainer ?? null,
+          draw: runner?.draw ?? null,
+          win_odds: runner?.win_odds ?? null,
+          finish_position: finishPos,
+          predicted_prob: pred.final_prob,
+          expected_value: pred.expected_value,
+          kelly_fraction: pred.kelly_fraction,
+          is_top3_pick: idx < 3,
+          finished_in_top3: finishPos != null && finishPos <= 3,
+          is_winner: finishPos === 1,
+          official_rating: runner?.official_rating ?? null,
+          jockey_win_rate: runner?.jockey_win_rate ?? null,
+          trainer_win_rate: runner?.trainer_win_rate ?? null,
+          weight_carried_diff: runner?.weight_carried_diff ?? null,
+          declared_weight: runner?.declared_weight ?? null,
+        }
+      })
+    } else {
+      comparison = typedRunners.map((runner, idx) => {
+        const horseId = runner.horse_id
+        const horseNo = runner.horse_no
+        const finishPos = finishPosMap.get(horseNo) ?? runner.finish_position ?? null
+        return {
+          rank: idx + 1,
+          runner_id: runner.runner_id,
+          horse_no: horseNo,
+          horse_id: horseId,
+          horse_name: horseNameMap.get(horseId) || horseId || `馬${horseNo || '?'}`,
+          jockey: runner.jockey ?? null,
+          trainer: runner.trainer ?? null,
+          draw: runner.draw ?? null,
+          win_odds: runner.win_odds ?? null,
+          finish_position: finishPos,
+          predicted_prob: null,
+          expected_value: null,
+          kelly_fraction: null,
+          is_top3_pick: false,
+          finished_in_top3: finishPos != null && finishPos <= 3,
+          is_winner: finishPos === 1,
+          official_rating: runner.official_rating ?? null,
+          jockey_win_rate: runner.jockey_win_rate ?? null,
+          trainer_win_rate: runner.trainer_win_rate ?? null,
+          weight_carried_diff: runner.weight_carried_diff ?? null,
+          declared_weight: runner.declared_weight ?? null,
+        }
+      })
+    }
 
     comparison.sort((a, b) => {
       const pa = a.finish_position ?? 999
