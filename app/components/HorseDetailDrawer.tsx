@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import type { HorseDetail, RaceRow } from '@/lib/types'
 import { getFormColor, generateHorseComprehensiveInsight, computeBenterBreakdown } from '@/lib/race-utils'
+import { FACTOR_COLORS, STAT_COLORS } from '@/lib/color-utils'
 
 interface HorseDetailDrawerProps {
   horseId: string | null
@@ -38,8 +39,9 @@ export function HorseDetailDrawer({ horseId, horseName, raceRow, onClose }: Hors
       } else {
         setError(data.error ?? 'Unknown error')
       }
-    } catch (e: any) {
-      setError(e.message ?? 'Network error')
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Network error'
+      setError(msg)
     } finally {
       setLoading(false)
     }
@@ -121,7 +123,7 @@ export function HorseDetailDrawer({ horseId, horseName, raceRow, onClose }: Hors
                 const bd = computeBenterBreakdown(raceRow)
                 const factors = [
                   {
-                    label: '近況走勢分', sublabel: 'Form Score', score: bd.formScore, weight: '30%', color: '#818cf8',
+                    label: '近況走勢分', sublabel: 'Form Score', score: bd.formScore, weight: '30%', color: FACTOR_COLORS.form,
                     subs: [
                       { label: '近 6 場平均名次', value: bd.formSub.avgFinish != null ? bd.formSub.avgFinish.toFixed(1) : '-' },
                       { label: '最佳名次', value: bd.formSub.bestFinish != null ? `第 ${bd.formSub.bestFinish} 名` : '-' },
@@ -131,7 +133,7 @@ export function HorseDetailDrawer({ horseId, horseName, raceRow, onClose }: Hors
                     ],
                   },
                   {
-                    label: '檔位偏差分', sublabel: 'Draw Bias', score: bd.drawScore, weight: '15%', color: '#f59e0b',
+                    label: '檔位偏差分', sublabel: 'Draw Bias', score: bd.drawScore, weight: '15%', color: FACTOR_COLORS.draw,
                     subs: [
                       { label: '檔位利弊係數', value: bd.drawSub.drawBiasCoeff.toFixed(2) },
                       { label: '場地偏差指數', value: bd.drawSub.trackBiasIndex.toFixed(2) },
@@ -139,7 +141,7 @@ export function HorseDetailDrawer({ horseId, horseName, raceRow, onClose }: Hors
                     ],
                   },
                   {
-                    label: '騎練組合分', sublabel: 'Jockey/Trainer', score: bd.jockeyTrainerScore, weight: '35%', color: '#10b981',
+                    label: '騎練組合分', sublabel: 'Jockey/Trainer', score: bd.jockeyTrainerScore, weight: '35%', color: FACTOR_COLORS.jockeyTrainer,
                     subs: [
                       { label: `騎師 ${bd.jtSub.jockeyLabel}`, value: `${bd.jtSub.jockeyWinRate.toFixed(1)}%` },
                       { label: `練馬師 ${bd.jtSub.trainerLabel}`, value: `${bd.jtSub.trainerWinRate.toFixed(1)}%` },
@@ -147,7 +149,7 @@ export function HorseDetailDrawer({ horseId, horseName, raceRow, onClose }: Hors
                     ],
                   },
                   {
-                    label: '途程場地分', sublabel: 'Course/Distance', score: bd.courseDistanceScore, weight: '20%', color: '#3b82f6',
+                    label: '途程場地分', sublabel: 'Course/Distance', score: bd.courseDistanceScore, weight: '20%', color: FACTOR_COLORS.courseDistance,
                     subs: [
                       { label: '負磅影響', value: bd.cdSub.weightEffect > 0 ? `+${bd.cdSub.weightEffect}` : `${bd.cdSub.weightEffect}` },
                       { label: '班次估算', value: bd.cdSub.classEstimate },
@@ -198,7 +200,7 @@ export function HorseDetailDrawer({ horseId, horseName, raceRow, onClose }: Hors
                       {bd.pFinal != null && (
                         <div className="benter-total-card">
                           <div className="bt-label">Benter P_final</div>
-                          <div className="bt-value" style={{ color: '#34d399' }}>{(bd.pFinal * 100).toFixed(1)}%</div>
+                          <div className="bt-value" style={{ color: STAT_COLORS.wins }}>{(bd.pFinal * 100).toFixed(1)}%</div>
                         </div>
                       )}
                     </div>
@@ -214,15 +216,15 @@ export function HorseDetailDrawer({ horseId, horseName, raceRow, onClose }: Hors
                   <div className="horse-stat-label">總出賽</div>
                 </div>
                 <div className="horse-stat-card">
-                  <div className="horse-stat-value" style={{ color: '#10b981' }}>{detail.total_wins}</div>
+                  <div className="horse-stat-value" style={{ color: STAT_COLORS.wins }}>{detail.total_wins}</div>
                   <div className="horse-stat-label">冠軍 (W)</div>
                 </div>
                 <div className="horse-stat-card">
-                  <div className="horse-stat-value" style={{ color: '#3b82f6' }}>{detail.total_places}</div>
+                  <div className="horse-stat-value" style={{ color: STAT_COLORS.places }}>{detail.total_places}</div>
                   <div className="horse-stat-label">亞軍 (P)</div>
                 </div>
                 <div className="horse-stat-card">
-                  <div className="horse-stat-value" style={{ color: '#f59e0b' }}>{detail.total_shows}</div>
+                  <div className="horse-stat-value" style={{ color: STAT_COLORS.shows }}>{detail.total_shows}</div>
                   <div className="horse-stat-label">季軍 (S)</div>
                 </div>
                 <div className="horse-stat-card">
@@ -234,7 +236,7 @@ export function HorseDetailDrawer({ horseId, horseName, raceRow, onClose }: Hors
                   <div className="horse-stat-label">勝出率</div>
                 </div>
                 <div className="horse-stat-card">
-                  <div className="horse-stat-value" style={{ color: '#f59e0b' }}>{detail.top3_rate.toFixed(1)}%</div>
+                  <div className="horse-stat-value" style={{ color: STAT_COLORS.shows }}>{detail.top3_rate.toFixed(1)}%</div>
                   <div className="horse-stat-label">前三率</div>
                 </div>
                 <div className="horse-stat-card">

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getServerSupabase } from '@/lib/supabase-server'
+import type { AIPerformanceRecord, RaceRunner, ModelPrediction, ComparisonRow, Race } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
 
@@ -21,7 +22,7 @@ export async function GET(
       return NextResponse.json({ ok: false, error: 'No analysis found for this race' }, { status: 404 })
     }
 
-    const perf = perfData as any
+    const perf = perfData as unknown as AIPerformanceRecord
 
     const { data: runners } = await supabase
       .from('race_runners')
@@ -29,15 +30,16 @@ export async function GET(
       .eq('race_id', raceId)
       .order('horse_no', { ascending: true })
 
-    const horseIds = (runners ?? []).map((r: any) => r.horse_id).filter(Boolean)
+    const typedRunners = (runners ?? []) as unknown as RaceRunner[]
+    const horseIds = typedRunners.map((r) => r.horse_id).filter(Boolean)
     const { data: horses } = horseIds.length > 0
       ? await supabase
           .from('horses')
           .select('horse_id, horse_name')
           .in('horse_id', horseIds)
-      : { data: [] }
+      : { data: [] as { horse_id: string; horse_name: string }[] }
 
-    const horseNameMap = new Map((horses ?? []).map((h: any) => [h.horse_id, h.horse_name]))
+    const horseNameMap = new Map<string, string>((horses ?? []).map((h) => [h.horse_id, h.horse_name]))
 
     const { data: predictions } = await supabase
       .from('model_predictions')
@@ -57,35 +59,37 @@ export async function GET(
 
     const finishPosMap = new Map<number, number>()
     if (results && results.length > 0) {
-      for (const r of results as any[]) {
-        if (r.horse_no != null && r.finish_position != null) {
-          finishPosMap.set(r.horse_no, r.finish_position)
+      for (const r of results) {
+        const row = r as { horse_no: number | null; finish_position: number | null }
+        if (row.horse_no != null && row.finish_position != null) {
+          finishPosMap.set(row.horse_no, row.finish_position)
         }
       }
     }
 
-    const runnerMap = new Map((runners ?? []).map((r: any) => [r.runner_id, r]))
-    const predMap = new Map((predictions ?? []).map((p: any) => [p.runner_id, p]))
+    const typedPredictions = (predictions ?? []) as unknown as ModelPrediction[]
+    const runnerMap = new Map(typedRunners.map((r) => [r.runner_id, r]))
+    const predMap = new Map(typedPredictions.map((p) => [p.runner_id, p]))
 
-    const sortedPreds = (predictions ?? []).sort(
-      (a: any, b: any) => (b.final_prob ?? 0) - (a.final_prob ?? 0)
+    const sortedPreds = typedPredictions.sort(
+      (a, b) => (b.final_prob ?? 0) - (a.final_prob ?? 0)
     )
 
-    const comparison = sortedPreds.map((pred: any, idx: number) => {
+    const comparison: ComparisonRow[] = sortedPreds.map((pred, idx) => {
       const runner = runnerMap.get(pred.runner_id)
       const horseId = runner?.horse_id
       const horseNo = runner?.horse_no
-      const finishPos = finishPosMap.get(horseNo) ?? runner?.finish_position ?? null
+      const finishPos = finishPosMap.get(horseNo!) ?? runner?.finish_position ?? null
       return {
         rank: idx + 1,
         runner_id: pred.runner_id,
-        horse_no: horseNo,
-        horse_id: horseId,
-        horse_name: horseNameMap.get(horseId) || horseId || `馬${horseNo || '?'}`,
-        jockey: runner?.jockey,
-        trainer: runner?.trainer,
-        draw: runner?.draw,
-        win_odds: runner?.win_odds,
+        horse_no: horseNo!,
+        horse_id: horseId!,
+        horse_name: horseNameMap.get(horseId!) || horseId! || `馬${horseNo || '?'}`,
+        jockey: runner?.jockey ?? null,
+        trainer: runner?.trainer ?? null,
+        draw: runner?.draw ?? null,
+        win_odds: runner?.win_odds ?? null,
         finish_position: finishPos,
         predicted_prob: pred.final_prob,
         expected_value: pred.expected_value,
@@ -96,13 +100,13 @@ export async function GET(
       }
     })
 
-    comparison.sort((a: any, b: any) => {
+    comparison.sort((a, b) => {
       const pa = a.finish_position ?? 999
       const pb = b.finish_position ?? 999
       return pa - pb
     })
 
-    let keyFactors: any[] = []
+    let keyFactors: { type: string; description: string; impact: string }[] = []
     if (perf.key_factors) {
       try {
         const parsed = typeof perf.key_factors === 'string'
@@ -114,7 +118,7 @@ export async function GET(
       }
     }
 
-    let top3Picks: any[] = []
+    let top3Picks: unknown[] = []
     if (perf.top3_picks) {
       try {
         top3Picks = typeof perf.top3_picks === 'string'
@@ -128,15 +132,16 @@ export async function GET(
     return NextResponse.json({
       ok: true,
       race_id: raceId,
-      race_info: raceInfo,
-      results: results,
+      race_info: raceInfo as unknown as Race,
+      results,
       performance: perf,
       comparison,
       key_factors: keyFactors,
       top3_picks: top3Picks,
     })
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Internal error'
     console.error('[API /performance/[raceId]] error:', err)
-    return NextResponse.json({ ok: false, error: err.message ?? 'Internal error' }, { status: 500 })
+    return NextResponse.json({ ok: false, error: message }, { status: 500 })
   }
 }

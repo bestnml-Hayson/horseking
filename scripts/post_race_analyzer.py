@@ -15,20 +15,8 @@ import json
 from typing import Dict, List, Optional
 from datetime import datetime
 
-try:
-    from supabase import create_client, Client
-except ImportError:
-    print("[FAIL] supabase-py not installed")
-    sys.exit(1)
-
-
-def get_supabase() -> Client:
-    url = os.environ.get('SUPABASE_URL') or os.environ.get('NEXT_PUBLIC_SUPABASE_URL')
-    key = os.environ.get('SUPABASE_SERVICE_KEY') or os.environ.get('NEXT_PUBLIC_SUPABASE_ANON_KEY')
-    if not url or not key:
-        print("[FAIL] Missing Supabase env vars")
-        sys.exit(1)
-    return create_client(url, key)
+sys.path.insert(0, os.path.dirname(__file__))
+from common import get_supabase, batch_upsert
 
 
 def analyze_race(supabase: Client, race_id: str) -> Optional[Dict]:

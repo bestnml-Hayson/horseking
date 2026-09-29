@@ -52,9 +52,10 @@ export function RaceDashboard() {
 
       setRows(raceRows)
       setLastUpdate(new Date())
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error('[RaceDashboard] loadRaceData error:', e)
-      setError(e.message ?? 'Failed to load race data')
+      const msg = e instanceof Error ? e.message : 'Failed to load race data'
+      setError(msg)
       setRows([])
     } finally {
       setLoading(false)
@@ -73,9 +74,10 @@ export function RaceDashboard() {
         } else {
           setLoading(false)
         }
-      } catch (e: any) {
+      } catch (e: unknown) {
         if (cancelled) return
-        setError(e.message ?? 'Failed to load races')
+        const msg = e instanceof Error ? e.message : 'Failed to load races'
+        setError(msg)
         setLoading(false)
       }
     }

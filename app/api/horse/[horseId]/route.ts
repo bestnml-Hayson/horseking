@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getServerSupabase } from '@/lib/supabase-server'
+import type { Horse, RaceRunner, Race, HorseRaceHistory } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
 
@@ -21,7 +22,7 @@ export async function GET(
       return NextResponse.json({ ok: false, error: 'Horse not found' }, { status: 404 })
     }
 
-    const h = horse as any
+    const h = horse as Horse
 
     const { data: runnerHistory } = await supabase
       .from('race_runners')
@@ -30,8 +31,8 @@ export async function GET(
       .order('race_id', { ascending: false })
       .limit(30)
 
-    const raceIds = (runnerHistory ?? []).map((r: any) => r.race_id)
-    let raceMetaMap = new Map<string, any>()
+    const raceIds = (runnerHistory ?? []).map((r) => (r as unknown as RaceRunner).race_id)
+    let raceMetaMap = new Map<string, Race>()
 
     if (raceIds.length > 0) {
       const { data: raceMeta } = await supabase
@@ -39,27 +40,31 @@ export async function GET(
         .select('race_id, race_date, venue, race_no, distance, going')
         .in('race_id', raceIds)
 
-      raceMetaMap = new Map((raceMeta ?? []).map((r: any) => [r.race_id, r]))
+      raceMetaMap = new Map((raceMeta ?? []).map((r) => {
+        const race = r as unknown as Race
+        return [race.race_id, race]
+      }))
     }
 
-    const raceHistory = (runnerHistory ?? []).map((r: any) => {
-      const meta = raceMetaMap.get(r.race_id) || {}
+    const raceHistory: HorseRaceHistory[] = (runnerHistory ?? []).map((r) => {
+      const row = r as unknown as RaceRunner
+      const meta = raceMetaMap.get(row.race_id)
       return {
-        race_id: r.race_id,
-        race_date: meta.race_date ?? null,
-        venue: meta.venue ?? null,
-        race_no: meta.race_no ?? null,
-        distance: meta.distance ?? null,
-        going: meta.going ?? null,
-        finish_position: r.finish_position ?? null,
-        horse_no: r.horse_no,
-        win_odds: r.win_odds,
-        jockey: r.jockey,
-        trainer: r.trainer,
-        weight_carried: r.actual_weight,
-        draw: r.draw,
-        finish_time: r.finish_time,
-        form_history: r.form_history,
+        race_id: row.race_id,
+        race_date: meta?.race_date ?? null,
+        venue: meta?.venue ?? null,
+        race_no: meta?.race_no ?? null,
+        distance: meta?.distance ?? null,
+        going: meta?.going ?? null,
+        finish_position: row.finish_position ?? null,
+        horse_no: row.horse_no,
+        win_odds: row.win_odds,
+        jockey: row.jockey,
+        trainer: row.trainer,
+        weight_carried: row.actual_weight,
+        draw: row.draw,
+        finish_time: row.finish_time,
+        form_history: row.form_history,
       }
     })
 
@@ -73,7 +78,7 @@ export async function GET(
     const latestForm = raceHistory.find(r => r.form_history)?.form_history
     const recentForm = latestForm
       ? latestForm.split(/[-/\s,]+/).map((s: string) => parseInt(s.trim())).filter((n: number) => !isNaN(n) && n > 0).slice(0, 6)
-      : finished.slice(0, 6).map((r: any) => r.finish_position)
+      : finished.slice(0, 6).map((r) => r.finish_position as number)
 
     const oddsValues = finished.map(r => r.win_odds).filter((o: number | null): o is number => o != null && o > 0)
     const avgOdds = oddsValues.length > 0 ? oddsValues.reduce((a: number, b: number) => a + b, 0) / oddsValues.length : 0
@@ -150,8 +155,9 @@ export async function GET(
       best_distance: bestDistance,
       jockey_partners: jockeyPartners,
     })
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Internal error'
     console.error('[API /horse/[horseId]] error:', err)
-    return NextResponse.json({ ok: false, error: err.message ?? 'Internal error' }, { status: 500 })
+    return NextResponse.json({ ok: false, error: message }, { status: 500 })
   }
 }

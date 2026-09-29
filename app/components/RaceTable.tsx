@@ -2,6 +2,7 @@
 
 import type { RaceRow } from '@/lib/types'
 import { fmtOdds, fmtEV, fmtKelly, parseFormHistory, getFormColor, generateHorseInsight, isOddsPending } from '@/lib/race-utils'
+import { getKellyColor } from '@/lib/color-utils'
 
 const VALUE_THRESHOLD = 0.15
 
@@ -141,7 +142,7 @@ export function RaceTable({ rows, topPickId, onHorseClick }: RaceTableProps) {
                 </td>
                 <td style={{ textAlign: 'right' }} className="tabular-nums">
                   <span className="kelly-display" style={{
-                    color: kelly !== null && kelly > 0 ? '#10b981' : '#64748b',
+                    color: getKellyColor(kelly),
                     fontWeight: kelly !== null && kelly > 0 ? 700 : 400,
                   }}>
                     {fmtKelly(kelly)}

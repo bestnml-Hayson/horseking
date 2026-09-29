@@ -19,6 +19,7 @@ export interface RaceRunner {
   actual_weight: number | null
   draw: number | null
   past_rating: number | null
+  official_rating: number | null
   recent_form_score: number | null
   weight_carried_diff: number | null
   jockey_win_rate: number | null
@@ -104,4 +105,62 @@ export interface HorseDetail {
   venue_stats: HorseVenueStats[]
   best_distance: string | null
   jockey_partners: { name: string; rides: number; wins: number }[]
+}
+
+export interface RaceResult {
+  race_id: string
+  race_date: string
+  venue: string
+  race_no: number
+  finish_position: number
+  horse_no: number
+  horse_name: string
+  jockey: string
+  trainer: string
+  win_odds: number | null
+}
+
+export interface AIPerformanceRecord {
+  race_id: string
+  race_date: string
+  venue: string
+  race_no: number
+  top1_pick_runner_id: string | null
+  top1_pick_finish_pos: number | null
+  top1_hit: boolean
+  top3_picks: string | null
+  top3_hit_count: number
+  total_bets: number
+  total_returns: number
+  roi_percent: number
+  key_factors: string | null
+  pace_analysis: string | null
+  draw_bias: string | null
+  market_move: string | null
+  analysis_date: string
+}
+
+export interface ComparisonRow {
+  rank: number
+  runner_id: string
+  horse_no: number
+  horse_id: string
+  horse_name: string
+  jockey: string | null
+  trainer: string | null
+  draw: number | null
+  win_odds: number | null
+  finish_position: number | null
+  predicted_prob: number | null
+  expected_value: number | null
+  kelly_fraction: number | null
+  is_top3_pick: boolean
+  finished_in_top3: boolean
+  is_winner: boolean
+}
+
+export interface APIResponse<T> {
+  ok: boolean
+  error?: string
+  data?: T
 }

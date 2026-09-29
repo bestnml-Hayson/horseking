@@ -12,17 +12,8 @@ import sys
 from collections import defaultdict
 from typing import Dict, List, Optional, Tuple
 
-def _load_dotenv():
-    env_path = os.path.join(os.path.dirname(__file__), '..', '.env.local')
-    if os.path.exists(env_path):
-        with open(env_path, 'r') as f:
-            for line in f:
-                line = line.strip()
-                if not line or line.startswith('#') or '=' not in line:
-                    continue
-                key, _, value = line.partition('=')
-                os.environ.setdefault(key.strip(), value.strip())
-_load_dotenv()
+sys.path.insert(0, os.path.dirname(__file__))
+from common import get_supabase, batch_upsert
 
 try:
     from supabase import create_client, Client
@@ -47,11 +38,8 @@ W_DRAW = 0.15         # 檔位優勢
 
 
 def get_supabase_client() -> Client:
-    url = os.environ.get('SUPABASE_URL') or os.environ.get('NEXT_PUBLIC_SUPABASE_URL')
-    key = os.environ.get('SUPABASE_SERVICE_KEY') or os.environ.get('NEXT_PUBLIC_SUPABASE_ANON_KEY')
-    if not url or not key:
-        raise EnvironmentError("Missing SUPABASE_URL/SUPABASE_SERVICE_KEY or NEXT_PUBLIC_SUPABASE_URL/NEXT_PUBLIC_SUPABASE_ANON_KEY")
-    return create_client(url, key)
+    """Alias for backward compatibility."""
+    return get_supabase()
 
 
 # =====================================================================
@@ -61,6 +49,10 @@ def normalize_features(runners: List[Dict]) -> List[Dict]:
     """Min-Max 標準化各特徵到 [0, 1] 區間"""
     if not runners:
         return runners
+
+    for r in runners:
+        if r.get('official_rating') is not None:
+            r['past_rating'] = r['official_rating']
 
     features = ['recent_form_score', 'past_rating', 'jockey_win_rate',
                 'trainer_win_rate', 'draw']

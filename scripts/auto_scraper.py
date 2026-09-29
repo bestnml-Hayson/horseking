@@ -28,35 +28,11 @@ import argparse
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 
-def _load_dotenv():
-    env_path = os.path.join(os.path.dirname(__file__), '..', '.env.local')
-    if os.path.exists(env_path):
-        with open(env_path, 'r') as f:
-            for line in f:
-                line = line.strip()
-                if not line or line.startswith('#') or '=' not in line:
-                    continue
-                key, _, value = line.partition('=')
-                os.environ.setdefault(key.strip(), value.strip())
-_load_dotenv()
+sys.path.insert(0, os.path.dirname(__file__))
+from common import get_supabase, batch_upsert, truncate, has_column
 
-try:
-    from supabase import create_client, Client
-except ImportError:
-    print("[FAIL] supabase-py not installed. Run: pip install supabase")
-    sys.exit(1)
-
-
-# =====================================================================
-# Supabase
-# =====================================================================
-def get_supabase_client() -> Optional[Client]:
-    url = os.environ.get('SUPABASE_URL') or os.environ.get('NEXT_PUBLIC_SUPABASE_URL')
-    key = os.environ.get('SUPABASE_SERVICE_KEY') or os.environ.get('NEXT_PUBLIC_SUPABASE_ANON_KEY')
-    if not url or not key:
-        print("[FAIL] Missing SUPABASE_URL/SUPABASE_SERVICE_KEY or NEXT_PUBLIC_SUPABASE_URL/NEXT_PUBLIC_SUPABASE_ANON_KEY env vars")
-        return None
-    return create_client(url, key)
+# Re-export for live_high_frequency_pacing.py compatibility
+get_supabase_client = get_supabase
 
 
 def clear_old_data(supabase: Client, race_date: str, venue: str):
@@ -107,6 +83,7 @@ def scrape_hkjc_races(date_str: str, venue: str) -> List[Dict]:
                     const horses = [];
                     const tables = document.querySelectorAll('table');
                     let targetTable = null;
+                    let colMap = {};
 
                     for (const t of tables) {
                         const rows = t.querySelectorAll('tr');
@@ -115,10 +92,15 @@ def scrape_hkjc_races(date_str: str, venue: str) -> List[Dict]:
                         const firstRowCells = rows[0].querySelectorAll('td, th');
                         let hasFormCol = false;
                         let hasHorseCol = false;
-                        for (const c of firstRowCells) {
-                            const txt = c.textContent.trim();
-                            if (txt === '6次近績') hasFormCol = true;
-                            if (txt === '馬名') hasHorseCol = true;
+                        for (let i = 0; i < firstRowCells.length; i++) {
+                            const txt = firstRowCells[i].textContent.trim();
+                            if (txt === '6次近績') { hasFormCol = true; colMap.form = i; }
+                            if (txt === '馬名') { hasHorseCol = true; colMap.horseName = i; }
+                            if (txt === '評分' || txt === '評分*') colMap.rating = i;
+                            if (txt === '負磅' || txt === '配磅') colMap.weight = i;
+                            if (txt === '騎師') colMap.jockey = i;
+                            if (txt === '檔位' || txt === '排位檔位') colMap.draw = i;
+                            if (txt === '練馬師') colMap.trainer = i;
                         }
 
                         if (hasFormCol && hasHorseCol) {
@@ -135,6 +117,7 @@ def scrape_hkjc_races(date_str: str, venue: str) -> List[Dict]:
                     }
                     if (!targetTable) return horses;
 
+                    const hasRatingCol = colMap.rating !== undefined;
                     const rows = targetTable.querySelectorAll('tr');
                     for (let ri = 1; ri < rows.length; ri++) {
                         const cells = rows[ri].querySelectorAll('td');
@@ -150,6 +133,17 @@ def scrape_hkjc_races(date_str: str, venue: str) -> List[Dict]:
                         const horseCode = cells[4].textContent.trim();
                         const weight = parseFloat(cells[5].textContent.trim()) || 0;
                         let jockey = cells[6].textContent.trim();
+
+                        let officialRating = null;
+                        if (hasRatingCol) {
+                            officialRating = parseFloat(cells[colMap.rating].textContent.trim()) || null;
+                        } else {
+                            const ratingGuess = parseFloat(cells[7].textContent.trim());
+                            if (!isNaN(ratingGuess) && ratingGuess > 0 && ratingGuess <= 140) {
+                                officialRating = ratingGuess;
+                            }
+                        }
+
                         const draw = parseInt(cells[8].textContent.trim()) || 0;
                         let trainer = cells[9].textContent.trim();
 
@@ -165,6 +159,7 @@ def scrape_hkjc_races(date_str: str, venue: str) -> List[Dict]:
                             jockey: jockey,
                             trainer: trainer,
                             form_history: formHistory,
+                            official_rating: officialRating,
                         });
                     }
                     return horses;
@@ -323,6 +318,32 @@ def validate_scraped_data(races: List[Dict]) -> bool:
 # =====================================================================
 # Write to Supabase
 # =====================================================================
+def validate_race_data(races: List[Dict]):
+    """SAFEGUARD #3: Pre-commit assertion gate - validate data before writing."""
+    for race in races:
+        race_id = race['race_id']
+        horses = race['horses']
+
+        # Check minimum horse count
+        if len(horses) < 8:
+            raise Exception(f"[VALIDATION FAIL] {race_id}: Only {len(horses)} horses, expected >= 8")
+
+        # Check horse_no sequence
+        horse_nos = sorted([h['horse_no'] for h in horses])
+        expected_nos = list(range(1, len(horses) + 1))
+        if horse_nos != expected_nos:
+            raise Exception(f"[VALIDATION FAIL] {race_id}: horse_no mismatch: got {horse_nos}, expected {expected_nos}")
+
+        # Check horse names are not empty
+        for h in horses:
+            if not h.get('horse_name') or len(h['horse_name']) < 2:
+                raise Exception(f"[VALIDATION FAIL] {race_id} H{h['horse_no']:02d}: Empty horse name")
+            if not h.get('jockey') or len(h['jockey']) < 2:
+                raise Exception(f"[VALIDATION FAIL] {race_id} H{h['horse_no']:02d}: Empty jockey name")
+
+    print(f"  [OK] Validation passed: {len(races)} races, all data integrity checks passed")
+
+
 def write_to_supabase(supabase: Client, races: List[Dict], dry_run: bool = False):
     if dry_run:
         print("\n[DRY RUN] Would write:")
@@ -330,60 +351,88 @@ def write_to_supabase(supabase: Client, races: List[Dict], dry_run: bool = False
             print(f"  {race['race_id']}: {len(race['horses'])} horses")
         return
 
+    # SAFEGUARD #3: Validate before writing
+    validate_race_data(races)
+
     print(f"\n[Write] Writing {len(races)} races to Supabase...")
     horse_id_map = {}
+    all_runner_rows = []
+    has_official_rating = has_column(supabase, "race_runners", "official_rating")
+    if has_official_rating:
+        print("  [OK] official_rating column found")
+    else:
+        print("  [WARN] official_rating column missing — skipping (run migration first)")
 
     for race in races:
+        race_id = race['race_id']
+
+        # SAFEGUARD #1: Pre-delete old data for this race
+        print(f"  [Purge] Deleting old data for {race_id}...")
+        try:
+            supabase.table('race_runners').delete().eq('race_id', race_id).execute()
+        except Exception as e:
+            print(f"    [WARN] Delete failed: {e}")
+
         race_row = {
-            'race_id': race['race_id'][:32],
+            'race_id': truncate(race_id, 32),
             'race_date': race['race_date'],
             'race_no': race['race_no'],
-            'venue': race['venue'][:4],
+            'venue': truncate(race['venue'], 4),
             'distance': race.get('distance'),
-            'class_level': str(race.get('class_level', ''))[:32] if race.get('class_level') else None,
-            'going': str(race.get('going', ''))[:32] if race.get('going') else None,
+            'class_level': truncate(race.get('class_level'), 32) if race.get('class_level') else None,
+            'going': truncate(race.get('going'), 32) if race.get('going') else None,
         }
         supabase.table('races').upsert(race_row, on_conflict='race_id').execute()
 
         for horse in race['horses']:
             horse_name = horse['horse_name']
+            horse_code = horse.get('horse_code', '')
+
+            # SAFEGUARD #2: Use horse_code as primary identifier
+            if horse_code:
+                horse_id = truncate(horse_code, 16)
+            else:
+                horse_id = f"H{len(horse_id_map) + 1:04d}"
+
             if horse_name not in horse_id_map:
-                horse_code = horse.get('horse_code', '')
-                if horse_code:
-                    horse_id = horse_code[:16]
-                else:
-                    horse_id = f"H{len(horse_id_map) + 1:04d}"
                 horse_id_map[horse_name] = horse_id
                 supabase.table('horses').upsert({
-                    'horse_id': horse_id[:16],
-                    'horse_name': horse_name[:64],
+                    'horse_id': horse_id,
+                    'horse_name': truncate(horse_name, 64),
                 }, on_conflict='horse_id').execute()
 
             jockey = horse.get('jockey', '')
             jockey = jockey.split('(')[0].strip() if '(' in jockey else jockey
 
-            runner_id = f"{race['race_id']}_H{horse['horse_no']:02d}"
+            runner_id = f"{race_id}_H{horse['horse_no']:02d}"
             form_history = horse.get('form_history', '')
-            supabase.table('race_runners').upsert({
-                'runner_id': runner_id[:48],
-                'race_id': race['race_id'][:32],
-                'horse_id': horse_id_map[horse_name][:16],
+            official_rating = horse.get('official_rating')
+            runner_row = {
+                'runner_id': truncate(runner_id, 48),
+                'race_id': truncate(race_id, 32),
+                'horse_id': horse_id,
                 'horse_no': horse['horse_no'],
-                'jockey': jockey[:64],
-                'trainer': horse.get('trainer', '')[:64],
+                'jockey': truncate(jockey, 64),
+                'trainer': truncate(horse.get('trainer', ''), 64),
                 'actual_weight': horse.get('weight'),
                 'draw': horse.get('draw'),
                 'win_odds': horse.get('win_odds', 0),
-                'past_rating': 50.0,
+                'past_rating': official_rating if official_rating else 50.0,
                 'recent_form_score': 50.0,
                 'jockey_win_rate': 0.10,
                 'trainer_win_rate': 0.10,
                 'weight_carried_diff': 0.0,
                 'rest_days': 0,
-                'form_history': form_history[:64] if form_history else None,
-            }, on_conflict='runner_id').execute()
+                'form_history': truncate(form_history, 64) if form_history else None,
+            }
+            if has_official_rating and official_rating:
+                runner_row['official_rating'] = official_rating
+            all_runner_rows.append(runner_row)
 
-        print(f"  [OK] {race['race_id']}: {len(race['horses'])} runners upserted")
+        print(f"  [OK] {race_id}: {len(race['horses'])} runners prepared")
+
+    if all_runner_rows:
+        batch_upsert(supabase, 'race_runners', all_runner_rows, 'runner_id')
 
     print("[Write] Done!")
 

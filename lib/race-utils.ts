@@ -1,4 +1,7 @@
 import type { RaceRow, Race } from './types'
+import { getFormColor } from './color-utils'
+
+export { getFormColor }
 
 /**
  * Compute AI composite score (0-100) from model predictions.
@@ -177,15 +180,6 @@ export function fmtEV(ev: number | null): string {
   if (ev == null) return '-'
   const sign = ev > 0 ? '+' : ''
   return sign + (ev * 100).toFixed(1) + '%'
-}
-
-/**
- * Get form position color.
- */
-export function getFormColor(pos: number): string {
-  if (pos <= 3) return '#10b981'
-  if (pos <= 6) return '#f59e0b'
-  return '#ef4444'
 }
 
 /**

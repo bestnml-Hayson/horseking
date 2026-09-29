@@ -33,39 +33,8 @@ except ImportError:
     print("[FAIL] playwright not installed. Run: pip install playwright && playwright install chromium")
     sys.exit(1)
 
-try:
-    from supabase import create_client, Client
-except ImportError:
-    print("[FAIL] supabase-py not installed. Run: pip install supabase")
-    sys.exit(1)
-
-
-def _load_dotenv():
-    """Load .env.local for Supabase credentials"""
-    env_path = os.path.join(os.path.dirname(__file__), '..', '.env.local')
-    if os.path.exists(env_path):
-        with open(env_path, 'r', encoding='utf-8') as f:
-            for line in f:
-                line = line.strip()
-                if not line or line.startswith('#') or '=' not in line:
-                    continue
-                key, _, value = line.partition('=')
-                os.environ.setdefault(key.strip(), value.strip())
-
-
-_load_dotenv()
-
-
-# =====================================================================
-# Supabase
-# =====================================================================
-def get_supabase() -> Client:
-    url = os.environ.get("SUPABASE_URL") or os.environ.get("NEXT_PUBLIC_SUPABASE_URL")
-    key = os.environ.get("SUPABASE_SERVICE_KEY") or os.environ.get("NEXT_PUBLIC_SUPABASE_ANON_KEY")
-    if not url or not key:
-        print("[FAIL] Missing SUPABASE_URL / SUPABASE_SERVICE_KEY env vars")
-        sys.exit(1)
-    return create_client(url, key)
+sys.path.insert(0, os.path.dirname(__file__))
+from common import get_supabase, batch_upsert, truncate, has_column
 
 
 # =====================================================================
@@ -208,7 +177,7 @@ def scrape_hkjc_race(date_str: str, venue: str, race_no: int) -> Optional[Dict]:
                 };
             }''')
 
-            # Extract results table
+            # Extract results table with header-aware column mapping
             horses = page.evaluate(r'''() => {
                 const tables = document.querySelectorAll('table');
                 let resultsTable = null;
@@ -224,74 +193,91 @@ def scrape_hkjc_race(date_str: str, venue: str, race_no: int) -> Optional[Dict]:
                 if (!resultsTable) return [];
 
                 const rows = resultsTable.querySelectorAll('tr');
+                if (rows.length < 2) return [];
+
+                // Parse header row to find column indices
+                const headerCells = rows[0].querySelectorAll('th, td');
+                const headers = Array.from(headerCells).map(c => c.textContent.trim());
+                const colMap = {};
+                for (let i = 0; i < headers.length; i++) {
+                    const h = headers[i];
+                    if (h === '名次') colMap.position = i;
+                    else if (h === '馬號' || h === '馬匹編號') colMap.horseNo = i;
+                    else if (h === '馬名') colMap.horseName = i;
+                    else if (h === '騎師') colMap.jockey = i;
+                    else if (h === '練馬師') colMap.trainer = i;
+                    else if (h === '負磅' || h === '配磅') colMap.weight = i;
+                    else if (h === '排位檔位' || h === '檔位') colMap.draw = i;
+                    else if (h === '評分' || h === '評分*') colMap.rating = i;
+                    else if (h === '完成時間' || h === '時間') colMap.finishTime = i;
+                    else if (h === '獨贏賠率' || h === '賠率') colMap.winOdds = i;
+                }
+
+                // Fallback to positional mapping if headers not found
+                const hasHeaderMap = Object.keys(colMap).length >= 5;
+
                 const horses = [];
 
-                for (const row of rows) {
+                for (let ri = 1; ri < rows.length; ri++) {
+                    const row = rows[ri];
                     const cells = row.querySelectorAll('td');
                     if (cells.length < 10) continue;
 
                     const texts = Array.from(cells).map(c => c.textContent.trim());
 
-                    // Position
-                    let position;
-                    try {
-                        position = parseInt(texts[0]);
-                        if (isNaN(position) || position < 1) continue;
-                    } catch (e) { continue; }
+                    let position, horseNo, horseNameRaw, jockey, trainer;
+                    let weight = null, draw = null, rating = null;
+                    let finishTime = null, winOdds = null;
 
-                    // Horse number
-                    let horseNo;
-                    try {
-                        horseNo = parseInt(texts[1]);
-                        if (isNaN(horseNo)) continue;
-                    } catch (e) { continue; }
+                    if (hasHeaderMap) {
+                        const get = (key) => colMap[key] !== undefined ? texts[colMap[key]] : null;
+                        try { position = parseInt(get('position')); if (isNaN(position) || position < 1) continue; } catch(e) { continue; }
+                        try { horseNo = parseInt(get('horseNo')); if (isNaN(horseNo)) continue; } catch(e) { continue; }
+                        horseNameRaw = get('horseName') || '';
+                        jockey = get('jockey') || '';
+                        trainer = get('trainer') || '';
+                        try { weight = parseFloat(get('weight')); if (isNaN(weight)) weight = null; } catch(e) {}
+                        try { draw = parseInt(get('draw')); if (isNaN(draw)) draw = null; } catch(e) {}
+                        try { rating = parseFloat(get('rating')); if (isNaN(rating)) rating = null; } catch(e) {}
 
-                    // Horse name
-                    let horseNameRaw = texts[2] || '';
+                        let ftStr = get('finishTime');
+                        if (ftStr) {
+                            ftStr = ftStr.replace(/[()]/g, '');
+                            if (ftStr && ftStr !== '---' && ftStr !== '-') {
+                                const tm = ftStr.match(/(\d+):(\d+\.\d+)/);
+                                if (tm) finishTime = parseInt(tm[1]) * 60 + parseFloat(tm[2]);
+                                else { try { finishTime = parseFloat(ftStr); } catch(e) {} }
+                            }
+                        }
+                        try { winOdds = parseFloat(get('winOdds')); if (isNaN(winOdds)) winOdds = null; } catch(e) {}
+                    } else {
+                        // Positional fallback
+                        try { position = parseInt(texts[0]); if (isNaN(position) || position < 1) continue; } catch(e) { continue; }
+                        try { horseNo = parseInt(texts[1]); if (isNaN(horseNo)) continue; } catch(e) { continue; }
+                        horseNameRaw = texts[2] || '';
+                        jockey = texts[3] || '';
+                        trainer = texts[4] || '';
+                        try { weight = parseFloat(texts[5]); if (isNaN(weight)) weight = null; } catch(e) {}
+                        try { draw = parseInt(texts[7]); if (isNaN(draw)) draw = null; } catch(e) {}
+                        // Column 6 or 8 might be rating depending on layout
+                        try {
+                            let ratingVal = parseFloat(texts[6]);
+                            if (!isNaN(ratingVal) && ratingVal > 0 && ratingVal <= 140) rating = ratingVal;
+                        } catch(e) {}
+                        if (texts.length > 10) {
+                            let ftStr = texts[10].trim().replace(/[()]/g, '');
+                            if (ftStr && ftStr !== '---' && ftStr !== '-') {
+                                const tm = ftStr.match(/(\d+):(\d+\.\d+)/);
+                                if (tm) finishTime = parseInt(tm[1]) * 60 + parseFloat(tm[2]);
+                                else { try { finishTime = parseFloat(ftStr); } catch(e) {} }
+                            }
+                        }
+                        try { winOdds = parseFloat(texts[11]); if (isNaN(winOdds)) winOdds = null; } catch(e) {}
+                    }
+
                     const horseCodeMatch = horseNameRaw.match(/\(([A-Z]\d+)\)/);
                     const horseCode = horseCodeMatch ? horseCodeMatch[1] : `H${horseNo.toString().padStart(4, '0')}`;
                     horseNameRaw = horseNameRaw.replace(/\([A-Z]\d+\)/g, '').trim();
-
-                    // Jockey & Trainer
-                    const jockey = texts[3] || '';
-                    const trainer = texts[4] || '';
-
-                    // Weight
-                    let weight = null;
-                    try {
-                        weight = parseFloat(texts[5]);
-                        if (isNaN(weight)) weight = null;
-                    } catch (e) {}
-
-                    // Draw
-                    let draw = null;
-                    try {
-                        draw = parseInt(texts[7]);
-                        if (isNaN(draw)) draw = null;
-                    } catch (e) {}
-
-                    // Finish time
-                    let finishTime = null;
-                    if (texts.length > 10) {
-                        let ftStr = texts[10].trim().replace(/[()]/g, '');
-                        if (ftStr && ftStr !== '---' && ftStr !== '-') {
-                            const tm = ftStr.match(/(\\d+):(\\d+\\.\\d+)/);
-                            if (tm) {
-                                finishTime = parseInt(tm[1]) * 60 + parseFloat(tm[2]);
-                            } else {
-                                try {
-                                    finishTime = parseFloat(ftStr);
-                                } catch (e) {}
-                            }
-                        }
-                    }
-
-                    // Win odds
-                    let winOdds = null;
-                    try {
-                        winOdds = parseFloat(texts[11]);
-                        if (isNaN(winOdds)) winOdds = null;
-                    } catch (e) {}
 
                     horses.push({
                         horse_no: horseNo,
@@ -301,6 +287,7 @@ def scrape_hkjc_race(date_str: str, venue: str, race_no: int) -> Optional[Dict]:
                         trainer: trainer,
                         weight: weight,
                         draw: draw,
+                        official_rating: rating,
                         finish_position: position,
                         finish_time: finishTime,
                         win_odds: winOdds,
@@ -405,6 +392,28 @@ def write_core_tables(supabase: Client, all_races: List[Dict],
                       jockey_wr: Dict, trainer_wr: Dict, horse_history: Dict):
     print(f"\n[Step 3] Writing core tables...")
 
+    for race in all_races:
+        horses = race.get("horses", [])
+        n = len(horses)
+        if n < 4:
+            raise Exception(f"[VALIDATION FAIL] {race['race_id']}: Only {n} horses, expected >= 4")
+        horse_nos = sorted(h["horse_no"] for h in horses)
+        expected = list(range(1, n + 1))
+        if horse_nos != expected:
+            raise Exception(f"[VALIDATION FAIL] {race['race_id']}: horse_no {horse_nos} != expected {expected}")
+        for h in horses:
+            if not h.get("horse_name") or len(h["horse_name"]) < 2:
+                raise Exception(f"[VALIDATION FAIL] {race['race_id']} H{h['horse_no']:02d}: Empty horse name")
+            if not h.get("jockey") or len(h["jockey"]) < 2:
+                raise Exception(f"[VALIDATION FAIL] {race['race_id']} H{h['horse_no']:02d}: Empty jockey name")
+    print(f"  [OK] Validation passed: {len(all_races)} races")
+
+    has_official_rating = has_column(supabase, "race_runners", "official_rating")
+    if has_official_rating:
+        print("  [OK] official_rating column found")
+    else:
+        print("  [INFO] official_rating column not yet added (run migrations/add_quantitative_fields.sql)")
+
     horses_map = {}
     races_rows = []
     runners_rows = []
@@ -412,13 +421,13 @@ def write_core_tables(supabase: Client, all_races: List[Dict],
     for race in all_races:
         race_id = race["race_id"]
         races_rows.append({
-            "race_id": race_id[:32],
+            "race_id": truncate(race_id, 32),
             "race_date": race["race_date"],
-            "venue": race["venue"][:4],
+            "venue": truncate(race["venue"], 4),
             "race_no": race["race_no"],
             "distance": race.get("distance"),
-            "going": str(race.get("going", ""))[:32] if race.get("going") else None,
-            "class_level": str(race.get("class_level", ""))[:32] if race.get("class_level") else None,
+            "going": truncate(race.get("going"), 32) if race.get("going") else None,
+            "class_level": truncate(race.get("class_level"), 32) if race.get("class_level") else None,
         })
 
         for h in race.get("horses", []):
@@ -430,53 +439,46 @@ def write_core_tables(supabase: Client, all_races: List[Dict],
                 }
 
             runner_id = f"{race_id}_H{h['horse_no']:02d}"
-            runners_rows.append({
+            official_rating = h.get("official_rating")
+            runner_row = {
                 "runner_id": runner_id[:48],
                 "race_id": race_id[:32],
                 "horse_id": hc[:16],
                 "horse_no": h["horse_no"],
-                "jockey": h.get("jockey", "")[:64],
-                "trainer": h.get("trainer", "")[:64],
+                "jockey": truncate(h.get("jockey", ""), 64),
+                "trainer": truncate(h.get("trainer", ""), 64),
                 "actual_weight": h.get("weight"),
                 "draw": h.get("draw"),
                 "win_odds": h.get("win_odds"),
                 "finish_position": h.get("finish_position"),
                 "finish_time": h.get("finish_time"),
-                "past_rating": 50.0,
+                "past_rating": official_rating if official_rating else 50.0,
                 "recent_form_score": compute_recent_form(hc, race["race_date"], horse_history),
                 "jockey_win_rate": jockey_wr.get(h.get("jockey", ""), 0.10),
                 "trainer_win_rate": trainer_wr.get(h.get("trainer", ""), 0.10),
                 "weight_carried_diff": 0.0,
                 "rest_days": compute_rest_days(hc, race["race_date"], horse_history),
-            })
+            }
+            if has_official_rating and official_rating:
+                runner_row["official_rating"] = official_rating
+            runners_rows.append(runner_row)
 
     horses_rows = list(horses_map.values())
 
-    _batch_upsert(supabase, "horses", horses_rows, "horse_id")
-    _batch_upsert(supabase, "races", races_rows, "race_id")
-    _batch_upsert(supabase, "race_runners", runners_rows, "runner_id")
+    race_ids = [r["race_id"] for r in races_rows]
+    for rid in race_ids:
+        try:
+            supabase.table("race_runners").delete().eq("race_id", rid).execute()
+        except Exception:
+            pass
+    print(f"  [OK] Cleared old race_runners for {len(race_ids)} races")
+
+    batch_upsert(supabase, "horses", horses_rows, "horse_id")
+    batch_upsert(supabase, "races", races_rows, "race_id")
+    batch_upsert(supabase, "race_runners", runners_rows, "runner_id")
 
     print(f"  [OK] {len(horses_rows)} horses, {len(races_rows)} races, {len(runners_rows)} runners")
     return len(races_rows), len(runners_rows)
-
-
-def _batch_upsert(supabase: Client, table: str, rows: List[Dict],
-                  pk: str, batch_size: int = 200):
-    total_ok = 0
-    for i in range(0, len(rows), batch_size):
-        batch = rows[i:i + batch_size]
-        try:
-            result = supabase.table(table).upsert(batch, on_conflict=pk).execute()
-            total_ok += len(result.data) if result.data else len(batch)
-        except Exception as e:
-            print(f"    [ERROR] {table} batch {i // batch_size + 1}: {e}")
-            for row in batch:
-                try:
-                    supabase.table(table).upsert(row, on_conflict=pk).execute()
-                    total_ok += 1
-                except Exception:
-                    pass
-    print(f"    {table}: {total_ok}/{len(rows)} rows upserted")
 
 
 # =====================================================================

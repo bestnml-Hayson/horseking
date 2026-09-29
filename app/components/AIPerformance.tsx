@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { HorseDetailDrawer } from './HorseDetailDrawer'
+import type { ComparisonRow, Race, RaceResult, AIPerformanceRecord } from '@/lib/types'
 
 interface PerfSummary {
   win_rate: number
@@ -28,25 +29,6 @@ interface PerfRecord {
   market_move: string
 }
 
-interface ComparisonRow {
-  rank: number
-  runner_id: string
-  horse_no: number
-  horse_id: string
-  horse_name: string
-  jockey: string | null
-  trainer: string | null
-  draw: number | null
-  win_odds: number | null
-  finish_position: number | null
-  predicted_prob: number | null
-  expected_value: number | null
-  kelly_fraction: number | null
-  is_top3_pick: boolean
-  finished_in_top3: boolean
-  is_winner: boolean
-}
-
 interface KeyFactor {
   type: string
   description: string
@@ -56,12 +38,12 @@ interface KeyFactor {
 interface RaceDetail {
   ok: boolean
   race_id: string
-  race_info: any
-  results: any
-  performance: any
+  race_info: Race | null
+  results: RaceResult[] | null
+  performance: AIPerformanceRecord
   comparison: ComparisonRow[]
   key_factors: KeyFactor[]
-  top3_picks: any[]
+  top3_picks: unknown[]
 }
 
 export function AIPerformance() {
@@ -92,7 +74,7 @@ export function AIPerformance() {
         setAvailableDates(json.dates)
         setSelectedDate(json.dates[0])
       }
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error('Failed to fetch dates:', e)
     }
   }, [])
@@ -119,8 +101,9 @@ export function AIPerformance() {
       } else {
         setError(json.error ?? 'Failed to load performance data')
       }
-    } catch (e: any) {
-      setError(e.message ?? 'Network error')
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Network error'
+      setError(msg)
     } finally {
       setLoading(false)
     }

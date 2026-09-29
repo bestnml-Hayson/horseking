@@ -9,6 +9,7 @@ import {
   getFormColor,
   isOddsPending,
 } from '@/lib/race-utils'
+import { PICK_ACCENT_COLORS, MUTED_TEXT_COLOR } from '@/lib/color-utils'
 
 interface TopPicksCardsProps {
   picks: RaceRow[]
@@ -18,7 +19,6 @@ interface TopPicksCardsProps {
 }
 
 const PICK_LABELS = ['1號膽', '2號膽', '3號膽', '4號膽']
-const PICK_COLORS = ['#f59e0b', '#94a3b8', '#d97706', '#38bdf8']
 const RANK_CLASSES = ['rank-gold', 'rank-silver', 'rank-bronze', 'rank-sky']
 
 function fmtPct(p: number | null): string {
@@ -52,7 +52,7 @@ export function TopPicksCards({ picks, totalRunners, paceLabel, onHorseClick }: 
           const kelly = pred?.kelly_fraction ?? null
           const form = row.form_history ?? ''
           const odds = fmtOdds(row.win_odds)
-          const color = PICK_COLORS[idx]
+          const color = PICK_ACCENT_COLORS[idx]
           const formPositions = form ? form.split('-').map(Number).filter(n => !isNaN(n)) : []
 
           return (
@@ -129,7 +129,7 @@ export function TopPicksCards({ picks, totalRunners, paceLabel, onHorseClick }: 
                       </span>
                     ))
                   ) : (
-                    <span className="form-position" style={{ color: '#64748b' }}>暫無數據</span>
+                    <span className="form-position" style={{ color: MUTED_TEXT_COLOR }}>暫無數據</span>
                   )}
                 </div>
               </div>

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getServerSupabase } from '@/lib/supabase-server'
+import type { AIPerformanceRecord } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
 
@@ -7,14 +8,14 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url)
     const date = searchParams.get('date')
-    
+
     const supabase = getServerSupabase()
 
     let query = supabase
       .from('ai_performance')
       .select('*')
       .order('analysis_date', { ascending: false })
-    
+
     if (date) {
       query = query.eq('race_date', date)
     }
@@ -35,7 +36,7 @@ export async function GET(req: Request) {
       return NextResponse.json({ ok: false, error: perfError.message }, { status: 500 })
     }
 
-    const records = perfData ?? []
+    const records = (perfData ?? []) as unknown as AIPerformanceRecord[]
 
     if (records.length === 0) {
       return NextResponse.json({
@@ -47,11 +48,11 @@ export async function GET(req: Request) {
     }
 
     const totalRaces = records.length
-    const top1Hits = records.filter((r: any) => r.top1_hit).length
-    const top3TotalHits = records.reduce((sum: number, r: any) => sum + (r.top3_hit_count ?? 0), 0)
-    const totalBets = records.reduce((sum: number, r: any) => sum + (r.total_bets ?? 0), 0)
-    const totalReturns = records.reduce((sum: number, r: any) => sum + (r.total_returns ?? 0), 0)
-    const avgRoi = records.reduce((sum: number, r: any) => sum + (r.roi_percent ?? 0), 0) / totalRaces
+    const top1Hits = records.filter((r) => r.top1_hit).length
+    const top3TotalHits = records.reduce((sum, r) => sum + (r.top3_hit_count ?? 0), 0)
+    const totalBets = records.reduce((sum, r) => sum + (r.total_bets ?? 0), 0)
+    const totalReturns = records.reduce((sum, r) => sum + (r.total_returns ?? 0), 0)
+    const avgRoi = records.reduce((sum, r) => sum + (r.roi_percent ?? 0), 0) / totalRaces
 
     const summary = {
       win_rate: totalRaces > 0 ? (top1Hits / totalRaces) * 100 : 0,
@@ -69,8 +70,9 @@ export async function GET(req: Request) {
       summary,
       records,
     })
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Internal error'
     console.error('[API /performance] unexpected error:', err)
-    return NextResponse.json({ ok: false, error: err.message ?? 'Internal error' }, { status: 500 })
+    return NextResponse.json({ ok: false, error: message }, { status: 500 })
   }
 }

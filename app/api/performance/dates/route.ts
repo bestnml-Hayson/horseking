@@ -19,7 +19,7 @@ export async function GET() {
     }
 
     const dateSet = new Set<string>()
-    for (const d of (perfDates ?? []) as any[]) {
+    for (const d of ((perfDates ?? []) as { race_date: string | null }[])) {
       if (d.race_date) dateSet.add(d.race_date)
     }
 
@@ -32,8 +32,9 @@ export async function GET() {
       ok: true,
       dates: uniqueDates,
     })
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Internal error'
     console.error('[API /performance/dates] error:', err)
-    return NextResponse.json({ ok: false, error: err.message ?? 'Internal error' }, { status: 500 })
+    return NextResponse.json({ ok: false, error: message }, { status: 500 })
   }
 }

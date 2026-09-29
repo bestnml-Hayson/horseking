@@ -157,23 +157,26 @@ export async function fetchHorseDetail(horseId: string): Promise<HorseDetail | n
     console.error('[fetchHorseDetail] race_results error:', resultsError)
   }
 
-  const raceHistory = (results ?? []).map((r: any) => ({
-    race_id: r.race_id,
-    race_date: r.race_date ?? null,
-    venue: r.venue ?? null,
-    race_no: r.race_no ?? null,
-    distance: r.distance ?? null,
-    going: r.going ?? null,
-    finish_position: r.finish_position ?? null,
-    horse_no: r.horse_no,
-    win_odds: r.win_odds,
-    jockey: r.jockey,
-    trainer: r.trainer,
-    weight_carried: null,
-    draw: null,
-    finish_time: null,
-    form_history: null,
-  }))
+  const raceHistory = (results ?? []).map((r) => {
+    const row = r as unknown as { race_id: string; race_date: string | null; venue: string | null; race_no: number | null; distance: number | null; going: string | null; finish_position: number | null; horse_no: number; win_odds: number | null; jockey: string | null; trainer: string | null }
+    return {
+      race_id: row.race_id,
+      race_date: row.race_date ?? null,
+      venue: row.venue ?? null,
+      race_no: row.race_no ?? null,
+      distance: row.distance ?? null,
+      going: row.going ?? null,
+      finish_position: row.finish_position ?? null,
+      horse_no: row.horse_no,
+      win_odds: row.win_odds,
+      jockey: row.jockey,
+      trainer: row.trainer,
+      weight_carried: null,
+      draw: null,
+      finish_time: null,
+      form_history: null,
+    }
+  })
 
   const totalStarts = raceHistory.length
   const totalWins = raceHistory.filter(r => r.finish_position === 1).length
