@@ -74,6 +74,7 @@ export interface HorseRaceHistory {
   race_id: string
   race_date: string | null
   venue: string | null
+  track_course: string | null
   race_no: number | null
   distance: number | null
   going: string | null

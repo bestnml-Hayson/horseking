@@ -1729,6 +1729,13 @@ html, body {
   background: #d2992220;
   color: #d29922;
 }
+.track-course-tag {
+  display: inline-block;
+  font-size: 10px;
+  color: #8b949e;
+  margin-left: 4px;
+  font-weight: 500;
+}
 .finish-badge {
   display: inline-flex;
   align-items: center;

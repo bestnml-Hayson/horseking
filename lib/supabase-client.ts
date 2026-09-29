@@ -158,11 +158,12 @@ export async function fetchHorseDetail(horseId: string): Promise<HorseDetail | n
   }
 
   const raceHistory = (results ?? []).map((r) => {
-    const row = r as unknown as { race_id: string; race_date: string | null; venue: string | null; race_no: number | null; distance: number | null; going: string | null; finish_position: number | null; horse_no: number; win_odds: number | null; jockey: string | null; trainer: string | null }
+    const row = r as unknown as { race_id: string; race_date: string | null; venue: string | null; track_course: string | null; race_no: number | null; distance: number | null; going: string | null; finish_position: number | null; horse_no: number; win_odds: number | null; jockey: string | null; trainer: string | null }
     return {
       race_id: row.race_id,
       race_date: row.race_date ?? null,
       venue: row.venue ?? null,
+      track_course: row.track_course ?? null,
       race_no: row.race_no ?? null,
       distance: row.distance ?? null,
       going: row.going ?? null,
@@ -209,4 +210,47 @@ export async function fetchHorseDetail(horseId: string): Promise<HorseDetail | n
     best_distance: null,
     jockey_partners: [],
   }
+}
+
+/**
+ * Fetch recent finish positions from race_results for a batch of horse IDs.
+ * Returns Map<horseId, formString> where formString is dash-separated positions (e.g. "6-7-3-9-9-5").
+ */
+export async function fetchRecentForm(horseIds: string[]): Promise<Map<string, string>> {
+  if (horseIds.length === 0) return new Map()
+  const supabase = getSupabase()
+  const formMap = new Map<string, string>()
+
+  const batchSize = 50
+  for (let i = 0; i < horseIds.length; i += batchSize) {
+    const batch = horseIds.slice(i, i + batchSize)
+    const { data, error } = await supabase
+      .from('race_results')
+      .select('horse_no, finish_position, race_date')
+      .in('horse_no', batch)
+      .order('race_date', { ascending: false })
+      .limit(200)
+
+    if (error) {
+      console.error('[fetchRecentForm] error:', error)
+      continue
+    }
+
+    const grouped = new Map<string, number[]>()
+    for (const r of (data ?? [])) {
+      const row = r as { horse_no: string; finish_position: number | null; race_date: string | null }
+      if (row.finish_position != null && row.finish_position > 0) {
+        const positions = grouped.get(row.horse_no) ?? []
+        positions.push(row.finish_position)
+        grouped.set(row.horse_no, positions)
+      }
+    }
+
+    for (const [horseId, positions] of Array.from(grouped.entries())) {
+      const top6 = positions.slice(0, 6)
+      formMap.set(horseId, top6.join('-'))
+    }
+  }
+
+  return formMap
 }

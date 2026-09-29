@@ -37,7 +37,7 @@ export async function GET(
     if (raceIds.length > 0) {
       const { data: raceMeta } = await supabase
         .from('races')
-        .select('race_id, race_date, venue, race_no, distance, going')
+        .select('race_id, race_date, venue, race_no, distance, going, track_course')
         .in('race_id', raceIds)
 
       raceMetaMap = new Map((raceMeta ?? []).map((r) => {
@@ -53,6 +53,7 @@ export async function GET(
         race_id: row.race_id,
         race_date: meta?.race_date ?? null,
         venue: meta?.venue ?? null,
+        track_course: meta?.track_course ?? null,
         race_no: meta?.race_no ?? null,
         distance: meta?.distance ?? null,
         going: meta?.going ?? null,

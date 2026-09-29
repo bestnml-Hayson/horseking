@@ -340,6 +340,9 @@ export function HorseDetailDrawer({ horseId, horseName, raceRow, onClose }: Hors
                               <span className={`venue-tag venue-${(race.venue ?? '').toLowerCase()}`}>
                                 {race.venue ? (VENUE_LABEL[race.venue] ?? race.venue) : '-'}
                               </span>
+                              {race.track_course && (
+                                <span className="track-course-tag"> {race.track_course}</span>
+                              )}
                             </td>
                             <td>{race.distance ? `${race.distance}m` : '-'}</td>
                             <td>{race.going ?? '-'}</td>

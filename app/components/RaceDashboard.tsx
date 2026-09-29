@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { fetchLatestRaces, fetchRaceRunners, fetchPredictions, fetchHorses } from '@/lib/supabase-client'
+import { fetchLatestRaces, fetchRaceRunners, fetchPredictions, fetchHorses, fetchRecentForm } from '@/lib/supabase-client'
 import type { Race, RaceRunner, ModelPrediction, Horse, RaceRow } from '@/lib/types'
 import { getTopPicks, estimateRaceTime, predictPace, isOddsPending, computeClientPredictions } from '@/lib/race-utils'
 import { PacingBriefing } from './PacingBriefing'
@@ -49,6 +49,17 @@ export function RaceDashboard() {
         horse_name: horseMap.get(r.horse_id)?.horse_name ?? r.horse_id,
         prediction: predMap.get(r.runner_id) ?? null,
       }))
+
+      // Fetch recent form from race_results to populate form_history
+      const horseIds = Array.from(new Set(runners.map(r => r.horse_id)))
+      const formMap = await fetchRecentForm(horseIds)
+      raceRows = raceRows.map(r => {
+        const formFromResults = formMap.get(r.horse_id)
+        if (formFromResults) {
+          return { ...r, form_history: formFromResults }
+        }
+        return r
+      })
 
       if (predictions.length === 0 && raceRows.length > 0) {
         console.log('[RaceDashboard] No predictions from DB, computing client-side fallback')
