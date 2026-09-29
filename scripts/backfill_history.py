@@ -37,6 +37,23 @@ sys.path.insert(0, os.path.dirname(__file__))
 from common import get_supabase, batch_upsert, truncate, has_column
 
 
+# Valid going values for HKJC races
+VALID_GOING_VALUES = {'好至黏快', '好至快地', '好至黏地', '好地', '快地', '慢地', '軟地', '黏地', '好至軟地'}
+
+def validate_going(going: Optional[str]) -> Optional[str]:
+    """Validate going value. Returns the going if valid, None otherwise."""
+    if not going:
+        return None
+    going_stripped = going.strip()
+    if going_stripped in VALID_GOING_VALUES:
+        return going_stripped
+    # Check if it contains a valid going value
+    for valid in VALID_GOING_VALUES:
+        if valid in going_stripped:
+            return valid
+    return None
+
+
 # =====================================================================
 # 1. Fetch race dates from HKJC (Playwright)
 # =====================================================================
@@ -94,12 +111,14 @@ def fetch_race_dates() -> List[str]:
 
 
 def _generate_fallback_dates(months: int = 3) -> List[str]:
+    """Generate fallback race dates (HKJC races on Tue/Wed/Thu/Sat/Sun)."""
     today = datetime.now()
     cutoff = today - timedelta(days=months * 30)
     dates = []
     current = cutoff
     while current <= today:
-        if current.weekday() in (2, 5, 6):
+        # HKJC race days: Tue(1), Wed(2), Thu(3), Sat(5), Sun(6)
+        if current.weekday() in (1, 2, 3, 5, 6):
             dates.append(current.strftime("%Y-%m-%d"))
         current += timedelta(days=1)
     dates.sort(reverse=True)
@@ -118,258 +137,282 @@ def filter_dates_by_months(dates: List[str], months: int) -> List[str]:
 # =====================================================================
 # 2. Scrape single race result (Playwright)
 # =====================================================================
-def scrape_hkjc_race(date_str: str, venue: str, race_no: int) -> Optional[Dict]:
-    """Scrape a single race result using Playwright."""
+def scrape_hkjc_race(page, date_str: str, venue: str, race_no: int) -> Optional[Dict]:
+    """Scrape a single race result using shared Playwright page."""
+    if race_no == 1:
+        print(f"    [DEBUG] Scraping {date_str} {venue} R{race_no}")
     y, m, d = date_str.split("-")
     url = f"https://racing.hkjc.com/racing/information/Chinese/Racing/LocalResults.aspx?RaceDate={y}/{m}/{d}&Racecourse={venue}&RaceNo={race_no}"
 
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True, args=['--no-sandbox', '--disable-gpu'])
-        page = browser.new_page()
-        try:
-            page.goto(url, wait_until='domcontentloaded', timeout=20000)
-            page.wait_for_timeout(2000)
+    try:
+        page.goto(url, wait_until='domcontentloaded', timeout=20000)
+        page.wait_for_timeout(1500)
 
-            # Check if race exists
-            has_content = page.evaluate(r'''() => {
-                const text = document.body.innerText;
-                return text.includes('場地狀況') || text.includes('名次');
-            }''')
+        # Check if race exists
+        has_content = page.evaluate(r'''() => {
+            const text = document.body.innerText;
+            return text.includes('場地狀況') || text.includes('名次');
+        }''')
 
-            if not has_content:
-                return None
+        if race_no == 1:
+            print(f"    [DEBUG] has_content={has_content}")
 
-            # Extract race metadata
-            race_meta = page.evaluate(r'''() => {
-                const text = document.body.innerText;
-                const lines = text.split('\\n');
+        if not has_content:
+            return None
 
-                let startIdx = -1;
-                for (let i = 0; i < lines.length; i++) {
-                    if (/第\\s*\\d+\\s*場/.test(lines[i])) {
-                        startIdx = i;
-                        break;
-                    }
+        # Extract race metadata
+        race_meta = page.evaluate(r'''() => {
+            const text = document.body.innerText;
+            const lines = text.split('\\n');
+
+            let startIdx = -1;
+            for (let i = 0; i < lines.length; i++) {
+                if (/第\\s*\\d+\\s*場/.test(lines[i])) {
+                    startIdx = i;
+                    break;
                 }
-
-                let endIdx = lines.length;
-                if (startIdx >= 0) {
-                    for (let i = startIdx + 1; i < lines.length; i++) {
-                        if (lines[i].includes('馬匹編號') || lines[i].includes('排位表')) {
-                            endIdx = i;
-                            break;
-                        }
-                    }
-                } else {
-                    startIdx = 0;
-                }
-
-                const block = lines.slice(startIdx, endIdx).join(' ');
-
-                const distMatch = block.match(/(\\d{3,4})米/);
-                const goingMatch = block.match(/好至黏快|好至快地|好至黏地|好地|快地|慢地|軟地|黏地/);
-                const classMatch = block.match(/第[一二三四五六七八九十]+班/);
-
-                return {
-                    distance: distMatch ? parseInt(distMatch[1]) : null,
-                    going: goingMatch ? goingMatch[0] : null,
-                    class_level: classMatch ? classMatch[0] : null,
-                };
-            }''')
-
-            # Extract results table with header-aware column mapping
-            horses = page.evaluate(r'''() => {
-                const tables = document.querySelectorAll('table');
-                let resultsTable = null;
-
-                for (const table of tables) {
-                    const text = table.innerText;
-                    if (text.includes('名次') && text.includes('獨贏')) {
-                        resultsTable = table;
-                        break;
-                    }
-                }
-
-                if (!resultsTable) return [];
-
-                const rows = resultsTable.querySelectorAll('tr');
-                if (rows.length < 2) return [];
-
-                // Parse header row to find column indices
-                const headerCells = rows[0].querySelectorAll('th, td');
-                const headers = Array.from(headerCells).map(c => c.textContent.trim());
-                const colMap = {};
-                for (let i = 0; i < headers.length; i++) {
-                    const h = headers[i];
-                    if (h === '名次') colMap.position = i;
-                    else if (h === '馬號' || h === '馬匹編號') colMap.horseNo = i;
-                    else if (h === '馬名') colMap.horseName = i;
-                    else if (h === '騎師') colMap.jockey = i;
-                    else if (h === '練馬師') colMap.trainer = i;
-                    else if (h === '負磅' || h === '配磅') colMap.weight = i;
-                    else if (h === '排位檔位' || h === '檔位') colMap.draw = i;
-                    else if (h === '評分' || h === '評分*') colMap.rating = i;
-                    else if (h === '完成時間' || h === '時間') colMap.finishTime = i;
-                    else if (h === '獨贏賠率' || h === '賠率') colMap.winOdds = i;
-                    else if (h === '距離') colMap.margin = i;
-                    else if (h === '體重') colMap.declaredWeight = i;
-                }
-
-                // Fallback to positional mapping if headers not found
-                const hasHeaderMap = Object.keys(colMap).length >= 5;
-
-                const horses = [];
-
-                for (let ri = 1; ri < rows.length; ri++) {
-                    const row = rows[ri];
-                    const cells = row.querySelectorAll('td');
-                    if (cells.length < 10) continue;
-
-                    const texts = Array.from(cells).map(c => c.textContent.trim());
-
-                    let position, horseNo, horseNameRaw, jockey, trainer;
-                    let weight = null, draw = null, rating = null;
-                    let finishTime = null, winOdds = null;
-                    let margin = null, declaredWeight = null;
-
-                    if (hasHeaderMap) {
-                        const get = (key) => colMap[key] !== undefined ? texts[colMap[key]] : null;
-                        try { position = parseInt(get('position')); if (isNaN(position) || position < 1) continue; } catch(e) { continue; }
-                        try { horseNo = parseInt(get('horseNo')); if (isNaN(horseNo)) continue; } catch(e) { continue; }
-                        horseNameRaw = get('horseName') || '';
-                        jockey = get('jockey') || '';
-                        trainer = get('trainer') || '';
-                        try { weight = parseFloat(get('weight')); if (isNaN(weight)) weight = null; } catch(e) {}
-                        try { draw = parseInt(get('draw')); if (isNaN(draw)) draw = null; } catch(e) {}
-                        try { rating = parseFloat(get('rating')); if (isNaN(rating)) rating = null; } catch(e) {}
-
-                        let ftStr = get('finishTime');
-                        if (ftStr) {
-                            ftStr = ftStr.replace(/[()]/g, '');
-                            if (ftStr && ftStr !== '---' && ftStr !== '-') {
-                                const tm = ftStr.match(/(\d+):(\d+\.\d+)/);
-                                if (tm) finishTime = parseInt(tm[1]) * 60 + parseFloat(tm[2]);
-                                else { try { finishTime = parseFloat(ftStr); } catch(e) {} }
-                            }
-                        }
-                        try { winOdds = parseFloat(get('winOdds')); if (isNaN(winOdds)) winOdds = null; } catch(e) {}
-
-                        if (colMap.margin !== undefined) {
-                            try {
-                                const marginStr = texts[colMap.margin].trim();
-                                if (marginStr && marginStr !== '---' && marginStr !== '-') {
-                                    const frac = marginStr.match(/(\d+)[-\s]*([\d]+)\/([\d]+)/);
-                                    if (frac) margin = parseInt(frac[1]) + parseInt(frac[2]) / parseInt(frac[3]);
-                                    else { const simple = parseFloat(marginStr); if (!isNaN(simple)) margin = simple; }
-                                }
-                            } catch(e) {}
-                        }
-                        if (colMap.declaredWeight !== undefined) {
-                            try {
-                                const dwVal = parseInt(texts[colMap.declaredWeight].trim());
-                                if (!isNaN(dwVal) && dwVal > 800 && dwVal < 1500) declaredWeight = dwVal;
-                            } catch(e) {}
-                        }
-                    } else {
-                        // Positional fallback
-                        try { position = parseInt(texts[0]); if (isNaN(position) || position < 1) continue; } catch(e) { continue; }
-                        try { horseNo = parseInt(texts[1]); if (isNaN(horseNo)) continue; } catch(e) { continue; }
-                        horseNameRaw = texts[2] || '';
-                        jockey = texts[3] || '';
-                        trainer = texts[4] || '';
-                        try { weight = parseFloat(texts[5]); if (isNaN(weight)) weight = null; } catch(e) {}
-                        try { draw = parseInt(texts[7]); if (isNaN(draw)) draw = null; } catch(e) {}
-                        // Column 6 or 8 might be rating depending on layout
-                        try {
-                            let ratingVal = parseFloat(texts[6]);
-                            if (!isNaN(ratingVal) && ratingVal > 0 && ratingVal <= 140) rating = ratingVal;
-                        } catch(e) {}
-                        if (texts.length > 10) {
-                            let ftStr = texts[10].trim().replace(/[()]/g, '');
-                            if (ftStr && ftStr !== '---' && ftStr !== '-') {
-                                const tm = ftStr.match(/(\d+):(\d+\.\d+)/);
-                                if (tm) finishTime = parseInt(tm[1]) * 60 + parseFloat(tm[2]);
-                                else { try { finishTime = parseFloat(ftStr); } catch(e) {} }
-                            }
-                        }
-                        try { winOdds = parseFloat(texts[11]); if (isNaN(winOdds)) winOdds = null; } catch(e) {}
-                    }
-
-                    const horseCodeMatch = horseNameRaw.match(/\(([A-Z]\d+)\)/);
-                    const horseCode = horseCodeMatch ? horseCodeMatch[1] : `H${horseNo.toString().padStart(4, '0')}`;
-                    horseNameRaw = horseNameRaw.replace(/\([A-Z]\d+\)/g, '').trim();
-
-                    horses.push({
-                        horse_no: horseNo,
-                        horse_name: horseNameRaw,
-                        horse_code: horseCode,
-                        jockey: jockey,
-                        trainer: trainer,
-                        weight: weight,
-                        draw: draw,
-                        official_rating: rating,
-                        finish_position: position,
-                        finish_time: finishTime,
-                        win_odds: winOdds,
-                        margin: margin,
-                        declared_weight: declaredWeight,
-                    });
-                }
-
-                return horses;
-            }''')
-
-            if not horses:
-                return None
-
-            # Extract sectional times (best-effort from same page)
-            sectional_times = page.evaluate(r'''() => {
-                const text = document.body.innerText;
-                const lines = text.split('\\n');
-                const sectionals = {};
-
-                let inSectional = false;
-                for (let i = 0; i < lines.length; i++) {
-                    const line = lines[i].trim();
-                    if (line.includes('分段時間') || line.includes('Sectional Times')) {
-                        inSectional = true;
-                        continue;
-                    }
-                    if (inSectional) {
-                        if (!line || line.includes('備註') || line.includes('排位表')) break;
-                        const match = line.match(/(\d+)\s*-\s*(.+)/);
-                        if (match) {
-                            const horseNo = parseInt(match[1]);
-                            const times = match[2].trim();
-                            if (!isNaN(horseNo) && times) {
-                                sectionals[horseNo] = times;
-                            }
-                        }
-                    }
-                }
-                return Object.keys(sectionals).length > 0 ? sectionals : null;
-            }''')
-
-            race_id = f"{venue}-{date_str.replace('-', '')}-{race_no:02d}"
-            race_data = {
-                "race_id": race_id[:32],
-                "race_date": date_str,
-                "venue": venue,
-                "race_no": race_no,
-                "distance": race_meta.get('distance'),
-                "going": str(race_meta.get('going', ''))[:32] if race_meta.get('going') else None,
-                "class_level": str(race_meta.get('class_level', ''))[:32] if race_meta.get('class_level') else None,
-                "horses": horses,
-                "sectional_times": sectional_times,
             }
 
-            return race_data
+            let endIdx = lines.length;
+            if (startIdx >= 0) {
+                for (let i = startIdx + 1; i < lines.length; i++) {
+                    if (lines[i].includes('馬匹編號') || lines[i].includes('排位表')) {
+                        endIdx = i;
+                        break;
+                    }
+                }
+            } else {
+                startIdx = 0;
+            }
 
-        except Exception as e:
-            print(f"    [ERROR] {date_str} {venue} R{race_no}: {e}")
+            const block = lines.slice(startIdx, endIdx).join(' ');
+
+            const distMatch = block.match(/(\d{3,4})米/);
+            const goingMatch = block.match(/好至黏快|好至快地|好至黏地|好地|快地|慢地|軟地|黏地/);
+            const classMatch = block.match(/第[一二三四五六七八九十]+班/);
+            const trackMatch = block.match(/賽道\s*[:：]\s*(草地|全天候跑道|tur f|all-weather)/i);
+
+            return {
+                distance: distMatch ? parseInt(distMatch[1]) : null,
+                going: goingMatch ? goingMatch[0] : null,
+                class_level: classMatch ? classMatch[0] : null,
+                track_course: trackMatch ? trackMatch[1].trim() : null,
+            };
+        }''')
+
+        # Extract results table with header-aware column mapping
+        if race_no == 1:
+            print(f"    [DEBUG] race_meta: distance={race_meta.get('distance')} going={race_meta.get('going')} track={race_meta.get('track_course')}")
+
+        horses = page.evaluate(r'''() => {
+            const tables = document.querySelectorAll('table');
+            let resultsTable = null;
+
+            for (const table of tables) {
+                const text = table.innerText;
+                if (text.includes('名次') && text.includes('獨贏')) {
+                    resultsTable = table;
+                    break;
+                }
+            }
+
+            if (!resultsTable) return [];
+
+            const rows = resultsTable.querySelectorAll('tr');
+            if (rows.length < 2) return [];
+
+            // Parse header row to find column indices
+            const headerCells = rows[0].querySelectorAll('th, td');
+            const headers = Array.from(headerCells).map(c => c.textContent.trim());
+            const colMap = {};
+            for (let i = 0; i < headers.length; i++) {
+                const h = headers[i];
+                if (h === '名次') colMap.position = i;
+                else if (h === '馬號' || h === '馬匹編號') colMap.horseNo = i;
+                else if (h.includes('馬名')) colMap.horseName = i;
+                else if (h.includes('騎師')) colMap.jockey = i;
+                else if (h.includes('練馬師')) colMap.trainer = i;
+                else if (h.includes('負磅')) colMap.weight = i;
+                else if (h.includes('體重')) colMap.declaredWeight = i;
+                else if (h.includes('檔位')) colMap.draw = i;
+                else if (h.includes('距離')) colMap.margin = i;
+                else if (h.includes('時間')) colMap.finishTime = i;
+                else if (h.includes('賠率')) colMap.winOdds = i;
+                else if (h.includes('評分')) colMap.rating = i;
+            }
+
+            // Fallback to positional mapping if headers not found
+            const hasHeaderMap = Object.keys(colMap).length >= 5;
+
+            const horses = [];
+
+            for (let ri = 1; ri < rows.length; ri++) {
+                const row = rows[ri];
+                const cells = row.querySelectorAll('td');
+                if (cells.length < 10) continue;
+
+                const texts = Array.from(cells).map(c => c.textContent.trim());
+
+                let position, horseNo, horseNameRaw, jockey, trainer;
+                let weight = null, draw = null, rating = null;
+                let finishTime = null, winOdds = null;
+                let margin = null, declaredWeight = null;
+
+                if (hasHeaderMap) {
+                    const get = (key) => colMap[key] !== undefined ? texts[colMap[key]] : null;
+                    try { position = parseInt(get('position')); if (isNaN(position) || position < 1) continue; } catch(e) { continue; }
+                    try { horseNo = parseInt(get('horseNo')); if (isNaN(horseNo)) continue; } catch(e) { continue; }
+                    horseNameRaw = get('horseName') || '';
+                    jockey = get('jockey') || '';
+                    trainer = get('trainer') || '';
+                    try { weight = parseFloat(get('weight')); if (isNaN(weight)) weight = null; } catch(e) {}
+                    try { draw = parseInt(get('draw')); if (isNaN(draw)) draw = null; } catch(e) {}
+                    try { rating = parseFloat(get('rating')); if (isNaN(rating)) rating = null; } catch(e) {}
+
+                    let ftStr = get('finishTime');
+                    if (ftStr) {
+                        ftStr = ftStr.replace(/[()]/g, '');
+                        if (ftStr && ftStr !== '---' && ftStr !== '-') {
+                            const tm = ftStr.match(/(\d+):(\d+\.\d+)/);
+                            if (tm) finishTime = parseInt(tm[1]) * 60 + parseFloat(tm[2]);
+                            else { try { finishTime = parseFloat(ftStr); } catch(e) {} }
+                        }
+                    }
+                    try { winOdds = parseFloat(get('winOdds')); if (isNaN(winOdds)) winOdds = null; } catch(e) {}
+
+                    if (colMap.margin !== undefined) {
+                        try {
+                            const marginStr = texts[colMap.margin].trim();
+                            if (marginStr && marginStr !== '---' && marginStr !== '-') {
+                                const frac = marginStr.match(/(\d+)[-\s]*([\d]+)\/([\d]+)/);
+                                if (frac) margin = parseInt(frac[1]) + parseInt(frac[2]) / parseInt(frac[3]);
+                                else { const simple = parseFloat(marginStr); if (!isNaN(simple)) margin = simple; }
+                            }
+                        } catch(e) {}
+                    }
+                    if (colMap.declaredWeight !== undefined) {
+                        try {
+                            const dwVal = parseInt(texts[colMap.declaredWeight].trim());
+                            if (!isNaN(dwVal) && dwVal > 800 && dwVal < 1500) declaredWeight = dwVal;
+                        } catch(e) {}
+                    }
+                } else {
+                    // Positional fallback (based on actual HKJC results page structure)
+                    // Col 0: 名次, 1: 馬號, 2: 馬名, 3: 騎師, 4: 練馬師
+                    // Col 5: 負磅, 6: 體重, 7: 檔位, 8: 評分/距離, 9: 分段時間
+                    // Col 10: 完成時間, 11: 獨贏賠率
+                    try { position = parseInt(texts[0]); if (isNaN(position) || position < 1) continue; } catch(e) { continue; }
+                    try { horseNo = parseInt(texts[1]); if (isNaN(horseNo)) continue; } catch(e) { continue; }
+                    horseNameRaw = texts[2] || '';
+                    jockey = texts[3] || '';
+                    trainer = texts[4] || '';
+                    try { weight = parseFloat(texts[5]); if (isNaN(weight)) weight = null; } catch(e) {}
+                    
+                    // Column 6: declared_weight (horse body weight, 800-1500 lbs)
+                    try {
+                        const dwVal = parseInt(texts[6]);
+                        if (!isNaN(dwVal) && dwVal > 800 && dwVal < 1500) declaredWeight = dwVal;
+                    } catch(e) {}
+                    
+                    try { draw = parseInt(texts[7]); if (isNaN(draw)) draw = null; } catch(e) {}
+                    
+                    // Column 8: margin or official_rating
+                    try {
+                        const marginStr = texts[8].trim();
+                        if (marginStr && marginStr !== '---' && marginStr !== '-') {
+                            const frac = marginStr.match(/(\d+)[-\s]*([\d]+)\/([\d]+)/);
+                            if (frac) margin = parseInt(frac[1]) + parseInt(frac[2]) / parseInt(frac[3]);
+                            else { const simple = parseFloat(marginStr); if (!isNaN(simple)) margin = simple; }
+                        }
+                    } catch(e) {}
+                    
+                    // Column 9: sectional_times (long text, skip for now)
+                    
+                    if (texts.length > 10) {
+                        let ftStr = texts[10].trim().replace(/[()]/g, '');
+                        if (ftStr && ftStr !== '---' && ftStr !== '-') {
+                            const tm = ftStr.match(/(\d+):(\d+\.\d+)/);
+                            if (tm) finishTime = parseInt(tm[1]) * 60 + parseFloat(tm[2]);
+                            else { try { finishTime = parseFloat(ftStr); } catch(e) {} }
+                        }
+                    }
+                    try { winOdds = parseFloat(texts[11]); if (isNaN(winOdds)) winOdds = null; } catch(e) {}
+                }
+
+                const horseCodeMatch = horseNameRaw.match(/\(([A-Z]\d+)\)/);
+                const horseCode = horseCodeMatch ? horseCodeMatch[1] : `H${horseNo.toString().padStart(4, '0')}`;
+                horseNameRaw = horseNameRaw.replace(/\([A-Z]\d+\)/g, '').trim();
+
+                horses.push({
+                    horse_no: horseNo,
+                    horse_name: horseNameRaw,
+                    horse_code: horseCode,
+                    jockey: jockey,
+                    trainer: trainer,
+                    weight: weight,
+                    draw: draw,
+                    official_rating: rating,
+                    finish_position: position,
+                    finish_time: finishTime,
+                    win_odds: winOdds,
+                    margin: margin,
+                    declared_weight: declaredWeight,
+                });
+            }
+
+            return horses;
+        }''')
+
+        if not horses:
             return None
-        finally:
-            browser.close()
+
+        # Extract sectional times (best-effort from same page)
+        sectional_times = page.evaluate(r'''() => {
+            const text = document.body.innerText;
+            const lines = text.split('\\n');
+            const sectionals = {};
+
+            let inSectional = false;
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (line.includes('分段時間') || line.includes('Sectional Times')) {
+                    inSectional = true;
+                    continue;
+                }
+                if (inSectional) {
+                    if (!line || line.includes('備註') || line.includes('排位表')) break;
+                    const match = line.match(/(\d+)\s*-\s*(.+)/);
+                    if (match) {
+                        const horseNo = parseInt(match[1]);
+                        const times = match[2].trim();
+                        if (!isNaN(horseNo) && times) {
+                            sectionals[horseNo] = times;
+                        }
+                    }
+                }
+            }
+            return Object.keys(sectionals).length > 0 ? sectionals : null;
+        }''')
+
+        race_id = f"{venue}-{date_str.replace('-', '')}-{race_no:02d}"
+        race_data = {
+            "race_id": race_id[:32],
+            "race_date": date_str,
+            "venue": venue,
+            "race_no": race_no,
+            "distance": race_meta.get('distance'),
+            "going": truncate(validate_going(race_meta.get('going')), 32) if validate_going(race_meta.get('going')) else None,
+            "class_level": str(race_meta.get('class_level', ''))[:32] if race_meta.get('class_level') else None,
+            "track_course": str(race_meta.get('track_course', ''))[:16] if race_meta.get('track_course') else None,
+            "horses": horses,
+            "sectional_times": sectional_times,
+        }
+
+        return race_data
+
+    except Exception as e:
+        print(f"    [ERROR] {date_str} {venue} R{race_no}: {e}")
+        return None
 
 
 # =====================================================================
@@ -485,6 +528,7 @@ def write_core_tables(supabase: Client, all_races: List[Dict],
     has_dw_col = has_column(supabase, "race_runners", "declared_weight")
     has_margin_col = has_column(supabase, "race_runners", "margin")
     has_st_col = has_column(supabase, "race_runners", "sectional_times")
+    has_track_course = has_column(supabase, "races", "track_course")
     if has_official_rating:
         print("  [OK] official_rating column found")
     else:
@@ -495,6 +539,8 @@ def write_core_tables(supabase: Client, all_races: List[Dict],
         print("  [OK] margin column found")
     if has_st_col:
         print("  [OK] sectional_times column found")
+    if has_track_course:
+        print("  [OK] track_course column found")
 
     horses_map = {}
     races_rows = []
@@ -503,15 +549,18 @@ def write_core_tables(supabase: Client, all_races: List[Dict],
     for race in all_races:
         race_id = race["race_id"]
         sectional_map = race.get("sectional_times") or {}
-        races_rows.append({
+        race_row = {
             "race_id": truncate(race_id, 32),
             "race_date": race["race_date"],
             "venue": truncate(race["venue"], 4),
             "race_no": race["race_no"],
             "distance": race.get("distance"),
-            "going": truncate(race.get("going"), 32) if race.get("going") else None,
+            "going": truncate(validate_going(race.get("going")), 32) if validate_going(race.get("going")) else None,
             "class_level": truncate(race.get("class_level"), 32) if race.get("class_level") else None,
-        })
+        }
+        if has_track_course and race.get("track_course"):
+            race_row["track_course"] = truncate(race.get("track_course"), 16)
+        races_rows.append(race_row)
 
         for h in race.get("horses", []):
             hc = h["horse_code"]
@@ -774,7 +823,7 @@ def analyze_existing_data(supabase: Client):
             "venue": meta.get("venue", ""),
             "race_no": meta.get("race_no", 0),
             "distance": meta.get("distance"),
-            "going": meta.get("going"),
+            "going": validate_going(meta.get("going")),
             "class_level": meta.get("class_level"),
             "horses": race_horses,
         })
@@ -824,22 +873,28 @@ def main():
     print(f"\n[Step 2] Scraping {len(dates)} race dates with Playwright...")
     all_races = []
 
-    for di, date_str in enumerate(dates):
-        date_races = 0
-        for venue in ["ST", "HV"]:
-            for race_no in range(1, 12):
-                result = scrape_hkjc_race(date_str, venue, race_no)
-                if result and result.get("horses"):
-                    all_races.append(result)
-                    date_races += 1
-                    print(f"      [OK] R{race_no}: {len(result['horses'])} horses")
-                else:
-                    if race_no == 1:
-                        continue
-                    break
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True, args=['--no-sandbox', '--disable-gpu'])
+        page = browser.new_page()
 
-        if (di + 1) % 5 == 0 or di == 0:
-            print(f"  [{di + 1}/{len(dates)}] {date_str}: {date_races} races (total: {len(all_races)})")
+        for di, date_str in enumerate(dates):
+            date_races = 0
+            for venue in ["ST", "HV"]:
+                for race_no in range(1, 12):
+                    result = scrape_hkjc_race(page, date_str, venue, race_no)
+                    if result and result.get("horses"):
+                        all_races.append(result)
+                        date_races += 1
+                        print(f"      [OK] R{race_no}: {len(result['horses'])} horses")
+                    else:
+                        if race_no == 1:
+                            continue
+                        break
+
+            if (di + 1) % 5 == 0 or di == 0:
+                print(f"  [{di + 1}/{len(dates)}] {date_str}: {date_races} races (total: {len(all_races)})")
+
+        browser.close()
 
     print(f"\n  Scraped {len(all_races)} races total")
     total_horses = sum(len(r.get("horses", [])) for r in all_races)
@@ -847,10 +902,21 @@ def main():
 
     if args.dry_run:
         print("\n[DRY RUN] Sample data:")
+        dw_count = 0
+        margin_count = 0
+        total_h = 0
+        for race in all_races:
+            for h in race.get("horses", []):
+                total_h += 1
+                if h.get("declared_weight"): dw_count += 1
+                if h.get("margin") is not None: margin_count += 1
+        print(f"  Field coverage: declared_weight={dw_count}/{total_h}, margin={margin_count}/{total_h}")
         for race in all_races[:2]:
             print(f"\n  {race['race_id']}: {race.get('distance')}m {race.get('going')}")
             for h in race.get("horses", [])[:3]:
-                print(f"    #{h['horse_no']} {h['horse_name']} Pos={h.get('finish_position')} Odds={h.get('win_odds')}")
+                print(f"    #{h['horse_no']} {h['horse_name']} Pos={h.get('finish_position')} "
+                      f"DW={h.get('declared_weight')} Margin={h.get('margin')} "
+                      f"Draw={h.get('draw')} Weight={h.get('weight')} Odds={h.get('win_odds')}")
         return 0
 
     # Step 3: Write core tables

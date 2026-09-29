@@ -40,6 +40,22 @@ from common import get_supabase, batch_upsert, truncate, has_column
 # Re-export for live_high_frequency_pacing.py compatibility
 get_supabase_client = get_supabase
 
+# Valid going values for HKJC races
+VALID_GOING_VALUES = {'好至黏快', '好至快地', '好至黏地', '好地', '快地', '慢地', '軟地', '黏地', '好至軟地'}
+
+def validate_going(going: Optional[str]) -> Optional[str]:
+    """Validate going value. Returns the going if valid, None otherwise."""
+    if not going:
+        return None
+    going_stripped = going.strip()
+    if going_stripped in VALID_GOING_VALUES:
+        return going_stripped
+    # Check if it contains a valid going value
+    for valid in VALID_GOING_VALUES:
+        if valid in going_stripped:
+            return valid
+    return None
+
 
 def clear_old_data(supabase: Client, race_date: str, venue: str):
     print(f"\n[Clear] Clearing old data for {race_date} {venue}...")
@@ -272,11 +288,13 @@ def scrape_hkjc_races(date_str: str, venue: str) -> List[Dict]:
                     const distMatch = block.match(/(\d{3,4})米/);
                     const goingMatch = block.match(/好至黏快|好至快地|好至黏地|好地|快地|慢地|軟地|黏地/);
                     const classMatch = block.match(/第[一二三四五六七八九十]+班/);
+                    const trackMatch = block.match(/賽道\s*[:：]\s*(草地|全天候跑道| turf |all-weather)/i);
 
                     return {
                         distance: distMatch ? parseInt(distMatch[1]) : null,
                         going: goingMatch ? goingMatch[0] : null,
                         class_level: classMatch ? classMatch[0] : null,
+                        track_course: trackMatch ? trackMatch[1].trim() : null,
                     };
                 }''')
 
@@ -292,6 +310,7 @@ def scrape_hkjc_races(date_str: str, venue: str) -> List[Dict]:
                     'distance': race_meta.get('distance'),
                     'class_level': race_meta.get('class_level'),
                     'going': race_meta.get('going'),
+                    'track_course': race_meta.get('track_course'),
                     'horses': horses,
                 }
                 all_races.append(race_data)
@@ -466,7 +485,8 @@ def write_to_supabase(supabase: Client, races: List[Dict], dry_run: bool = False
             'venue': truncate(race['venue'], 4),
             'distance': race.get('distance'),
             'class_level': truncate(race.get('class_level'), 32) if race.get('class_level') else None,
-            'going': truncate(race.get('going'), 32) if race.get('going') else None,
+            'going': truncate(validate_going(race.get('going')), 32) if validate_going(race.get('going')) else None,
+            'track_course': truncate(race.get('track_course'), 16) if race.get('track_course') else None,
         }
         supabase.table('races').upsert(race_row, on_conflict='race_id').execute()
 

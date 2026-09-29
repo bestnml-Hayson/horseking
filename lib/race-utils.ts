@@ -273,13 +273,17 @@ export function fmtEV(ev: number | null): string {
 
 /**
  * Parse form_history string (e.g. "12-8-9-9-11-5") into number array.
+ * Handles mixed content like "第 2 場(806) 3-5-7" by extracting only valid finish positions (1-20).
  */
 export function parseFormHistory(form: string | null | undefined): number[] {
   if (!form) return []
-  const stripped = form.replace(/[{}"':]/g, ' ')
-  return stripped
-    .split(/[-\/\s,]+/)
-    .map(s => parseInt(s.trim()))
+  // Remove JSON-like noise and extract all numbers
+  const cleaned = form.replace(/[{}"':]/g, ' ')
+  // Extract all numbers from the string
+  const numbers = cleaned.match(/\d+/g) ?? []
+  // Parse and filter to valid finish positions (1-20)
+  return numbers
+    .map(s => parseInt(s, 10))
     .filter(n => !isNaN(n) && n > 0 && n <= 20)
     .slice(0, 6)
 }

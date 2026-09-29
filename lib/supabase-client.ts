@@ -215,11 +215,13 @@ export async function fetchHorseDetail(horseId: string): Promise<HorseDetail | n
 /**
  * Fetch recent finish positions from race_results for a batch of horse IDs.
  * Returns Map<horseId, formString> where formString is dash-separated positions (e.g. "6-7-3-9-9-5").
+ * Filters out future races (race_date >= today) and null/invalid finish positions.
  */
 export async function fetchRecentForm(horseIds: string[]): Promise<Map<string, string>> {
   if (horseIds.length === 0) return new Map()
   const supabase = getSupabase()
   const formMap = new Map<string, string>()
+  const today = new Date().toISOString().split('T')[0]
 
   const batchSize = 50
   for (let i = 0; i < horseIds.length; i += batchSize) {
@@ -228,6 +230,7 @@ export async function fetchRecentForm(horseIds: string[]): Promise<Map<string, s
       .from('race_results')
       .select('horse_no, finish_position, race_date')
       .in('horse_no', batch)
+      .lt('race_date', today)
       .order('race_date', { ascending: false })
       .limit(200)
 
@@ -239,7 +242,7 @@ export async function fetchRecentForm(horseIds: string[]): Promise<Map<string, s
     const grouped = new Map<string, number[]>()
     for (const r of (data ?? [])) {
       const row = r as { horse_no: string; finish_position: number | null; race_date: string | null }
-      if (row.finish_position != null && row.finish_position > 0) {
+      if (row.finish_position != null && row.finish_position > 0 && row.finish_position <= 20) {
         const positions = grouped.get(row.horse_no) ?? []
         positions.push(row.finish_position)
         grouped.set(row.horse_no, positions)
