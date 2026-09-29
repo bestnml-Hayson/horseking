@@ -898,27 +898,60 @@ def main():
     all_races = []
 
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True, args=['--no-sandbox', '--disable-gpu'])
-        page = browser.new_page()
+        BROWSER_RESTART_EVERY = 10
+        browser = None
+        page = None
 
-        for di, date_str in enumerate(dates):
-            date_races = 0
-            for venue in ["ST", "HV"]:
-                for race_no in range(1, 12):
-                    result = scrape_hkjc_race(page, date_str, venue, race_no)
-                    if result and result.get("horses"):
-                        all_races.append(result)
-                        date_races += 1
-                        print(f"      [OK] R{race_no}: {len(result['horses'])} horses")
-                    else:
-                        if race_no == 1:
+        def _restart_browser():
+            nonlocal browser, page
+            if browser:
+                try:
+                    browser.close()
+                except Exception:
+                    pass
+            browser = p.chromium.launch(headless=True, args=['--no-sandbox', '--disable-gpu', '--disable-dev-shm-usage'])
+            page = browser.new_page()
+            return page
+
+        try:
+            page = _restart_browser()
+
+            for di, date_str in enumerate(dates):
+                if di > 0 and di % BROWSER_RESTART_EVERY == 0:
+                    print(f"  [RESTART] Browser restart after {BROWSER_RESTART_EVERY} dates (memory refresh)")
+                    page = _restart_browser()
+
+                date_races = 0
+                for venue in ["ST", "HV"]:
+                    for race_no in range(1, 12):
+                        result = None
+                        try:
+                            result = scrape_hkjc_race(page, date_str, venue, race_no)
+                        except Exception as e:
+                            print(f"      [ERROR] {date_str} {venue} R{race_no}: {e}")
+                            if "crash" in str(e).lower() or "closed" in str(e).lower():
+                                print(f"      [RESTART] Browser crashed, restarting...")
+                                page = _restart_browser()
                             continue
-                        break
 
-            if (di + 1) % 5 == 0 or di == 0:
-                print(f"  [{di + 1}/{len(dates)}] {date_str}: {date_races} races (total: {len(all_races)})")
+                        if result and result.get("horses"):
+                            all_races.append(result)
+                            date_races += 1
+                            print(f"      [OK] R{race_no}: {len(result['horses'])} horses")
+                        else:
+                            if race_no == 1:
+                                continue
+                            break
 
-        browser.close()
+                if (di + 1) % 5 == 0 or di == 0:
+                    print(f"  [{di + 1}/{len(dates)}] {date_str}: {date_races} races (total: {len(all_races)})")
+
+        finally:
+            if browser:
+                try:
+                    browser.close()
+                except Exception:
+                    pass
 
     print(f"\n  Scraped {len(all_races)} races total")
     total_horses = sum(len(r.get("horses", [])) for r in all_races)
