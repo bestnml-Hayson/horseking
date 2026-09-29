@@ -38,6 +38,12 @@ export interface RaceRunner {
   declared_weight: number | null
   sectional_times: string | null
   margin: number | null
+  weight_change: number | null
+  best_time: string | null
+  gender: string | null
+  season_prize: number | null
+  priority: string | null
+  gear: string | null
 }
 
 export interface ModelPrediction {
@@ -55,6 +61,8 @@ export interface Horse {
   horse_id: string
   horse_name: string
   country: string | null
+  sire?: string | null
+  dam?: string | null
 }
 
 export interface RaceRow extends RaceRunner {

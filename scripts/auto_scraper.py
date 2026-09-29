@@ -191,6 +191,16 @@ def scrape_hkjc_races(date_str: str, venue: str) -> List[Dict]:
                             if (txt === '檔位' || txt === '排位檔位') colMap.draw = i;
                             if (txt === '練馬師') colMap.trainer = i;
                             if (txt === '排位體重' || txt === '體重') colMap.declaredWeight = i;
+                            if (txt === '排位體重+/-' || txt === '體重+/-') colMap.weightChange = i;
+                            if (txt === '最佳時間') colMap.bestTime = i;
+                            if (txt === '馬齡') colMap.age = i;
+                            if (txt === '性別') colMap.gender = i;
+                            if (txt === '今季獎金') colMap.seasonPrize = i;
+                            if (txt === '優先參賽次序') colMap.priority = i;
+                            if (txt === '上賽距今日數') colMap.daysSinceLastRun = i;
+                            if (txt === '配備') colMap.gear = i;
+                            if (txt === '父系') colMap.sire = i;
+                            if (txt === '母系') colMap.dam = i;
                         }
 
                         if (hasFormCol && hasHorseCol) {
@@ -246,6 +256,89 @@ def scrape_hkjc_races(date_str: str, venue: str) -> List[Dict]:
                             }
                         }
 
+                        let weightChange = null;
+                        if (colMap.weightChange !== undefined) {
+                            const wcText = cells[colMap.weightChange].textContent.trim().replace('+', '').replace('-', '');
+                            const wcVal = parseFloat(wcText);
+                            if (!isNaN(wcVal)) {
+                                const sign = cells[colMap.weightChange].textContent.trim().startsWith('-') ? -1 : 1;
+                                weightChange = sign * Math.abs(wcVal);
+                            }
+                        }
+
+                        let bestTime = null;
+                        if (colMap.bestTime !== undefined) {
+                            const btText = cells[colMap.bestTime].textContent.trim();
+                            if (btText && /^\d{1,2}\.\d{2}\.\d{2}$/.test(btText)) {
+                                bestTime = btText;
+                            }
+                        }
+
+                        let age = null;
+                        if (colMap.age !== undefined) {
+                            const ageVal = parseInt(cells[colMap.age].textContent.trim());
+                            if (!isNaN(ageVal) && ageVal > 0 && ageVal <= 20) {
+                                age = ageVal;
+                            }
+                        }
+
+                        let gender = null;
+                        if (colMap.gender !== undefined) {
+                            const gText = cells[colMap.gender].textContent.trim();
+                            if (['閹', '雄', '雌'].includes(gText)) {
+                                gender = gText;
+                            }
+                        }
+
+                        let seasonPrize = null;
+                        if (colMap.seasonPrize !== undefined) {
+                            const spText = cells[colMap.seasonPrize].textContent.trim().replace(/,/g, '');
+                            const spVal = parseFloat(spText);
+                            if (!isNaN(spVal) && spVal >= 0) {
+                                seasonPrize = spVal;
+                            }
+                        }
+
+                        let priority = null;
+                        if (colMap.priority !== undefined) {
+                            const pText = cells[colMap.priority].textContent.trim();
+                            if (pText && pText !== '') {
+                                priority = pText;
+                            }
+                        }
+
+                        let daysSinceLastRun = null;
+                        if (colMap.daysSinceLastRun !== undefined) {
+                            const dVal = parseInt(cells[colMap.daysSinceLastRun].textContent.trim());
+                            if (!isNaN(dVal) && dVal >= 0 && dVal <= 999) {
+                                daysSinceLastRun = dVal;
+                            }
+                        }
+
+                        let gear = null;
+                        if (colMap.gear !== undefined) {
+                            const gText = cells[colMap.gear].textContent.trim();
+                            if (gText && gText !== '') {
+                                gear = gText;
+                            }
+                        }
+
+                        let sire = null;
+                        if (colMap.sire !== undefined) {
+                            const sText = cells[colMap.sire].textContent.trim();
+                            if (sText && sText !== '') {
+                                sire = sText;
+                            }
+                        }
+
+                        let dam = null;
+                        if (colMap.dam !== undefined) {
+                            const dText = cells[colMap.dam].textContent.trim();
+                            if (dText && dText !== '') {
+                                dam = dText;
+                            }
+                        }
+
                         jockey = jockey.split('(')[0].trim();
                         trainer = trainer.split('(')[0].trim();
 
@@ -260,6 +353,16 @@ def scrape_hkjc_races(date_str: str, venue: str) -> List[Dict]:
                             form_history: formHistory,
                             official_rating: officialRating,
                             declared_weight: declaredWeight,
+                            weight_change: weightChange,
+                            best_time: bestTime,
+                            age: age,
+                            gender: gender,
+                            season_prize: seasonPrize,
+                            priority: priority,
+                            days_since_last_run: daysSinceLastRun,
+                            gear: gear,
+                            sire: sire,
+                            dam: dam,
                         });
                     }
                     return horses;
@@ -465,12 +568,23 @@ def write_to_supabase(supabase: Client, races: List[Dict], dry_run: bool = False
 
     has_official_rating = has_column(supabase, "race_runners", "official_rating")
     has_dw_col = has_column(supabase, "race_runners", "declared_weight")
+    has_weight_change = has_column(supabase, "race_runners", "weight_change")
+    has_best_time = has_column(supabase, "race_runners", "best_time")
+    has_gender = has_column(supabase, "race_runners", "gender")
+    has_season_prize = has_column(supabase, "race_runners", "season_prize")
+    has_priority = has_column(supabase, "race_runners", "priority")
+    has_gear = has_column(supabase, "race_runners", "gear")
+    has_sire_dam = has_column(supabase, "horses", "sire")
     if has_official_rating:
         print("  [OK] official_rating column found")
     else:
         print("  [WARN] official_rating column missing — skipping (run migration first)")
     if has_dw_col:
         print("  [OK] declared_weight column found")
+    new_cols_found = sum([has_weight_change, has_best_time, has_gender, has_season_prize, has_priority, has_gear])
+    print(f"  [INFO] {new_cols_found}/6 new feature columns found (weight_change, best_time, gender, season_prize, priority, gear)")
+    if has_sire_dam:
+        print("  [OK] horses.sire/dam columns found")
 
     # --- Pass 1: Upsert races + horses, collect horse entries ---
     horse_id_map = {}
@@ -510,10 +624,26 @@ def write_to_supabase(supabase: Client, races: List[Dict], dry_run: bool = False
 
             if horse_name not in horse_id_map:
                 horse_id_map[horse_name] = horse_id
-                retry_supabase(lambda: supabase.table('horses').upsert({
+                horse_row = {
                     'horse_id': horse_id,
                     'horse_name': truncate(horse_name, 64),
-                }, on_conflict='horse_id').execute())
+                }
+                if has_sire_dam:
+                    if horse.get('sire'):
+                        horse_row['sire'] = truncate(horse['sire'], 64)
+                    if horse.get('dam'):
+                        horse_row['dam'] = truncate(horse['dam'], 64)
+                retry_supabase(lambda hr=horse_row: supabase.table('horses').upsert(hr, on_conflict='horse_id').execute())
+            elif has_sire_dam:
+                sire = horse.get('sire')
+                dam = horse.get('dam')
+                if sire or dam:
+                    update_row = {'horse_id': horse_id}
+                    if sire:
+                        update_row['sire'] = truncate(sire, 64)
+                    if dam:
+                        update_row['dam'] = truncate(dam, 64)
+                    retry_supabase(lambda ur=update_row: supabase.table('horses').upsert(ur, on_conflict='horse_id').execute())
 
             dw = horse.get('declared_weight')
             if dw and has_dw_col:
@@ -562,13 +692,25 @@ def write_to_supabase(supabase: Client, races: List[Dict], dry_run: bool = False
                 'jockey_win_rate': real_jwr if real_jwr is not None else 0.10,
                 'trainer_win_rate': real_twr if real_twr is not None else 0.10,
                 'weight_carried_diff': wcd,
-                'rest_days': 0,
+                'rest_days': horse.get('days_since_last_run') or 0,
                 'form_history': truncate(form_history, 64) if form_history else None,
             }
             if has_official_rating:
                 runner_row['official_rating'] = official_rating if official_rating else None
             if has_dw_col and horse.get('declared_weight'):
                 runner_row['declared_weight'] = horse['declared_weight']
+            if has_weight_change and horse.get('weight_change') is not None:
+                runner_row['weight_change'] = horse['weight_change']
+            if has_best_time and horse.get('best_time'):
+                runner_row['best_time'] = horse['best_time']
+            if has_gender and horse.get('gender'):
+                runner_row['gender'] = horse['gender']
+            if has_season_prize and horse.get('season_prize') is not None:
+                runner_row['season_prize'] = horse['season_prize']
+            if has_priority and horse.get('priority'):
+                runner_row['priority'] = horse['priority']
+            if has_gear and horse.get('gear'):
+                runner_row['gear'] = horse['gear']
             all_runner_rows.append(runner_row)
 
         print(f"  [OK] {race_id}: {len(race['horses'])} runners prepared")

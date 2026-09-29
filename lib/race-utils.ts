@@ -507,6 +507,37 @@ export function generateHorseInsight(
     }
   }
 
+  // Gear change insight
+  const gear = row.gear
+  if (gear) {
+    const gearParts = gear.split('/').map(g => g.trim()).filter(Boolean)
+    const newGear = gearParts.filter(g => g.endsWith('1'))
+    if (newGear.length > 0) {
+      const gearNames: Record<string, string> = {
+        'B1': '眼罩', 'B': '眼罩', 'TT1': '吐舌帶', 'TT': '吐舌帶',
+        'XB1': '開孔眼罩', 'XB': '開孔眼罩', 'V1': '眼罩', 'V': '眼罩',
+        'P1': '眼罩', 'P': '眼罩', 'H1': '頭罩', 'H': '頭罩',
+      }
+      const gearDesc = newGear.map(g => {
+        const base = g.replace(/\d$/, '')
+        return gearNames[g] || gearNames[base] || g
+      }).join('、')
+      parts.push(`初戴${gearDesc}，可能有新鮮感`)
+    }
+  }
+
+  // Rest days insight
+  const restDays = row.rest_days
+  if (restDays != null && restDays > 0) {
+    if (restDays >= 90) {
+      parts.push(`久休${restDays}天復出，狀態待觀察`)
+    } else if (restDays >= 60) {
+      parts.push(`休養${restDays}天，充分休息`)
+    } else if (restDays <= 14) {
+      parts.push(`僅休息${restDays}天，頻密出賽`)
+    }
+  }
+
   if (parts.length > 3) {
     return parts.slice(0, 3).join('；') + '。'
   }

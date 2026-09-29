@@ -44,6 +44,8 @@ export function RaceTable({ rows, topPickId, onHorseClick }: RaceTableProps) {
             <th style={{ width: 160 }}>近 6 場往績</th>
             <th>騎師 / 練馬師</th>
             <th style={{ textAlign: 'center', width: 48 }}>檔</th>
+            <th style={{ textAlign: 'center', width: 56 }}>配備</th>
+            <th style={{ textAlign: 'center', width: 48 }}>休養</th>
             <th style={{ textAlign: 'right', width: 64 }}>賠率</th>
             <th className="th-model" style={{ textAlign: 'right', width: 72 }}>P_model</th>
             <th className="th-market" style={{ textAlign: 'right', width: 72 }}>P_market</th>
@@ -121,6 +123,29 @@ export function RaceTable({ rows, topPickId, onHorseClick }: RaceTableProps) {
                 </td>
                 <td style={{ textAlign: 'center' }} className="tabular-nums draw-cell">
                   {row.draw ?? '-'}
+                </td>
+                <td style={{ textAlign: 'center' }} className="tabular-nums">
+                  {row.gear ? (
+                    <span className="badge" style={{
+                      backgroundColor: row.gear.includes('1') ? '#f59e0b20' : '#6b728020',
+                      color: row.gear.includes('1') ? '#f59e0b' : '#9ca3af',
+                      borderColor: row.gear.includes('1') ? '#f59e0b40' : '#6b728040',
+                      fontSize: '0.75rem',
+                      padding: '2px 6px',
+                    }}>
+                      {row.gear}
+                    </span>
+                  ) : '-'}
+                </td>
+                <td style={{ textAlign: 'center' }} className="tabular-nums">
+                  {row.rest_days != null ? (
+                    <span style={{
+                      color: row.rest_days >= 90 ? '#ef4444' : row.rest_days >= 60 ? '#f59e0b' : '#9ca3af',
+                      fontWeight: row.rest_days >= 60 ? 600 : 400,
+                    }}>
+                      {row.rest_days}天
+                    </span>
+                  ) : '-'}
                 </td>
                 <td style={{ textAlign: 'right' }} className="tabular-nums">
                   <span className={`badge ${isOddsPending(row.win_odds) ? 'badge-odds-pending' : 'badge-odds'}`}>

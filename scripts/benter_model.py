@@ -30,11 +30,13 @@ FRACTIONAL_KELLY = 0.25  # 1/4 Kelly 降低方差
 TEMPERATURE = 1.0     # Softmax 溫度參數
 
 # 評分維度權重 (總和 = 1.0)
-W_FORM = 0.30         # 近況評分
-W_RATING = 0.20       # 往績評分 (past_rating)
-W_JOCKEY = 0.20       # 騎師勝率
-W_TRAINER = 0.15      # 練馬師勝率
-W_DRAW = 0.15         # 檔位優勢
+W_FORM = 0.25         # 近況評分
+W_RATING = 0.18       # 往績評分 (past_rating)
+W_JOCKEY = 0.17       # 騎師勝率
+W_TRAINER = 0.13      # 練馬師勝率
+W_DRAW = 0.12         # 檔位優勢
+W_WEIGHT_CHANGE = 0.08  # 體重變化 (減磅為佳)
+W_REST_DAYS = 0.07    # 休養天數 (適中為佳)
 
 
 def get_supabase_client() -> Client:
@@ -79,6 +81,39 @@ def normalize_features(runners: List[Dict]) -> List[Dict]:
             else:
                 r[f'{feat}_norm'] = max(0.0, min(1.0, normed))
 
+    # weight_change: negative (weight reduction) is better
+    wc_vals = [r.get('weight_change') for r in runners if r.get('weight_change') is not None]
+    if wc_vals:
+        wc_min, wc_max = min(wc_vals), max(wc_vals)
+        wc_rng = wc_max - wc_min if wc_max != wc_min else 1.0
+        for r in runners:
+            wc = r.get('weight_change')
+            if wc is None:
+                r['weight_change_norm'] = 0.5
+            else:
+                # Invert: lower weight_change = higher score
+                r['weight_change_norm'] = max(0.0, min(1.0, 1.0 - (wc - wc_min) / wc_rng))
+
+    # rest_days: moderate rest (14-45 days) is optimal, too short or too long is worse
+    rd_vals = [r.get('rest_days') for r in runners if r.get('rest_days') is not None]
+    if rd_vals:
+        for r in runners:
+            rd = r.get('rest_days')
+            if rd is None:
+                r['rest_days_norm'] = 0.5
+            else:
+                # Bell curve: peak at ~30 days, decline on both sides
+                optimal = 30
+                deviation = abs(rd - optimal)
+                r['rest_days_norm'] = max(0.0, min(1.0, 1.0 - deviation / 90.0))
+
+    # gear_change: binary - new gear (e.g., B1 first time) may indicate improvement
+    for r in runners:
+        gear = r.get('gear', '') or ''
+        # Gear codes ending in 1 often indicate first-time use (B1, TT1, etc.)
+        has_new_gear = any(gear.endswith('1') or gear.endswith('B1') for g in gear.split('/') if g.strip())
+        r['gear_change_norm'] = 0.7 if has_new_gear else 0.5
+
     return runners
 
 
@@ -88,11 +123,14 @@ def normalize_features(runners: List[Dict]) -> List[Dict]:
 def compute_raw_score(runner: Dict) -> float:
     """加權線性綜合評分"""
     score = (
-        W_FORM     * runner.get('recent_form_score_norm', 0.5) +
-        W_RATING   * runner.get('past_rating_norm', 0.5) +
-        W_JOCKEY   * runner.get('jockey_win_rate_norm', 0.5) +
-        W_TRAINER  * runner.get('trainer_win_rate_norm', 0.5) +
-        W_DRAW     * runner.get('draw_norm', 0.5)
+        W_FORM          * runner.get('recent_form_score_norm', 0.5) +
+        W_RATING        * runner.get('past_rating_norm', 0.5) +
+        W_JOCKEY        * runner.get('jockey_win_rate_norm', 0.5) +
+        W_TRAINER       * runner.get('trainer_win_rate_norm', 0.5) +
+        W_DRAW          * runner.get('draw_norm', 0.5) +
+        W_WEIGHT_CHANGE * runner.get('weight_change_norm', 0.5) +
+        W_REST_DAYS     * runner.get('rest_days_norm', 0.5) +
+        0.02            * runner.get('gear_change_norm', 0.5)
     )
     return score
 
