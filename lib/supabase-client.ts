@@ -230,7 +230,6 @@ export async function fetchRecentForm(horseIds: string[]): Promise<Map<string, s
       .from('race_runners')
       .select('horse_id, finish_position, race_id')
       .in('horse_id', batch)
-      .neq('finish_position', null)
       .order('race_id', { ascending: false })
       .limit(200)
 
