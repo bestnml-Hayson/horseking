@@ -223,14 +223,17 @@ export async function fetchRecentForm(horseIds: string[]): Promise<Map<string, s
   const supabase = getSupabase()
   const formMap = new Map<string, string>()
 
+  const today = new Date().toISOString().split('T')[0]
+
   const batchSize = 50
   for (let i = 0; i < horseIds.length; i += batchSize) {
     const batch = horseIds.slice(i, i + batchSize)
     const { data, error } = await supabase
       .from('race_runners')
-      .select('horse_id, finish_position, race_id')
+      .select('horse_id, finish_position, race_id, races!inner(race_date)')
       .in('horse_id', batch)
-      .order('race_id', { ascending: false })
+      .lt('races.race_date', today)
+      .order('races.race_date', { ascending: false })
       .limit(3000)
 
     if (error) {
@@ -240,7 +243,7 @@ export async function fetchRecentForm(horseIds: string[]): Promise<Map<string, s
 
     const grouped = new Map<string, number[]>()
     for (const r of (data ?? [])) {
-      const row = r as { horse_id: string; finish_position: number | null; race_id: string }
+      const row = r as { horse_id: string; finish_position: number | null; race_id: string; races: { race_date: string }[] }
       if (row.finish_position != null && row.finish_position > 0 && row.finish_position <= 20) {
         const positions = grouped.get(row.horse_id) ?? []
         positions.push(row.finish_position)
