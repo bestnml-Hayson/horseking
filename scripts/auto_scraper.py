@@ -35,7 +35,7 @@ except ImportError:
     sys.exit(1)
 
 sys.path.insert(0, os.path.dirname(__file__))
-from common import get_supabase, batch_upsert, truncate, has_column
+from common import get_supabase, batch_upsert, truncate, has_column, retry_supabase
 
 # Re-export for live_high_frequency_pacing.py compatibility
 get_supabase_client = get_supabase
@@ -59,14 +59,18 @@ def validate_going(going: Optional[str]) -> Optional[str]:
 
 def clear_old_data(supabase: Client, race_date: str, venue: str):
     print(f"\n[Clear] Clearing old data for {race_date} {venue}...")
-    races_resp = supabase.table('races').select('race_id').eq('race_date', race_date).eq('venue', venue).execute()
+    races_resp = retry_supabase(
+        lambda: supabase.table('races').select('race_id').eq('race_date', race_date).eq('venue', venue).execute()
+    )
     race_ids = [r['race_id'] for r in (races_resp.data or [])]
 
     if race_ids:
         for race_id in race_ids:
-            supabase.table('model_predictions').delete().eq('race_id', race_id).execute()
-            supabase.table('race_runners').delete().eq('race_id', race_id).execute()
-        supabase.table('races').delete().eq('race_date', race_date).eq('venue', venue).execute()
+            retry_supabase(lambda rid=race_id: supabase.table('model_predictions').delete().eq('race_id', rid).execute())
+            retry_supabase(lambda rid=race_id: supabase.table('race_runners').delete().eq('race_id', rid).execute())
+        retry_supabase(
+            lambda: supabase.table('races').delete().eq('race_date', race_date).eq('venue', venue).execute()
+        )
         print(f"  [OK] Cleared {len(race_ids)} races + runners + predictions")
     else:
         print("  [OK] No old data found")
@@ -78,9 +82,11 @@ def clear_old_data(supabase: Client, race_date: str, venue: str):
 def compute_jockey_trainer_win_rates(supabase) -> tuple:
     """Query Supabase historical race_runners to compute real jockey/trainer win rates."""
     print("  [WinRate] Computing jockey/trainer win rates from Supabase history...")
-    result = supabase.table('race_runners').select(
-        'jockey, trainer, finish_position'
-    ).not_.is_('finish_position', 'null').execute()
+    result = retry_supabase(
+        lambda: supabase.table('race_runners').select(
+            'jockey, trainer, finish_position'
+        ).not_.is_('finish_position', 'null').execute()
+    )
     rows = result.data or []
 
     jockey_stats = {}
@@ -120,11 +126,13 @@ def compute_weight_diffs(supabase, horse_entries: list) -> dict:
         current_dw = entry.get('declared_weight')
         if not current_dw:
             continue
-        prev = supabase.table('race_runners').select('declared_weight').eq(
-            'horse_id', horse_id
-        ).not_.is_('declared_weight', 'null').order(
-            'race_id', desc=True
-        ).limit(1).execute()
+        prev = retry_supabase(
+            lambda hid=horse_id: supabase.table('race_runners').select('declared_weight').eq(
+                'horse_id', hid
+            ).not_.is_('declared_weight', 'null').order(
+                'race_id', desc=True
+            ).limit(1).execute()
+        )
         if prev.data and prev.data[0].get('declared_weight'):
             prev_dw = float(prev.data[0]['declared_weight'])
             diffs[horse_id] = round(current_dw - prev_dw, 1)
@@ -182,7 +190,7 @@ def scrape_hkjc_races(date_str: str, venue: str) -> List[Dict]:
                             if (txt === '騎師') colMap.jockey = i;
                             if (txt === '檔位' || txt === '排位檔位') colMap.draw = i;
                             if (txt === '練馬師') colMap.trainer = i;
-                            if (txt === '體重') colMap.declaredWeight = i;
+                            if (txt === '排位體重' || txt === '體重') colMap.declaredWeight = i;
                         }
 
                         if (hasFormCol && hasHorseCol) {
@@ -474,7 +482,7 @@ def write_to_supabase(supabase: Client, races: List[Dict], dry_run: bool = False
         # SAFEGUARD #1: Pre-delete old data for this race
         print(f"  [Purge] Deleting old data for {race_id}...")
         try:
-            supabase.table('race_runners').delete().eq('race_id', race_id).execute()
+            retry_supabase(lambda rid=race_id: supabase.table('race_runners').delete().eq('race_id', rid).execute())
         except Exception as e:
             print(f"    [WARN] Delete failed: {e}")
 
@@ -488,7 +496,7 @@ def write_to_supabase(supabase: Client, races: List[Dict], dry_run: bool = False
             'going': truncate(validate_going(race.get('going')), 32) if validate_going(race.get('going')) else None,
             'track_course': truncate(race.get('track_course'), 16) if race.get('track_course') else None,
         }
-        supabase.table('races').upsert(race_row, on_conflict='race_id').execute()
+        retry_supabase(lambda: supabase.table('races').upsert(race_row, on_conflict='race_id').execute())
 
         for horse in race['horses']:
             horse_name = horse['horse_name']
@@ -502,10 +510,10 @@ def write_to_supabase(supabase: Client, races: List[Dict], dry_run: bool = False
 
             if horse_name not in horse_id_map:
                 horse_id_map[horse_name] = horse_id
-                supabase.table('horses').upsert({
+                retry_supabase(lambda: supabase.table('horses').upsert({
                     'horse_id': horse_id,
                     'horse_name': truncate(horse_name, 64),
-                }, on_conflict='horse_id').execute()
+                }, on_conflict='horse_id').execute())
 
             dw = horse.get('declared_weight')
             if dw and has_dw_col:
@@ -668,12 +676,12 @@ def update_odds_in_supabase(supabase: Client, date_str: str, venue: str, odds_ma
         race_id = f"{venue}-{date_path}-{race_no:02d}"
         for horse_no, win_odds in horse_odds.items():
             runner_id = f"{race_id}_H{horse_no:02d}"
-            supabase.table('race_runners').upsert({
+            retry_supabase(lambda: supabase.table('race_runners').upsert({
                 'runner_id': runner_id[:48],
                 'race_id': race_id[:32],
                 'horse_no': horse_no,
                 'win_odds': win_odds,
-            }, on_conflict='runner_id').execute()
+            }, on_conflict='runner_id').execute())
             total_updated += 1
 
     print(f"  [OK] Updated {total_updated} odds entries")

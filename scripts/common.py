@@ -7,6 +7,7 @@ Eliminates duplication of get_supabase_client, _load_dotenv, batch_upsert, etc.
 """
 import os
 import sys
+import time
 from typing import Dict, List, Optional
 
 try:
@@ -14,6 +15,23 @@ try:
 except ImportError:
     print("[FAIL] supabase-py not installed. Run: pip install supabase")
     sys.exit(1)
+
+import httpx
+
+
+def retry_supabase(fn, retries=3, delay=2, backoff=2):
+    """Retry a Supabase call on transient network errors (RemoteProtocolError, etc.)."""
+    for attempt in range(retries):
+        try:
+            return fn()
+        except (httpx.RemoteProtocolError, httpx.ConnectError, httpx.ReadTimeout,
+                ConnectionError, OSError) as e:
+            if attempt < retries - 1:
+                wait = delay * (backoff ** attempt)
+                print(f"    [RETRY] {type(e).__name__}: {e} — retrying in {wait}s (attempt {attempt+2}/{retries})")
+                time.sleep(wait)
+            else:
+                raise
 
 
 def load_dotenv():
