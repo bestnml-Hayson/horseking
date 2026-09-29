@@ -1,0 +1,12 @@
+Scraping horse profile: K209
+
+Profile data:
+  Age: None
+  Career starts: None
+  Career wins: None
+  Career places: None
+Traceback (most recent call last):
+  File "D:\Trae\horse\scripts\horse_scraper.py", line 185, in <module>
+    print(f"  Total prize: ${result.get('total_prize_money', 0):,}")
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: unsupported format string passed to NoneType.__format__

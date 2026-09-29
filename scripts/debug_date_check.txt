@@ -1,0 +1,33 @@
+
+============================================================
+Testing: 2026/09/29 ST
+URL: https://racing.hkjc.com/racing/information/Chinese/Racing/LocalResults.aspx?RaceDate=2026/09/29&Racecourse=ST&RaceNo=1
+============================================================
+  Page date shown: N/A
+  has '場地狀況': False
+  has '名次': False
+  has '第X場': False
+  hasContent (場地狀況 OR 名次): False
+  text length: 672
+
+============================================================
+Testing: 2026/09/27 ST
+URL: https://racing.hkjc.com/racing/information/Chinese/Racing/LocalResults.aspx?RaceDate=2026/09/27&Racecourse=ST&RaceNo=1
+============================================================
+  Page date shown: 27/09/2026
+  has '場地狀況': True
+  has '名次': True
+  has '第X場': True
+  hasContent (場地狀況 OR 名次): True
+  text length: 4658
+
+============================================================
+Testing: 2026/09/26 ST
+URL: https://racing.hkjc.com/racing/information/Chinese/Racing/LocalResults.aspx?RaceDate=2026/09/26&Racecourse=ST&RaceNo=1
+============================================================
+  Page date shown: N/A
+  has '場地狀況': False
+  has '名次': False
+  has '第X場': False
+  hasContent (場地狀況 OR 名次): False
+  text length: 672

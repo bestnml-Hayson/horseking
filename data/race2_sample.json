@@ -1,0 +1,131 @@
+{
+  "race_id": "ST-20260927-02",
+  "race_date": "2026-09-27",
+  "race_no": 2,
+  "venue": "沙田",
+  "distance": 1200,
+  "class_level": "第四班",
+  "going": "好地至快地",
+  "horses": [
+    {
+      "horse_no": 1,
+      "horse_name": "成就非凡",
+      "draw": 4,
+      "weight": 131,
+      "jockey": "楊明綸",
+      "trainer": "黎昭昇",
+      "win_odds": 34.0,
+      "place_odds": 9.7
+    },
+    {
+      "horse_no": 2,
+      "horse_name": "共同享樂",
+      "draw": 2,
+      "weight": 130,
+      "jockey": "霍宏聲",
+      "trainer": "羅富全",
+      "win_odds": 29.0,
+      "place_odds": 7.4
+    },
+    {
+      "horse_no": 3,
+      "horse_name": "紫電王",
+      "draw": 5,
+      "weight": 129,
+      "jockey": "黃智弘",
+      "trainer": "葉楚航",
+      "win_odds": 145.0,
+      "place_odds": 29.0
+    },
+    {
+      "horse_no": 4,
+      "horse_name": "小魔怪",
+      "draw": 6,
+      "weight": 128,
+      "jockey": "蔡明紹",
+      "trainer": "巫偉傑",
+      "win_odds": 4.6,
+      "place_odds": 1.7
+    },
+    {
+      "horse_no": 5,
+      "horse_name": "君至酷",
+      "draw": 9,
+      "weight": 128,
+      "jockey": "金誠剛",
+      "trainer": "呂健威",
+      "win_odds": 27.0,
+      "place_odds": 8.1
+    },
+    {
+      "horse_no": 6,
+      "horse_name": "機緣燦爛",
+      "draw": 1,
+      "weight": 127,
+      "jockey": "梁家俊",
+      "trainer": "鄭俊偉",
+      "win_odds": 52.0,
+      "place_odds": 15.0
+    },
+    {
+      "horse_no": 7,
+      "horse_name": "星光大道",
+      "draw": 10,
+      "weight": 126,
+      "jockey": "袁幸堯",
+      "trainer": "韋達",
+      "win_odds": 12.0,
+      "place_odds": 3.6
+    },
+    {
+      "horse_no": 8,
+      "horse_name": "領駿輝煌",
+      "draw": 12,
+      "weight": 124,
+      "jockey": "潘頓",
+      "trainer": "文家良",
+      "win_odds": 3.0,
+      "place_odds": 1.5
+    },
+    {
+      "horse_no": 9,
+      "horse_name": "龍威心得",
+      "draw": 8,
+      "weight": 124,
+      "jockey": "班德禮",
+      "trainer": "大衛希斯",
+      "win_odds": 21.0,
+      "place_odds": 4.1
+    },
+    {
+      "horse_no": 10,
+      "horse_name": "隋我同來",
+      "draw": 3,
+      "weight": 123,
+      "jockey": "田泰安",
+      "trainer": "桂福特",
+      "win_odds": 4.9,
+      "place_odds": 1.6
+    },
+    {
+      "horse_no": 11,
+      "horse_name": "源好運",
+      "draw": 11,
+      "weight": 122,
+      "jockey": "艾兆禮",
+      "trainer": "廖康銘",
+      "win_odds": 9.3,
+      "place_odds": 2.8
+    },
+    {
+      "horse_no": 12,
+      "horse_name": "金多囍",
+      "draw": 7,
+      "weight": 120,
+      "jockey": "何澤堯",
+      "trainer": "伍鵬志",
+      "win_odds": 9.9,
+      "place_odds": 2.2
+    }
+  ]
+}

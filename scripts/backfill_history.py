@@ -89,9 +89,33 @@ def fetch_race_dates() -> List[str]:
                 if (!targetSelect) return dates;
                 for (const opt of targetSelect.options) {
                     const text = opt.value.trim();
-                    if (/^\d{2}\/\d{2}\/\d{4}$/.test(text)) {
-                        const parts = text.split('/');
-                        dates.push(`${parts[2]}-${parts[1]}-${parts[0]}`);
+                    // Try parsing JSON format: {"date":"DD/MM/YYYY","venue":""}
+                    try {
+                        const parsed = JSON.parse(text);
+                        if (parsed.date) {
+                            const m = parsed.date.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+                            if (m) {
+                                dates.push(`${m[3]}-${m[2]}-${m[1]}`);
+                                continue;
+                            }
+                        }
+                    } catch(e) {}
+                    // Try DD/MM/YYYY format
+                    let m = text.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+                    if (m) {
+                        dates.push(`${m[3]}-${m[2]}-${m[1]}`);
+                        continue;
+                    }
+                    // Try YYYY/MM/DD format
+                    m = text.match(/^(\d{4})\/(\d{2})\/(\d{2})$/);
+                    if (m) {
+                        dates.push(`${m[1]}-${m[2]}-${m[3]}`);
+                        continue;
+                    }
+                    // Try YYYY-MM-DD format
+                    m = text.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+                    if (m) {
+                        dates.push(text);
                     }
                 }
                 return dates;

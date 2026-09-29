@@ -231,7 +231,7 @@ export async function fetchRecentForm(horseIds: string[]): Promise<Map<string, s
       .select('horse_id, finish_position, race_id')
       .in('horse_id', batch)
       .order('race_id', { ascending: false })
-      .limit(200)
+      .limit(3000)
 
     if (error) {
       console.error('[fetchRecentForm] error:', error)

@@ -1,0 +1,73 @@
+Testing URL: https://racing.hkjc.com/racing/information/Chinese/Racing/LocalResults.aspx?RaceDate=2026/09/27&Racecourse=ST&RaceNo=1
+
+has_content with 1.5s wait: True
+
+Text checks with 1.5s wait:
+  has '場地狀況': True
+  has '名次': True
+  has '賽道': True
+  has '跑道': True
+  text length: 4658
+
+First 500 chars:
+首頁 English  
+登入 / 登記常見問題
+賽馬
+足智彩
+六合彩
+
+馬場活動
+
+賽馬資訊
+
+足球資訊
+
+馬會會員
+
+慈善及社區貢獻
+
+馬會知多少
+
+賽事資料(本地) | 賽事資料(越洋轉播) | 賽馬新聞 | 主要賽事 | 視聽播放區 | 國際賽馬 | 香港國際馬匹拍賣會 | 從化馬場 | 投注指南 | 賽馬知多些 | RESTART
+ 報名表
+ 排位表
+ 即時賠率
+ 練馬師分場表
+ 騎師分場表
+ 參考資料
+ 統計資料
+ 賽果
+ 賽事報告
+ 騎練資料
+ 馬匹資料
+ 試閘結果
+ 賽期表
+沙田:														
+S2 日本:													
+S3 德國:													
+
+賽事日期: 27/09/2026    沙田
+01/10/2026
+27/09/2026
+26/09/2026
+23/09/2026
+19/09/2026
+16/09/2026
+13/09/2026
+12/09/2026
+09/09/2026
+06/09/2026
+05/09/2026
+29/08/2026
+22/08/2026
+21/08/2026
+20/08/2026
+19/08
+
+
+has_content with 3.5s wait: True
+
+Text checks with 3.5s wait:
+  has '場地狀況': True
+  has '名次': True
+  text length: 4658

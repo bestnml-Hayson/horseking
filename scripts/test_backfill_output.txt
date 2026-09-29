@@ -1,0 +1,428 @@
+======================================================================
+HKJC Historical Data Backfill
+  Mode: scrape + analyze
+  History: past 0 months
+======================================================================
+[Step 1] Fetching available race dates from HKJC...
+  [WARN] No dates parsed from page, using fallback
+
+[Step 2] Scraping 65 race dates with Playwright...
+    [DEBUG] Scraping 2026-09-29 ST R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-09-29 HV R1
+    [DEBUG] has_content=False
+  [1/65] 2026-09-29: 0 races (total: 0)
+    [DEBUG] Scraping 2026-09-27 ST R1
+    [DEBUG] has_content=True
+    [DEBUG] race_meta: distance=1200 going=好地 track=全天候跑道
+      [OK] R1: 12 horses
+      [OK] R2: 12 horses
+      [OK] R3: 14 horses
+      [OK] R4: 14 horses
+      [OK] R5: 12 horses
+      [OK] R6: 14 horses
+      [OK] R7: 12 horses
+      [OK] R8: 9 horses
+      [OK] R9: 14 horses
+      [OK] R10: 12 horses
+      [OK] R11: 14 horses
+    [DEBUG] Scraping 2026-09-27 HV R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-09-26 ST R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-09-26 HV R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-09-24 ST R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-09-24 HV R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-09-23 ST R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-09-23 HV R1
+    [DEBUG] has_content=True
+    [DEBUG] race_meta: distance=1650 going=好地 track=草地
+      [OK] R1: 12 horses
+      [OK] R2: 12 horses
+      [OK] R3: 12 horses
+      [OK] R4: 10 horses
+      [OK] R5: 12 horses
+      [OK] R6: 12 horses
+      [OK] R7: 12 horses
+      [OK] R8: 12 horses
+      [OK] R9: 12 horses
+  [5/65] 2026-09-23: 9 races (total: 20)
+    [DEBUG] Scraping 2026-09-22 ST R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-09-22 HV R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-09-20 ST R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-09-20 HV R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-09-19 ST R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-09-19 HV R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-09-17 ST R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-09-17 HV R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-09-16 ST R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-09-16 HV R1
+    [DEBUG] has_content=True
+    [DEBUG] race_meta: distance=1000 going=好地 track=草地
+      [OK] R1: 12 horses
+      [OK] R2: 12 horses
+      [OK] R3: 12 horses
+      [OK] R4: 12 horses
+      [OK] R5: 12 horses
+      [OK] R6: 12 horses
+      [OK] R7: 12 horses
+      [OK] R8: 11 horses
+  [10/65] 2026-09-16: 8 races (total: 28)
+    [DEBUG] Scraping 2026-09-15 ST R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-09-15 HV R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-09-13 ST R1
+    [DEBUG] has_content=True
+    [DEBUG] race_meta: distance=1400 going=好地 track=草地
+      [OK] R1: 14 horses
+      [OK] R2: 13 horses
+      [OK] R3: 14 horses
+      [OK] R4: 14 horses
+      [OK] R5: 14 horses
+      [OK] R6: 14 horses
+      [OK] R7: 14 horses
+      [OK] R8: 14 horses
+      [OK] R9: 14 horses
+      [OK] R10: 14 horses
+    [DEBUG] Scraping 2026-09-13 HV R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-09-12 ST R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-09-12 HV R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-09-10 ST R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-09-10 HV R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-09-09 ST R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-09-09 HV R1
+    [DEBUG] has_content=True
+    [DEBUG] race_meta: distance=1200 going=好地 track=草地
+      [OK] R1: 12 horses
+      [OK] R2: 10 horses
+      [OK] R3: 12 horses
+      [OK] R4: 11 horses
+      [OK] R5: 12 horses
+      [OK] R6: 12 horses
+      [OK] R7: 12 horses
+      [OK] R8: 12 horses
+  [15/65] 2026-09-09: 8 races (total: 46)
+    [DEBUG] Scraping 2026-09-08 ST R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-09-08 HV R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-09-06 ST R1
+    [DEBUG] has_content=True
+    [DEBUG] race_meta: distance=1200 going=好地 track=草地
+      [OK] R1: 14 horses
+      [OK] R2: 11 horses
+      [OK] R3: 6 horses
+      [OK] R4: 14 horses
+      [OK] R5: 14 horses
+      [OK] R6: 14 horses
+      [OK] R7: 8 horses
+      [OK] R8: 14 horses
+      [OK] R9: 11 horses
+      [OK] R10: 13 horses
+    [DEBUG] Scraping 2026-09-06 HV R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-09-05 ST R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-09-05 HV R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-09-03 ST R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-09-03 HV R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-09-02 ST R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-09-02 HV R1
+    [DEBUG] has_content=False
+  [20/65] 2026-09-02: 0 races (total: 56)
+    [DEBUG] Scraping 2026-09-01 ST R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-09-01 HV R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-08-30 ST R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-08-30 HV R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-08-29 ST R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-08-29 HV R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-08-27 ST R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-08-27 HV R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-08-26 ST R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-08-26 HV R1
+    [DEBUG] has_content=False
+  [25/65] 2026-08-26: 0 races (total: 56)
+    [DEBUG] Scraping 2026-08-25 ST R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-08-25 HV R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-08-23 ST R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-08-23 HV R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-08-22 ST R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-08-22 HV R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-08-20 ST R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-08-20 HV R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-08-19 ST R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-08-19 HV R1
+    [DEBUG] has_content=False
+  [30/65] 2026-08-19: 0 races (total: 56)
+    [DEBUG] Scraping 2026-08-18 ST R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-08-18 HV R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-08-16 ST R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-08-16 HV R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-08-15 ST R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-08-15 HV R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-08-13 ST R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-08-13 HV R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-08-12 ST R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-08-12 HV R1
+    [DEBUG] has_content=False
+  [35/65] 2026-08-12: 0 races (total: 56)
+    [DEBUG] Scraping 2026-08-11 ST R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-08-11 HV R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-08-09 ST R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-08-09 HV R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-08-08 ST R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-08-08 HV R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-08-06 ST R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-08-06 HV R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-08-05 ST R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-08-05 HV R1
+    [DEBUG] has_content=False
+  [40/65] 2026-08-05: 0 races (total: 56)
+    [DEBUG] Scraping 2026-08-04 ST R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-08-04 HV R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-08-02 ST R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-08-02 HV R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-08-01 ST R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-08-01 HV R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-07-30 ST R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-07-30 HV R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-07-29 ST R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-07-29 HV R1
+    [DEBUG] has_content=False
+  [45/65] 2026-07-29: 0 races (total: 56)
+    [DEBUG] Scraping 2026-07-28 ST R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-07-28 HV R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-07-26 ST R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-07-26 HV R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-07-25 ST R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-07-25 HV R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-07-23 ST R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-07-23 HV R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-07-22 ST R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-07-22 HV R1
+    [DEBUG] has_content=False
+  [50/65] 2026-07-22: 0 races (total: 56)
+    [DEBUG] Scraping 2026-07-21 ST R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-07-21 HV R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-07-19 ST R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-07-19 HV R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-07-18 ST R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-07-18 HV R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-07-16 ST R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-07-16 HV R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-07-15 ST R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-07-15 HV R1
+    [DEBUG] has_content=True
+    [DEBUG] race_meta: distance=1650 going=好地 track=草地
+      [OK] R1: 12 horses
+      [OK] R2: 12 horses
+      [OK] R3: 12 horses
+      [OK] R4: 12 horses
+      [OK] R5: 12 horses
+      [OK] R6: 12 horses
+      [OK] R7: 12 horses
+      [OK] R8: 11 horses
+      [OK] R9: 12 horses
+  [55/65] 2026-07-15: 9 races (total: 65)
+    [DEBUG] Scraping 2026-07-14 ST R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-07-14 HV R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-07-12 ST R1
+    [DEBUG] has_content=True
+    [DEBUG] race_meta: distance=1800 going=好地 track=草地
+      [OK] R1: 14 horses
+      [OK] R2: 14 horses
+      [OK] R3: 14 horses
+      [OK] R4: 14 horses
+      [OK] R5: 14 horses
+      [OK] R6: 14 horses
+      [OK] R7: 14 horses
+      [OK] R8: 12 horses
+      [OK] R9: 14 horses
+      [OK] R10: 14 horses
+      [OK] R11: 14 horses
+    [DEBUG] Scraping 2026-07-12 HV R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-07-11 ST R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-07-11 HV R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-07-09 ST R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-07-09 HV R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-07-08 ST R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-07-08 HV R1
+    [DEBUG] has_content=True
+    [DEBUG] race_meta: distance=1000 going=好地 track=草地
+      [OK] R1: 11 horses
+      [OK] R2: 12 horses
+      [OK] R3: 12 horses
+      [OK] R4: 8 horses
+      [OK] R5: 12 horses
+      [OK] R6: 12 horses
+      [OK] R7: 12 horses
+      [OK] R8: 12 horses
+      [OK] R9: 12 horses
+  [60/65] 2026-07-08: 9 races (total: 85)
+    [DEBUG] Scraping 2026-07-07 ST R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-07-07 HV R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-07-05 ST R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-07-05 HV R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-07-04 ST R1
+    [DEBUG] has_content=True
+    [DEBUG] race_meta: distance=1200 going=好地 track=草地
+      [OK] R1: 10 horses
+      [OK] R2: 12 horses
+      [OK] R3: 12 horses
+      [OK] R4: 7 horses
+      [OK] R5: 14 horses
+      [OK] R6: 12 horses
+      [OK] R7: 11 horses
+      [OK] R8: 14 horses
+      [OK] R9: 12 horses
+      [OK] R10: 12 horses
+      [OK] R11: 14 horses
+    [DEBUG] Scraping 2026-07-04 HV R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-07-02 ST R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-07-02 HV R1
+    [DEBUG] has_content=False
+    [DEBUG] Scraping 2026-07-01 ST R1
+    [DEBUG] has_content=True
+    [DEBUG] race_meta: distance=1600 going=好地 track=草地
+      [OK] R1: 14 horses
+      [OK] R2: 14 horses
+      [OK] R3: 14 horses
+      [OK] R4: 13 horses
+      [OK] R5: 10 horses
+      [OK] R6: 12 horses
+      [OK] R7: 14 horses
+      [OK] R8: 14 horses
+      [OK] R9: 14 horses
+      [OK] R10: 14 horses
+      [OK] R11: 12 horses
+    [DEBUG] Scraping 2026-07-01 HV R1
+    [DEBUG] has_content=False
+  [65/65] 2026-07-01: 11 races (total: 107)
+
+  Scraped 107 races total
+  1328 horse entries
+
+[Step 3] Writing core tables...
+  [OK] Validation passed: 107 races
+  [OK] official_rating column found
+  [OK] declared_weight column found
+  [OK] margin column found
+  [OK] sectional_times column found
+  [OK] track_course column found
+  [OK] Cleared old race_runners for 107 races
+    [OK] 824/824 rows upserted to horses
+    [OK] 107/107 rows upserted to races
+    [OK] 1328/1328 rows upserted to race_runners
+  [OK] 824 horses, 107 races, 1328 runners
+
+[Step 4] Running post-race AI analysis...
+  [OK] 107 races → ai_performance, 1328 runners → race_results
+
+======================================================================
+BACKFILL COMPLETE
+  Race dates processed: 65
+  Core tables:          107 races, 1328 runners
+  AI analysis:          107 races → ai_performance
+  Race results:         1328 runners → race_results
+======================================================================
