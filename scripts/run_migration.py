@@ -23,16 +23,14 @@ def main():
     print(f"  Project ref: {project_ref}")
 
     statements = [
-        "ALTER TABLE race_runners ADD COLUMN IF NOT EXISTS official_rating NUMERIC(6,2)",
-        "ALTER TABLE race_runners ADD COLUMN IF NOT EXISTS age INTEGER",
-        "ALTER TABLE race_runners ADD COLUMN IF NOT EXISTS career_starts INTEGER",
-        "ALTER TABLE race_runners ADD COLUMN IF NOT EXISTS career_wins INTEGER",
-        "ALTER TABLE race_runners ADD COLUMN IF NOT EXISTS career_places INTEGER",
-        "ALTER TABLE race_runners ADD COLUMN IF NOT EXISTS total_prize_money NUMERIC(12,2)",
-        "ALTER TABLE race_runners ADD COLUMN IF NOT EXISTS declared_weight NUMERIC(6,2)",
-        "ALTER TABLE race_runners ADD COLUMN IF NOT EXISTS sectional_times TEXT",
-        "ALTER TABLE race_runners ADD COLUMN IF NOT EXISTS margin NUMERIC(4,1)",
-        "ALTER TABLE races ADD COLUMN IF NOT EXISTS track_course VARCHAR(16)",
+        "ALTER TABLE race_runners ADD COLUMN IF NOT EXISTS weight_change NUMERIC(6,2)",
+        "ALTER TABLE race_runners ADD COLUMN IF NOT EXISTS best_time VARCHAR(16)",
+        "ALTER TABLE race_runners ADD COLUMN IF NOT EXISTS gender VARCHAR(4)",
+        "ALTER TABLE race_runners ADD COLUMN IF NOT EXISTS season_prize NUMERIC(12,2)",
+        "ALTER TABLE race_runners ADD COLUMN IF NOT EXISTS priority VARCHAR(8)",
+        "ALTER TABLE race_runners ADD COLUMN IF NOT EXISTS gear VARCHAR(16)",
+        "ALTER TABLE horses ADD COLUMN IF NOT EXISTS sire VARCHAR(64)",
+        "ALTER TABLE horses ADD COLUMN IF NOT EXISTS dam VARCHAR(64)",
     ]
 
     conn = None
@@ -63,8 +61,8 @@ def main():
         cur.execute("""
             SELECT column_name, data_type
             FROM information_schema.columns
-            WHERE table_name IN ('race_runners', 'races')
-            AND column_name IN ('official_rating','age','career_starts','career_wins','career_places','total_prize_money','declared_weight','sectional_times','margin','track_course')
+            WHERE table_name IN ('race_runners', 'horses')
+            AND column_name IN ('weight_change','best_time','gender','season_prize','priority','gear','sire','dam')
             ORDER BY table_name, ordinal_position
         """)
         rows = cur.fetchall()
