@@ -212,12 +212,21 @@ def analyze_race(runners: List[Dict]) -> List[Dict]:
     results = []
     for i, r in enumerate(runners):
         p_model = p_models[i]
-        p_market = p_markets[i]
-        p_final = benter_fusion(p_model, p_market)
-        ev = compute_ev(p_final, r.get('win_odds'))
-        kelly = compute_kelly(p_final, r.get('win_odds'))
+        win_odds = r.get('win_odds')
+        odds_available = win_odds is not None and win_odds > 1.0
 
-        is_value_bet = ev > 0.15
+        if odds_available:
+            p_market = p_markets[i]
+            p_final = benter_fusion(p_model, p_market)
+            ev = compute_ev(p_final, win_odds)
+            kelly = compute_kelly(p_final, win_odds)
+        else:
+            p_market = None
+            p_final = None
+            ev = None
+            kelly = None
+
+        is_value_bet = ev is not None and ev > 0.15
 
         results.append({
             'runner_id': r.get('runner_id'),
@@ -225,8 +234,8 @@ def analyze_race(runners: List[Dict]) -> List[Dict]:
             'horse_no': r.get('horse_no'),
             'horse_id': r.get('horse_id'),
             'raw_model_prob': round(p_model, 5),
-            'market_implied_prob': round(p_market, 5),
-            'final_prob': round(p_final, 5),
+            'market_implied_prob': round(p_market, 5) if p_market is not None else None,
+            'final_prob': round(p_final, 5) if p_final is not None else None,
             'expected_value': ev,
             'kelly_fraction': kelly,
             'is_value_bet': is_value_bet,
