@@ -1,7 +1,96 @@
-import type { RaceRow, Race } from './types'
+import type { RaceRow, Race, ModelPrediction } from './types'
 import { getFormColor } from './color-utils'
 
 export { getFormColor }
+
+const ALPHA = 0.25
+const FRACTIONAL_KELLY = 0.25
+const W_FORM = 0.30
+const W_RATING = 0.20
+const W_JOCKEY = 0.20
+const W_TRAINER = 0.15
+const W_DRAW = 0.15
+
+function normalize(arr: (number | null | undefined)[]): number[] {
+  const vals = arr.filter((v): v is number => v != null)
+  if (vals.length === 0) return arr.map(() => 0.5)
+  const mn = Math.min(...vals)
+  const mx = Math.max(...vals)
+  const rng = mx !== mn ? mx - mn : 1
+  return arr.map(v => v != null ? (v - mn) / rng : 0.5)
+}
+
+function softmax(scores: number[]): number[] {
+  if (scores.length === 0) return []
+  const maxS = Math.max(...scores)
+  const exps = scores.map(s => Math.exp(s - maxS))
+  const total = exps.reduce((a, b) => a + b, 0)
+  return total === 0 ? scores.map(() => 1 / scores.length) : exps.map(e => e / total)
+}
+
+function parseFormForScore(form: string | null | undefined): number {
+  if (!form) return 10
+  const positions = form.split(/[-/\s,]+/).map(s => parseInt(s.trim())).filter(n => !isNaN(n) && n > 0)
+  if (positions.length === 0) return 10
+  return positions.slice(0, 6).reduce((s, p) => s + p, 0) / positions.length
+}
+
+export function computeClientPredictions(rows: RaceRow[]): RaceRow[] {
+  if (rows.length === 0) return rows
+
+  const formScores = rows.map(r => parseFormForScore(r.form_history))
+  const ratings = rows.map(r => r.official_rating)
+  const jockeyWrs = rows.map(r => r.jockey_win_rate)
+  const trainerWrs = rows.map(r => r.trainer_win_rate)
+  const draws = rows.map(r => r.draw)
+
+  const nForm = normalize(formScores.map(f => 1 / f))
+  const nRating = normalize(ratings)
+  const nJockey = normalize(jockeyWrs)
+  const nTrainer = normalize(trainerWrs)
+
+  const nDraws = draws.map(d => {
+    if (d == null) return 0.5
+    const mid = (rows.length + 1) / 2
+    return Math.max(0, Math.min(1, 1 - Math.abs(d - mid) / mid))
+  })
+
+  const rawScores = rows.map((_, i) =>
+    W_FORM * nForm[i] + W_RATING * nRating[i] + W_JOCKEY * nJockey[i] +
+    W_TRAINER * nTrainer[i] + W_DRAW * nDraws[i]
+  )
+  const pModels = softmax(rawScores)
+
+  const oddsList = rows.map(r => r.win_odds)
+  const hasValidOdds = oddsList.some(o => o != null && o > 1)
+  const pMarkets = hasValidOdds
+    ? softmax(oddsList.map(o => (o != null && o > 1) ? 1 / o : 0))
+    : rows.map(() => 1 / rows.length)
+
+  return rows.map((row, i) => {
+    const pModel = pModels[i]
+    const pMarket = pMarkets[i]
+    const eps = 1e-10
+    const pFinal = Math.exp(ALPHA * Math.log(Math.max(pModel, eps)) + (1 - ALPHA) * Math.log(Math.max(pMarket, eps)))
+    const odds = row.win_odds
+    const ev = (odds != null && odds > 1) ? pFinal * odds - 1 : 0
+    const fullKelly = (odds != null && odds > 1 && ev > 0) ? ev / (odds - 1) : 0
+    const kelly = Math.max(0, fullKelly * FRACTIONAL_KELLY)
+
+    const prediction: ModelPrediction = {
+      prediction_id: `client-${row.runner_id}`,
+      race_id: row.race_id,
+      runner_id: row.runner_id,
+      raw_model_prob: Math.round(pModel * 10000) / 10000,
+      market_implied_prob: Math.round(pMarket * 10000) / 10000,
+      final_prob: Math.max(0, Math.min(1, Math.round(pFinal * 10000) / 10000)),
+      expected_value: Math.round(ev * 10000) / 10000,
+      kelly_fraction: Math.round(kelly * 100000) / 100000,
+    }
+
+    return { ...row, prediction }
+  })
+}
 
 /**
  * Compute AI composite score (0-100) from model predictions.
@@ -187,10 +276,11 @@ export function fmtEV(ev: number | null): string {
  */
 export function parseFormHistory(form: string | null | undefined): number[] {
   if (!form) return []
-  return form
+  const stripped = form.replace(/[{}"':]/g, ' ')
+  return stripped
     .split(/[-\/\s,]+/)
     .map(s => parseInt(s.trim()))
-    .filter(n => !isNaN(n) && n > 0)
+    .filter(n => !isNaN(n) && n > 0 && n <= 20)
     .slice(0, 6)
 }
 

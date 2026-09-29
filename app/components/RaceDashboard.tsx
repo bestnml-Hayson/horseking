@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { fetchLatestRaces, fetchRaceRunners, fetchPredictions, fetchHorses } from '@/lib/supabase-client'
 import type { Race, RaceRunner, ModelPrediction, Horse, RaceRow } from '@/lib/types'
-import { getTopPicks, estimateRaceTime, predictPace, isOddsPending } from '@/lib/race-utils'
+import { getTopPicks, estimateRaceTime, predictPace, isOddsPending, computeClientPredictions } from '@/lib/race-utils'
 import { PacingBriefing } from './PacingBriefing'
 import { AIRaceAnalysis } from './AIRaceAnalysis'
 import { TopPicksCards } from './TopPicksCards'
@@ -44,11 +44,16 @@ export function RaceDashboard() {
       const predMap = new Map<string, ModelPrediction>()
       predictions.forEach(p => predMap.set(p.runner_id, p))
 
-      const raceRows: RaceRow[] = runners.map(r => ({
+      let raceRows: RaceRow[] = runners.map(r => ({
         ...r,
         horse_name: horseMap.get(r.horse_id)?.horse_name ?? r.horse_id,
         prediction: predMap.get(r.runner_id) ?? null,
       }))
+
+      if (predictions.length === 0 && raceRows.length > 0) {
+        console.log('[RaceDashboard] No predictions from DB, computing client-side fallback')
+        raceRows = computeClientPredictions(raceRows)
+      }
 
       setRows(raceRows)
       setLastUpdate(new Date())

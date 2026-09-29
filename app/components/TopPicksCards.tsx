@@ -8,6 +8,7 @@ import {
   fmtKelly,
   getFormColor,
   isOddsPending,
+  parseFormHistory,
 } from '@/lib/race-utils'
 import { PICK_ACCENT_COLORS, MUTED_TEXT_COLOR } from '@/lib/color-utils'
 
@@ -50,10 +51,10 @@ export function TopPicksCards({ picks, totalRunners, paceLabel, onHorseClick }: 
           const pFinal = pred?.final_prob ?? null
           const ev = pred?.expected_value ?? null
           const kelly = pred?.kelly_fraction ?? null
-          const form = row.form_history ?? ''
+          const oddsPending = isOddsPending(row.win_odds)
+          const formPositions = parseFormHistory(row.form_history)
           const odds = fmtOdds(row.win_odds)
           const color = PICK_ACCENT_COLORS[idx]
-          const formPositions = form ? form.split('-').map(Number).filter(n => !isNaN(n)) : []
 
           return (
             <div
@@ -88,7 +89,7 @@ export function TopPicksCards({ picks, totalRunners, paceLabel, onHorseClick }: 
                 </div>
                 <div className="benter-stat-row">
                   <span className="benter-label">P_market</span>
-                  <span className="benter-value market-val">{fmtPct(pMarket)}</span>
+                  <span className="benter-value market-val">{oddsPending ? '待定' : fmtPct(pMarket)}</span>
                 </div>
                 <div className="benter-stat-row highlight">
                   <span className="benter-label">P_final</span>
