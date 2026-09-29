@@ -97,6 +97,11 @@ export async function GET(
         is_top3_pick: idx < 3,
         finished_in_top3: finishPos != null && finishPos <= 3,
         is_winner: finishPos === 1,
+        official_rating: runner?.official_rating ?? null,
+        jockey_win_rate: runner?.jockey_win_rate ?? null,
+        trainer_win_rate: runner?.trainer_win_rate ?? null,
+        weight_carried_diff: runner?.weight_carried_diff ?? null,
+        declared_weight: runner?.declared_weight ?? null,
       }
     })
 

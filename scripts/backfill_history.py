@@ -211,6 +211,8 @@ def scrape_hkjc_race(date_str: str, venue: str, race_no: int) -> Optional[Dict]:
                     else if (h === '評分' || h === '評分*') colMap.rating = i;
                     else if (h === '完成時間' || h === '時間') colMap.finishTime = i;
                     else if (h === '獨贏賠率' || h === '賠率') colMap.winOdds = i;
+                    else if (h === '距離') colMap.margin = i;
+                    else if (h === '體重') colMap.declaredWeight = i;
                 }
 
                 // Fallback to positional mapping if headers not found
@@ -228,6 +230,7 @@ def scrape_hkjc_race(date_str: str, venue: str, race_no: int) -> Optional[Dict]:
                     let position, horseNo, horseNameRaw, jockey, trainer;
                     let weight = null, draw = null, rating = null;
                     let finishTime = null, winOdds = null;
+                    let margin = null, declaredWeight = null;
 
                     if (hasHeaderMap) {
                         const get = (key) => colMap[key] !== undefined ? texts[colMap[key]] : null;
@@ -250,6 +253,23 @@ def scrape_hkjc_race(date_str: str, venue: str, race_no: int) -> Optional[Dict]:
                             }
                         }
                         try { winOdds = parseFloat(get('winOdds')); if (isNaN(winOdds)) winOdds = null; } catch(e) {}
+
+                        if (colMap.margin !== undefined) {
+                            try {
+                                const marginStr = texts[colMap.margin].trim();
+                                if (marginStr && marginStr !== '---' && marginStr !== '-') {
+                                    const frac = marginStr.match(/(\d+)[-\s]*([\d]+)\/([\d]+)/);
+                                    if (frac) margin = parseInt(frac[1]) + parseInt(frac[2]) / parseInt(frac[3]);
+                                    else { const simple = parseFloat(marginStr); if (!isNaN(simple)) margin = simple; }
+                                }
+                            } catch(e) {}
+                        }
+                        if (colMap.declaredWeight !== undefined) {
+                            try {
+                                const dwVal = parseInt(texts[colMap.declaredWeight].trim());
+                                if (!isNaN(dwVal) && dwVal > 800 && dwVal < 1500) declaredWeight = dwVal;
+                            } catch(e) {}
+                        }
                     } else {
                         // Positional fallback
                         try { position = parseInt(texts[0]); if (isNaN(position) || position < 1) continue; } catch(e) { continue; }
@@ -291,6 +311,8 @@ def scrape_hkjc_race(date_str: str, venue: str, race_no: int) -> Optional[Dict]:
                         finish_position: position,
                         finish_time: finishTime,
                         win_odds: winOdds,
+                        margin: margin,
+                        declared_weight: declaredWeight,
                     });
                 }
 
@@ -299,6 +321,34 @@ def scrape_hkjc_race(date_str: str, venue: str, race_no: int) -> Optional[Dict]:
 
             if not horses:
                 return None
+
+            # Extract sectional times (best-effort from same page)
+            sectional_times = page.evaluate(r'''() => {
+                const text = document.body.innerText;
+                const lines = text.split('\\n');
+                const sectionals = {};
+
+                let inSectional = false;
+                for (let i = 0; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    if (line.includes('分段時間') || line.includes('Sectional Times')) {
+                        inSectional = true;
+                        continue;
+                    }
+                    if (inSectional) {
+                        if (!line || line.includes('備註') || line.includes('排位表')) break;
+                        const match = line.match(/(\d+)\s*-\s*(.+)/);
+                        if (match) {
+                            const horseNo = parseInt(match[1]);
+                            const times = match[2].trim();
+                            if (!isNaN(horseNo) && times) {
+                                sectionals[horseNo] = times;
+                            }
+                        }
+                    }
+                }
+                return Object.keys(sectionals).length > 0 ? sectionals : null;
+            }''')
 
             race_id = f"{venue}-{date_str.replace('-', '')}-{race_no:02d}"
             race_data = {
@@ -310,6 +360,7 @@ def scrape_hkjc_race(date_str: str, venue: str, race_no: int) -> Optional[Dict]:
                 "going": str(race_meta.get('going', ''))[:32] if race_meta.get('going') else None,
                 "class_level": str(race_meta.get('class_level', ''))[:32] if race_meta.get('class_level') else None,
                 "horses": horses,
+                "sectional_times": sectional_times,
             }
 
             return race_data
@@ -324,10 +375,11 @@ def scrape_hkjc_race(date_str: str, venue: str, race_no: int) -> Optional[Dict]:
 # =====================================================================
 # 3. Compute features (jockey/trainer win rates, form scores)
 # =====================================================================
-def compute_features(all_races: List[Dict]) -> Tuple[Dict, Dict, Dict]:
+def compute_features(all_races: List[Dict]) -> Tuple[Dict, Dict, Dict, Dict]:
     jockey_stats = defaultdict(lambda: {"starts": 0, "wins": 0})
     trainer_stats = defaultdict(lambda: {"starts": 0, "wins": 0})
     horse_history = defaultdict(list)
+    dw_history = defaultdict(list)
 
     for race in sorted(all_races, key=lambda r: r["race_date"]):
         for h in race.get("horses", []):
@@ -348,13 +400,19 @@ def compute_features(all_races: List[Dict]) -> Tuple[Dict, Dict, Dict]:
                     "date": race["race_date"],
                     "position": h.get("finish_position"),
                 })
+                dw = h.get("declared_weight")
+                if dw:
+                    dw_history[hc].append({
+                        "date": race["race_date"],
+                        "declared_weight": dw,
+                    })
 
     jockey_wr = {n: round(s["wins"] / s["starts"], 4) if s["starts"] > 0 else 0.10
                  for n, s in jockey_stats.items()}
     trainer_wr = {n: round(s["wins"] / s["starts"], 4) if s["starts"] > 0 else 0.10
                   for n, s in trainer_stats.items()}
 
-    return jockey_wr, trainer_wr, horse_history
+    return jockey_wr, trainer_wr, horse_history, dw_history
 
 
 def compute_recent_form(horse_code: str, race_date: str, horse_history: Dict) -> float:
@@ -385,11 +443,25 @@ def compute_rest_days(horse_code: str, race_date: str, horse_history: Dict) -> i
     return (current - prev).days
 
 
+def compute_weight_carried_diff(horse_code: str, race_date: str,
+                                dw_history: Dict, current_dw: float) -> float:
+    """Compute weight carried diff = current declared_weight - previous declared_weight."""
+    entries = sorted(
+        [e for e in dw_history.get(horse_code, []) if e["date"] < race_date and e.get("declared_weight")],
+        key=lambda e: e["date"], reverse=True,
+    )
+    if not entries:
+        return 0.0
+    prev_dw = entries[0]["declared_weight"]
+    return round(current_dw - prev_dw, 1)
+
+
 # =====================================================================
 # 4. Write core tables (races, horses, race_runners)
 # =====================================================================
 def write_core_tables(supabase: Client, all_races: List[Dict],
-                      jockey_wr: Dict, trainer_wr: Dict, horse_history: Dict):
+                      jockey_wr: Dict, trainer_wr: Dict, horse_history: Dict,
+                      dw_history: Dict):
     print(f"\n[Step 3] Writing core tables...")
 
     for race in all_races:
@@ -397,10 +469,11 @@ def write_core_tables(supabase: Client, all_races: List[Dict],
         n = len(horses)
         if n < 4:
             raise Exception(f"[VALIDATION FAIL] {race['race_id']}: Only {n} horses, expected >= 4")
-        horse_nos = sorted(h["horse_no"] for h in horses)
-        expected = list(range(1, n + 1))
-        if horse_nos != expected:
-            raise Exception(f"[VALIDATION FAIL] {race['race_id']}: horse_no {horse_nos} != expected {expected}")
+        horse_nos = [h["horse_no"] for h in horses]
+        if len(set(horse_nos)) != n:
+            raise Exception(f"[VALIDATION FAIL] {race['race_id']}: Duplicate horse_no detected")
+        if any(no < 1 or no > 20 for no in horse_nos):
+            raise Exception(f"[VALIDATION FAIL] {race['race_id']}: horse_no out of range: {horse_nos}")
         for h in horses:
             if not h.get("horse_name") or len(h["horse_name"]) < 2:
                 raise Exception(f"[VALIDATION FAIL] {race['race_id']} H{h['horse_no']:02d}: Empty horse name")
@@ -409,10 +482,19 @@ def write_core_tables(supabase: Client, all_races: List[Dict],
     print(f"  [OK] Validation passed: {len(all_races)} races")
 
     has_official_rating = has_column(supabase, "race_runners", "official_rating")
+    has_dw_col = has_column(supabase, "race_runners", "declared_weight")
+    has_margin_col = has_column(supabase, "race_runners", "margin")
+    has_st_col = has_column(supabase, "race_runners", "sectional_times")
     if has_official_rating:
         print("  [OK] official_rating column found")
     else:
         print("  [INFO] official_rating column not yet added (run migrations/add_quantitative_fields.sql)")
+    if has_dw_col:
+        print("  [OK] declared_weight column found")
+    if has_margin_col:
+        print("  [OK] margin column found")
+    if has_st_col:
+        print("  [OK] sectional_times column found")
 
     horses_map = {}
     races_rows = []
@@ -420,6 +502,7 @@ def write_core_tables(supabase: Client, all_races: List[Dict],
 
     for race in all_races:
         race_id = race["race_id"]
+        sectional_map = race.get("sectional_times") or {}
         races_rows.append({
             "race_id": truncate(race_id, 32),
             "race_date": race["race_date"],
@@ -440,6 +523,10 @@ def write_core_tables(supabase: Client, all_races: List[Dict],
 
             runner_id = f"{race_id}_H{h['horse_no']:02d}"
             official_rating = h.get("official_rating")
+            current_dw = h.get("declared_weight")
+            wcd = 0.0
+            if current_dw:
+                wcd = compute_weight_carried_diff(hc, race["race_date"], dw_history, current_dw)
             runner_row = {
                 "runner_id": runner_id[:48],
                 "race_id": race_id[:32],
@@ -456,11 +543,18 @@ def write_core_tables(supabase: Client, all_races: List[Dict],
                 "recent_form_score": compute_recent_form(hc, race["race_date"], horse_history),
                 "jockey_win_rate": jockey_wr.get(h.get("jockey", ""), 0.10),
                 "trainer_win_rate": trainer_wr.get(h.get("trainer", ""), 0.10),
-                "weight_carried_diff": 0.0,
+                "weight_carried_diff": wcd,
                 "rest_days": compute_rest_days(hc, race["race_date"], horse_history),
             }
-            if has_official_rating and official_rating:
-                runner_row["official_rating"] = official_rating
+            if has_official_rating:
+                runner_row["official_rating"] = official_rating if official_rating else None
+            if has_dw_col and current_dw:
+                runner_row["declared_weight"] = current_dw
+            if has_margin_col and h.get("margin") is not None:
+                runner_row["margin"] = h["margin"]
+            st = sectional_map.get(str(h["horse_no"])) or sectional_map.get(h["horse_no"])
+            if has_st_col and st:
+                runner_row["sectional_times"] = str(st)[:500]
             runners_rows.append(runner_row)
 
     horses_rows = list(horses_map.values())
@@ -760,8 +854,8 @@ def main():
         return 0
 
     # Step 3: Write core tables
-    jockey_wr, trainer_wr, horse_history = compute_features(all_races)
-    n_races, n_runners = write_core_tables(supabase, all_races, jockey_wr, trainer_wr, horse_history)
+    jockey_wr, trainer_wr, horse_history, dw_history = compute_features(all_races)
+    n_races, n_runners = write_core_tables(supabase, all_races, jockey_wr, trainer_wr, horse_history, dw_history)
 
     # Step 4: Post-race analysis → race_results + ai_performance
     n_analyzed, n_results = analyze_and_write(supabase, all_races)

@@ -26,7 +26,7 @@ export async function GET(
 
     const { data: runnerHistory } = await supabase
       .from('race_runners')
-      .select('race_id, horse_no, jockey, trainer, win_odds, finish_position, actual_weight, draw, finish_time, form_history')
+      .select('race_id, horse_no, jockey, trainer, win_odds, finish_position, actual_weight, draw, finish_time, form_history, official_rating, jockey_win_rate, trainer_win_rate, rest_days, recent_form_score, weight_carried_diff, declared_weight')
       .eq('horse_id', horseId)
       .order('race_id', { ascending: false })
       .limit(30)
@@ -65,6 +65,12 @@ export async function GET(
         draw: row.draw,
         finish_time: row.finish_time,
         form_history: row.form_history,
+        official_rating: row.official_rating ?? null,
+        jockey_win_rate: row.jockey_win_rate ?? null,
+        trainer_win_rate: row.trainer_win_rate ?? null,
+        rest_days: row.rest_days ?? null,
+        recent_form_score: row.recent_form_score ?? null,
+        declared_weight: row.declared_weight ?? null,
       }
     })
 

@@ -7,6 +7,7 @@ export interface Race {
   going: string | null
   class_level: string | null
   race_time?: string | null
+  track_course?: string | null
 }
 
 export interface RaceRunner {
@@ -29,6 +30,14 @@ export interface RaceRunner {
   finish_position: number | null
   finish_time: number | null
   form_history: string | null
+  age: number | null
+  career_starts: number | null
+  career_wins: number | null
+  career_places: number | null
+  total_prize_money: number | null
+  declared_weight: number | null
+  sectional_times: string | null
+  margin: number | null
 }
 
 export interface ModelPrediction {
@@ -77,6 +86,12 @@ export interface HorseRaceHistory {
   draw: number | null
   finish_time: number | null
   form_history: string | null
+  official_rating: number | null
+  jockey_win_rate: number | null
+  trainer_win_rate: number | null
+  rest_days: number | null
+  recent_form_score: number | null
+  declared_weight: number | null
 }
 
 export interface HorseVenueStats {
@@ -118,6 +133,8 @@ export interface RaceResult {
   jockey: string
   trainer: string
   win_odds: number | null
+  margin: number | null
+  official_rating: number | null
 }
 
 export interface AIPerformanceRecord {
@@ -157,6 +174,11 @@ export interface ComparisonRow {
   is_top3_pick: boolean
   finished_in_top3: boolean
   is_winner: boolean
+  official_rating: number | null
+  jockey_win_rate: number | null
+  trainer_win_rate: number | null
+  weight_carried_diff: number | null
+  declared_weight: number | null
 }
 
 export interface APIResponse<T> {

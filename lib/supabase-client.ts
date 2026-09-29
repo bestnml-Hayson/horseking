@@ -175,6 +175,12 @@ export async function fetchHorseDetail(horseId: string): Promise<HorseDetail | n
       draw: null,
       finish_time: null,
       form_history: null,
+      official_rating: null,
+      jockey_win_rate: null,
+      trainer_win_rate: null,
+      rest_days: null,
+      recent_form_score: null,
+      declared_weight: null,
     }
   })
 

@@ -28,6 +28,12 @@ import argparse
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 
+try:
+    from supabase import create_client, Client
+except ImportError:
+    print("[FAIL] supabase-py not installed. Run: pip install supabase")
+    sys.exit(1)
+
 sys.path.insert(0, os.path.dirname(__file__))
 from common import get_supabase, batch_upsert, truncate, has_column
 
@@ -48,6 +54,65 @@ def clear_old_data(supabase: Client, race_date: str, venue: str):
         print(f"  [OK] Cleared {len(race_ids)} races + runners + predictions")
     else:
         print("  [OK] No old data found")
+
+
+# =====================================================================
+# Dynamic feature computation from Supabase history
+# =====================================================================
+def compute_jockey_trainer_win_rates(supabase) -> tuple:
+    """Query Supabase historical race_runners to compute real jockey/trainer win rates."""
+    print("  [WinRate] Computing jockey/trainer win rates from Supabase history...")
+    result = supabase.table('race_runners').select(
+        'jockey, trainer, finish_position'
+    ).not_.is_('finish_position', 'null').execute()
+    rows = result.data or []
+
+    jockey_stats = {}
+    trainer_stats = {}
+    for r in rows:
+        j = (r.get('jockey') or '').strip()
+        t = (r.get('trainer') or '').strip()
+        pos = r.get('finish_position')
+        if j:
+            if j not in jockey_stats:
+                jockey_stats[j] = [0, 0]
+            jockey_stats[j][0] += 1
+            if pos == 1:
+                jockey_stats[j][1] += 1
+        if t:
+            if t not in trainer_stats:
+                trainer_stats[t] = [0, 0]
+            trainer_stats[t][0] += 1
+            if pos == 1:
+                trainer_stats[t][1] += 1
+
+    jockey_wr = {n: round(s[1] / s[0], 4) for n, s in jockey_stats.items() if s[0] >= 3}
+    trainer_wr = {n: round(s[1] / s[0], 4) for n, s in trainer_stats.items() if s[0] >= 3}
+    print(f"  [WinRate] {len(jockey_wr)} jockeys, {len(trainer_wr)} trainers (min 3 starts)")
+    return jockey_wr, trainer_wr
+
+
+def compute_weight_diffs(supabase, horse_entries: list) -> dict:
+    """Query Supabase for each horse's previous declared_weight to compute weight_carried_diff."""
+    diffs = {}
+    has_dw_col = has_column(supabase, 'race_runners', 'declared_weight')
+    if not has_dw_col:
+        return diffs
+
+    for entry in horse_entries:
+        horse_id = entry['horse_id']
+        current_dw = entry.get('declared_weight')
+        if not current_dw:
+            continue
+        prev = supabase.table('race_runners').select('declared_weight').eq(
+            'horse_id', horse_id
+        ).not_.is_('declared_weight', 'null').order(
+            'race_id', desc=True
+        ).limit(1).execute()
+        if prev.data and prev.data[0].get('declared_weight'):
+            prev_dw = float(prev.data[0]['declared_weight'])
+            diffs[horse_id] = round(current_dw - prev_dw, 1)
+    return diffs
 
 
 # =====================================================================
@@ -101,6 +166,7 @@ def scrape_hkjc_races(date_str: str, venue: str) -> List[Dict]:
                             if (txt === '騎師') colMap.jockey = i;
                             if (txt === '檔位' || txt === '排位檔位') colMap.draw = i;
                             if (txt === '練馬師') colMap.trainer = i;
+                            if (txt === '體重') colMap.declaredWeight = i;
                         }
 
                         if (hasFormCol && hasHorseCol) {
@@ -147,6 +213,15 @@ def scrape_hkjc_races(date_str: str, venue: str) -> List[Dict]:
                         const draw = parseInt(cells[8].textContent.trim()) || 0;
                         let trainer = cells[9].textContent.trim();
 
+                        let declaredWeight = null;
+                        if (colMap.declaredWeight !== undefined) {
+                            const dwText = cells[colMap.declaredWeight].textContent.trim();
+                            const dwVal = parseInt(dwText);
+                            if (!isNaN(dwVal) && dwVal > 800 && dwVal < 1500) {
+                                declaredWeight = dwVal;
+                            }
+                        }
+
                         jockey = jockey.split('(')[0].trim();
                         trainer = trainer.split('(')[0].trim();
 
@@ -160,6 +235,7 @@ def scrape_hkjc_races(date_str: str, venue: str) -> List[Dict]:
                             trainer: trainer,
                             form_history: formHistory,
                             official_rating: officialRating,
+                            declared_weight: declaredWeight,
                         });
                     }
                     return horses;
@@ -325,14 +401,15 @@ def validate_race_data(races: List[Dict]):
         horses = race['horses']
 
         # Check minimum horse count
-        if len(horses) < 8:
-            raise Exception(f"[VALIDATION FAIL] {race_id}: Only {len(horses)} horses, expected >= 8")
+        if len(horses) < 4:
+            raise Exception(f"[VALIDATION FAIL] {race_id}: Only {len(horses)} horses, expected >= 4")
 
-        # Check horse_no sequence
-        horse_nos = sorted([h['horse_no'] for h in horses])
-        expected_nos = list(range(1, len(horses) + 1))
-        if horse_nos != expected_nos:
-            raise Exception(f"[VALIDATION FAIL] {race_id}: horse_no mismatch: got {horse_nos}, expected {expected_nos}")
+        # Check horse_no uniqueness and range (allow gaps for withdrawn horses)
+        horse_nos = [h['horse_no'] for h in horses]
+        if len(set(horse_nos)) != len(horses):
+            raise Exception(f"[VALIDATION FAIL] {race_id}: Duplicate horse_no detected")
+        if any(no < 1 or no > 20 for no in horse_nos):
+            raise Exception(f"[VALIDATION FAIL] {race_id}: horse_no out of range: {horse_nos}")
 
         # Check horse names are not empty
         for h in horses:
@@ -355,13 +432,22 @@ def write_to_supabase(supabase: Client, races: List[Dict], dry_run: bool = False
     validate_race_data(races)
 
     print(f"\n[Write] Writing {len(races)} races to Supabase...")
-    horse_id_map = {}
-    all_runner_rows = []
+
+    # Dynamic jockey/trainer win rates from Supabase history
+    jockey_wr, trainer_wr = compute_jockey_trainer_win_rates(supabase)
+
     has_official_rating = has_column(supabase, "race_runners", "official_rating")
+    has_dw_col = has_column(supabase, "race_runners", "declared_weight")
     if has_official_rating:
         print("  [OK] official_rating column found")
     else:
         print("  [WARN] official_rating column missing — skipping (run migration first)")
+    if has_dw_col:
+        print("  [OK] declared_weight column found")
+
+    # --- Pass 1: Upsert races + horses, collect horse entries ---
+    horse_id_map = {}
+    horse_entries_for_dw = []
 
     for race in races:
         race_id = race['race_id']
@@ -401,32 +487,60 @@ def write_to_supabase(supabase: Client, races: List[Dict], dry_run: bool = False
                     'horse_name': truncate(horse_name, 64),
                 }, on_conflict='horse_id').execute()
 
+            dw = horse.get('declared_weight')
+            if dw and has_dw_col:
+                horse_entries_for_dw.append({'horse_id': horse_id, 'declared_weight': dw})
+
+    # --- Compute weight_carried_diff from previous declared_weight ---
+    weight_diffs = compute_weight_diffs(supabase, horse_entries_for_dw)
+    if weight_diffs:
+        print(f"  [OK] Computed weight_carried_diff for {len(weight_diffs)} horses")
+
+    # --- Pass 2: Build runner rows with all computed features ---
+    all_runner_rows = []
+
+    for race in races:
+        race_id = race['race_id']
+
+        for horse in race['horses']:
+            horse_name = horse['horse_name']
+            horse_code = horse.get('horse_code', '')
+            horse_id = horse_id_map.get(horse_name, horse_code[:16] if horse_code else 'UNKNOWN')
+
             jockey = horse.get('jockey', '')
             jockey = jockey.split('(')[0].strip() if '(' in jockey else jockey
+            trainer = horse.get('trainer', '')
 
             runner_id = f"{race_id}_H{horse['horse_no']:02d}"
             form_history = horse.get('form_history', '')
             official_rating = horse.get('official_rating')
+
+            real_jwr = jockey_wr.get(jockey)
+            real_twr = trainer_wr.get(trainer)
+            wcd = weight_diffs.get(horse_id, 0.0)
+
             runner_row = {
                 'runner_id': truncate(runner_id, 48),
                 'race_id': truncate(race_id, 32),
                 'horse_id': horse_id,
                 'horse_no': horse['horse_no'],
                 'jockey': truncate(jockey, 64),
-                'trainer': truncate(horse.get('trainer', ''), 64),
+                'trainer': truncate(trainer, 64),
                 'actual_weight': horse.get('weight'),
                 'draw': horse.get('draw'),
                 'win_odds': horse.get('win_odds', 0),
                 'past_rating': official_rating if official_rating else 50.0,
                 'recent_form_score': 50.0,
-                'jockey_win_rate': 0.10,
-                'trainer_win_rate': 0.10,
-                'weight_carried_diff': 0.0,
+                'jockey_win_rate': real_jwr if real_jwr is not None else 0.10,
+                'trainer_win_rate': real_twr if real_twr is not None else 0.10,
+                'weight_carried_diff': wcd,
                 'rest_days': 0,
                 'form_history': truncate(form_history, 64) if form_history else None,
             }
-            if has_official_rating and official_rating:
-                runner_row['official_rating'] = official_rating
+            if has_official_rating:
+                runner_row['official_rating'] = official_rating if official_rating else None
+            if has_dw_col and horse.get('declared_weight'):
+                runner_row['declared_weight'] = horse['declared_weight']
             all_runner_rows.append(runner_row)
 
         print(f"  [OK] {race_id}: {len(race['horses'])} runners prepared")
