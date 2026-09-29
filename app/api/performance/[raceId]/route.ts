@@ -57,7 +57,7 @@ export async function GET(
 
     const finishPosMap = new Map<number, number>()
     if (results && results.length > 0) {
-      for (const r of results) {
+      for (const r of results as any[]) {
         if (r.horse_no != null && r.finish_position != null) {
           finishPosMap.set(r.horse_no, r.finish_position)
         }
