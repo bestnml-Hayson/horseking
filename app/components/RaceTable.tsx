@@ -57,11 +57,12 @@ export function RaceTable({ rows, topPickId, onHorseClick }: RaceTableProps) {
         <tbody>
           {sorted.map((row, idx) => {
             const pred = row.prediction
+            const oddsPending = isOddsPending(row.win_odds)
             const pModel = pred?.raw_model_prob ?? null
-            const pMarket = pred?.market_implied_prob ?? null
-            const pFinal = pred?.final_prob ?? null
-            const ev = pred?.expected_value ?? null
-            const kelly = pred?.kelly_fraction ?? null
+            const pMarket = oddsPending ? null : (pred?.market_implied_prob ?? null)
+            const pFinal = oddsPending ? null : (pred?.final_prob ?? null)
+            const ev = oddsPending ? null : (pred?.expected_value ?? null)
+            const kelly = oddsPending ? null : (pred?.kelly_fraction ?? null)
             const isValue = ev !== null && ev > VALUE_THRESHOLD
             const isTopPick = row.runner_id === topPickId
             const isValueBet = isValue && kelly !== null && kelly > 0
