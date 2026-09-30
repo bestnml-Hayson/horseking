@@ -197,17 +197,20 @@ export function getGoingInfo(race: Race | undefined): { label: string; bias: str
 }
 
 /**
- * Sort rows by AI score descending.
+ * Sort rows by P_model (pure ability, no odds) descending.
+ * Ensures "AI 精選 4 膽" reflects true model strength ranking.
  */
-export function sortByAIScore(rows: RaceRow[]): RaceRow[] {
-  return [...rows].sort((a, b) => computeAIScore(b) - computeAIScore(a))
+export function sortByPModel(rows: RaceRow[]): RaceRow[] {
+  return [...rows].sort((a, b) =>
+    (b.prediction?.raw_model_prob ?? 0) - (a.prediction?.raw_model_prob ?? 0)
+  )
 }
 
 /**
- * Get top N picks.
+ * Get top N picks sorted by P_model (pure ability).
  */
 export function getTopPicks(rows: RaceRow[], n: number = 4): RaceRow[] {
-  return sortByAIScore(rows).slice(0, n)
+  return sortByPModel(rows).slice(0, n)
 }
 
 /**
@@ -377,27 +380,27 @@ export function generateRaceAnalysis(rows: RaceRow[], race: Race | undefined, to
     })
   }
 
-  // Model logic explanation
+  // Model logic explanation — two-stage architecture
   const top1 = topPicks[0]
   const top2 = topPicks[1]
   const logicParts: string[] = []
 
   if (top1) {
-    const p1 = top1.prediction?.final_prob ?? 0
+    const pm1 = top1.prediction?.raw_model_prob ?? 0
     const ev1 = top1.prediction?.expected_value ?? 0
     logicParts.push(
-      `首選「${top1.horse_name}」融合勝率 ${(p1 * 100).toFixed(1)}%` +
-      (ev1 > 0 ? `，EV +${(ev1 * 100).toFixed(1)}% 具價值` : '')
+      `首選「${top1.horse_name}」純實力評分最高 (P_model ${(pm1 * 100).toFixed(1)}%)` +
+      (ev1 > 0 ? `，融合賠率後 EV +${(ev1 * 100).toFixed(1)}% 具價值` : '')
     )
   }
   if (top2) {
-    const p2 = top2.prediction?.final_prob ?? 0
-    logicParts.push(`次選「${top2.horse_name}」勝率 ${(p2 * 100).toFixed(1)}%`)
+    const pm2 = top2.prediction?.raw_model_prob ?? 0
+    logicParts.push(`次選「${top2.horse_name}」純實力 P_model ${(pm2 * 100).toFixed(1)}%`)
   }
 
   const modelLogic = logicParts.length > 0
-    ? `Benter 模型以 25% .self評 + 75% 市場賠率融合計算。${logicParts.join('；')}。`
-    : 'Benter 模型以 25% .self評分 + 75% 市場賠率融合計算，輸出各馬勝率及期望值。'
+    ? `Benter 兩階段模型：階段一以往績、檔位、騎練等特徵計算純實力 P_model；階段二融合市場賠率生成 P_final。${logicParts.join('；')}。`
+    : 'Benter 兩階段模型：階段一計算純實力 P_model，階段二融合市場賠率生成 P_final，輸出各馬勝率及期望值。'
 
   return {
     paceLabel: pace.label,
@@ -421,6 +424,15 @@ function analyzeFormTrend(form: number[]): { trend: 'improving' | 'declining' | 
   return { trend: 'mixed', avg, recent3Avg }
 }
 
+/**
+ * Matrix AI Insight Engine — 先評實力、後比賠率、精準生成評語
+ *
+ * 4 cases based on P_model vs P_market relationship:
+ *   A: Value/Overlay     — P_model >= 8%  AND EV > 0%
+ *   B: Overpriced Top    — P_model >= 8%  AND EV < -20%
+ *   C: Underlay Trap     — P_model < 7.14% AND EV < -25%
+ *   D: Longshot Overlay  — P_model >= 7.5% AND P_market < 5% (odds > 20)
+ */
 export function generateHorseInsight(
   row: RaceRow,
   rank: number,
@@ -429,6 +441,8 @@ export function generateHorseInsight(
 ): string {
   const parts: string[] = []
   const pred = row.prediction
+  const pModel = pred?.raw_model_prob ?? null
+  const pMarket = pred?.market_implied_prob ?? null
   const pFinal = pred?.final_prob ?? null
   const ev = pred?.expected_value ?? null
   const kelly = pred?.kelly_fraction ?? null
@@ -436,23 +450,47 @@ export function generateHorseInsight(
   const weight = row.actual_weight
   const jockey = row.jockey
   const jockeyWr = row.jockey_win_rate
-  const trainerWr = row.trainer_win_rate
   const odds = row.win_odds
   const form = parseFormHistory(row.form_history)
   const formTrend = analyzeFormTrend(form)
 
-  if (rank === 1) {
-    parts.push('Benter 模型計算奪魁機會最高')
-  } else if (rank === 2) {
-    parts.push('模型評估爭勝能力第二')
-  } else if (rank === 3) {
-    parts.push('模型評分第三選擇')
-  } else if (rank <= 6) {
-    parts.push('中規中矩')
-  } else {
-    parts.push('模型評分偏低')
+  // --- Matrix Insight (priority order: A > B > C > D) ---
+  const pModelPct = pModel != null ? pModel * 100 : 0
+  const pMarketPct = pMarket != null ? pMarket * 100 : 0
+
+  if (pModel != null && pMarket != null && ev != null) {
+    const caseA = pModel >= 0.08 && ev > 0
+    const caseB = pModel >= 0.08 && ev < -0.20
+    const caseC = pModel < 0.0714 && ev < -0.25
+    const caseD = pModel >= 0.075 && pMarket < 0.05
+
+    if (caseA) {
+      parts.push(`AI 量化實力頂尖 (P_model ${pModelPct.toFixed(1)}%)；市場賠率具備高值博率 (+EV ${fmtEV(ev)})，為重點投注目標`)
+    } else if (caseB) {
+      parts.push(`AI 量化評估實力屬第一梯隊 (P_model ${pModelPct.toFixed(1)}%)，但市場資金高度追捧（賠率過熱，EV ${fmtEV(ev)}），獨贏性價比低，建議轉向連贏/位置 Q 拖碼`)
+    } else if (caseC) {
+      parts.push(`近況/久休數據令 AI 評分偏低 (P_model ${pModelPct.toFixed(1)}%)；市場賠率盲目過熱，存在極高陷阱風險，嚴禁單獨追捧`)
+    } else if (caseD) {
+      parts.push(`AI 評估硬實力被市場嚴重忽視 (P_model ${pModelPct.toFixed(1)}%，市場僅 ${pMarketPct.toFixed(1)}%)，具備冷門爆發潛質，位置 (Place) / 位置 Q 極佳配腳`)
+    }
   }
 
+  // --- Fallback: rank-based context (only if no matrix case matched) ---
+  if (parts.length === 0) {
+    if (rank === 1) {
+      parts.push('Benter 模型計算奪魁機會最高')
+    } else if (rank === 2) {
+      parts.push('模型評估爭勝能力第二')
+    } else if (rank === 3) {
+      parts.push('模型評分第三選擇')
+    } else if (rank <= 6) {
+      parts.push('中規中矩')
+    } else {
+      parts.push('模型評分偏低')
+    }
+  }
+
+  // --- Draw ---
   if (draw != null) {
     if (draw <= 3) {
       parts.push(`排 ${draw} 檔好檔，內欄有利搶先`)
@@ -465,6 +503,7 @@ export function generateHorseInsight(
     }
   }
 
+  // --- Form trend ---
   if (form.length >= 3) {
     if (formTrend.trend === 'improving') {
       parts.push('近績走勢回升，狀態上揚')
@@ -478,10 +517,12 @@ export function generateHorseInsight(
     }
   }
 
+  // --- Jockey ---
   if (jockeyWr != null && jockeyWr >= 0.15) {
     parts.push(`騎師 ${jockey ?? ''} 近績 ${(jockeyWr * 100).toFixed(0)}% 勝率，狀態正佳`)
   }
 
+  // --- Weight ---
   if (weight != null) {
     if (weight <= 118) {
       parts.push('負磅輕巧，有減磅優勢')
@@ -490,15 +531,7 @@ export function generateHorseInsight(
     }
   }
 
-  if (ev != null && ev > 0.15 && kelly != null && kelly > 0) {
-    parts.push('EV 正期望，具投注價值')
-  } else if (odds != null && odds > 0 && pFinal != null) {
-    const impliedProb = 1 / odds
-    if (pFinal > impliedProb * 1.2) {
-      parts.push('模型勝率高於市場預期')
-    }
-  }
-
+  // --- Pace interaction ---
   if (paceLabel) {
     if (paceLabel === '慢步速' && draw != null && draw <= 5) {
       parts.push('慢步速形勢下內檔可前領')
@@ -507,7 +540,7 @@ export function generateHorseInsight(
     }
   }
 
-  // Gear change insight
+  // --- Gear change ---
   const gear = row.gear
   if (gear) {
     const gearParts = gear.split('/').map(g => g.trim()).filter(Boolean)
@@ -526,7 +559,7 @@ export function generateHorseInsight(
     }
   }
 
-  // Rest days insight
+  // --- Rest days ---
   const restDays = row.rest_days
   if (restDays != null && restDays > 0) {
     if (restDays >= 90) {

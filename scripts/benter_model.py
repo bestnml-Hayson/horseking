@@ -23,9 +23,13 @@ except ImportError:
 
 
 # =====================================================================
-# Benter 模型超參數
+# Benter 兩階段模型超參數
+# 階段一（純實力 P_model）：完全不參考賠率，僅根據馬匹基礎能力
+#   （往績走勢、檔位、騎練、配備變動、久休天數、體重變化等）算出獨立勝率
+# 階段二（融合勝率 P_final）：結合開盤後的賠率算出 P_market，
+#   透過對數加權融合生成 P_final
 # =====================================================================
-ALPHA = 0.25          # P_model 權重 (1-ALPHA = P_market 權重)
+ALPHA = 0.25          # P_model 在融合中的權重 (1-ALPHA = P_market 權重)
 FRACTIONAL_KELLY = 0.25  # 1/4 Kelly 降低方差
 TEMPERATURE = 1.0     # Softmax 溫度參數
 
@@ -238,7 +242,11 @@ def compute_kelly(p_final: float, odds_win: float, fraction: float = FRACTIONAL_
 # 8. 單場賽事完整計算流程
 # =====================================================================
 def analyze_race(runners: List[Dict]) -> List[Dict]:
-    """對單場賽事的所有馬匹執行完整 Benter 模型計算"""
+    """
+    兩階段完整計算流程：
+      階段一：normalize → raw_score → softmax → P_model（純實力，不含賠率）
+      階段二：market_implied → benter_fusion → P_final → EV → Kelly
+    """
     runners = normalize_features(runners)
 
     raw_scores = [compute_raw_score(r) for r in runners]
