@@ -439,7 +439,10 @@ def scrape_hkjc_races(date_str: str, venue: str) -> List[Dict]:
             race_no = race_data['race_no']
             try:
                 page.goto(odds_url_base.format(race_no=race_no), wait_until='domcontentloaded', timeout=20000)
-                page.wait_for_timeout(3000)
+                try:
+                    page.wait_for_selector('.rc-odds-row', timeout=10000)
+                except Exception:
+                    page.wait_for_timeout(5000)
 
                 odds_map = page.evaluate('''() => {
                     const map = {};
@@ -774,7 +777,10 @@ def scrape_odds_only(date_str: str, venue: str) -> Dict[int, Dict[int, float]]:
             url = base_url.format(race_no=race_no)
             try:
                 page.goto(url, wait_until='domcontentloaded', timeout=20000)
-                page.wait_for_timeout(2000)
+                try:
+                    page.wait_for_selector('.rc-odds-row', timeout=10000)
+                except Exception:
+                    page.wait_for_timeout(5000)
 
                 odds_data = page.evaluate('''() => {
                     const odds = {};
@@ -810,21 +816,21 @@ def scrape_odds_only(date_str: str, venue: str) -> Dict[int, Dict[int, float]]:
 
 
 def update_odds_in_supabase(supabase: Client, date_str: str, venue: str, odds_map: Dict[int, Dict[int, float]]):
-    """Upsert win_odds into race_runners without clearing data."""
+    """Update win_odds in existing race_runners without clearing data."""
     date_path = date_str.replace('-', '')
     total_updated = 0
 
     for race_no, horse_odds in odds_map.items():
-        race_id = f"{venue}-{date_path}-{race_no:02d}"
+        race_id = f"{venue}-{date_path}-{int(race_no):02d}"
         for horse_no, win_odds in horse_odds.items():
-            runner_id = f"{race_id}_H{horse_no:02d}"
-            retry_supabase(lambda: supabase.table('race_runners').upsert({
-                'runner_id': runner_id[:48],
-                'race_id': race_id[:32],
-                'horse_no': horse_no,
-                'win_odds': win_odds,
-            }, on_conflict='runner_id').execute())
-            total_updated += 1
+            runner_id = f"{race_id}_H{int(horse_no):02d}"
+            try:
+                retry_supabase(lambda: supabase.table('race_runners').update({
+                    'win_odds': float(win_odds),
+                }).eq('runner_id', runner_id[:48]).execute())
+                total_updated += 1
+            except Exception as e:
+                print(f"    [WARN] {runner_id}: {e}")
 
     print(f"  [OK] Updated {total_updated} odds entries")
     return total_updated
@@ -856,7 +862,7 @@ def main():
     if not supabase and not args.dry_run:
         sys.exit(1)
 
-    if supabase and not args.dry_run and not args.clear_only:
+    if supabase and not args.dry_run and not args.clear_only and not args.odds_only:
         clear_old_data(supabase, date_str, venue)
 
     if args.clear_only:
