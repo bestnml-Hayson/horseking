@@ -1,0 +1,72 @@
+name: Monthly Horse Profile Update
+
+on:
+  schedule:
+    # Run on the 1st of every month at 4 AM HKT (8 PM UTC last day of month)
+    - cron: '0 20 28-31 * *'  # Runs on 28th-31st, script checks if it's 1st HKT
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+  SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+
+jobs:
+  monthly-horse-update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install --quiet --upgrade pip
+          pip install --quiet -r requirements.txt
+          playwright install --with-deps chromium
+          python -c "from playwright.sync_api import sync_playwright; import supabase; print('[OK] deps loaded')"
+
+      - name: Check if 1st of month (HKT)
+        run: |
+          # Convert UTC to HKT (UTC+8)
+          HKT_HOUR=$(TZ='Asia/Hong_Kong' date +%H)
+          HKT_DAY=$(TZ='Asia/Hong_Kong' date +%d)
+          echo "HKT Time: $(TZ='Asia/Hong_Kong' date '+%Y-%m-%d %H:%M')"
+          if [ "$HKT_DAY" = "01" ] && [ "$HKT_HOUR" -ge "4" ]; then
+            echo "RUN_UPDATE=true" >> $GITHUB_ENV
+            echo "Today is 1st of month in HKT, running horse profile update"
+          else
+            echo "RUN_UPDATE=false" >> $GITHUB_ENV
+            echo "Not 1st of month in HKT, skipping"
+          fi
+
+      - name: Run batch horse scraper
+        if: env.RUN_UPDATE == 'true'
+        run: |
+          echo "=== [MonthlyHorseUpdate] $(date -u '+%Y-%m-%d %H:%M:%S UTC') ==="
+          python scripts/batch_horse_scraper.py --limit 500
+          echo "=== [MonthlyHorseUpdate] Done ==="
+
+      - name: Skip notification
+        if: env.RUN_UPDATE == 'false'
+        run: echo "Skipped: Not 1st of month in HKT timezone"
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Monthly Horse Profile Update" >> $GITHUB_STEP_SUMMARY
+          echo "- Trigger: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Time: $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
+          echo "- Executed: ${{ env.RUN_UPDATE }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Status: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY

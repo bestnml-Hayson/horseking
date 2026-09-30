@@ -1,34 +1,190 @@
 'use client'
 
 import type { RaceRow } from '@/lib/types'
-import {
-  getBestWinBet,
-  getQCombination,
-  getTrioCombination,
-  computeAIScore,
-  fmtOdds,
-  fmtKelly,
-  fmtEV,
-} from '@/lib/race-utils'
+import { runBettingEngine } from '@/lib/betting-engine'
+import type { OverlayHorse, WinBet, QCombination } from '@/lib/betting-engine'
+import { fmtOdds, fmtEV, fmtKelly } from '@/lib/race-utils'
 
 interface BettingStrategyProps {
   rows: RaceRow[]
   bankroll?: number
 }
 
-const DEFAULT_BANKROLL = 10000
+function OverlayCard({ overlays }: { overlays: OverlayHorse[] }) {
+  if (overlays.length === 0) return null
+  return (
+    <div className="betting-card overlay-card">
+      <div className="betting-card-title">
+        <span className="betting-icon">&#x1F525;</span>
+        Overlay 冷門價值馬
+        <span className="betting-card-sub">P_model / P_market &ge; 1.3</span>
+      </div>
+      <div className="betting-card-body">
+        {overlays.map(({ row, ratio, label }) => (
+          <div key={row.runner_id} className="overlay-row">
+            <span className="overlay-no">#{row.horse_no}</span>
+            <span className="overlay-name">{row.horse_name}</span>
+            <span className="overlay-ratio">{ratio.toFixed(2)}x</span>
+            <span className="overlay-label">{label}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
 
-export function BettingStrategy({ rows, bankroll = DEFAULT_BANKROLL }: BettingStrategyProps) {
-  const bestWin = getBestWinBet(rows)
-  const qCombo = getQCombination(rows)
-  const trioCombo = getTrioCombination(rows)
+function UnderlayCard({ underlays }: { underlays: { row: RaceRow; ratio: number }[] }) {
+  if (underlays.length === 0) return null
+  return (
+    <div className="betting-card underlay-card">
+      <div className="betting-card-title">
+        <span className="betting-icon">&#x26A0;&#xFE0F;</span>
+        Underlay 過熱馬
+        <span className="betting-card-sub">P_market / P_model &ge; 1.5</span>
+      </div>
+      <div className="betting-card-body">
+        {underlays.map(({ row, ratio }) => (
+          <div key={row.runner_id} className="underlay-row">
+            <span className="underlay-no">#{row.horse_no}</span>
+            <span className="underlay-name">{row.horse_name}</span>
+            <span className="underlay-ratio">{ratio.toFixed(2)}x</span>
+            <span className="underlay-label">市場過熱，避免投注</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
 
-  const hasData = bestWin || qCombo || trioCombo
+function WinPlaceCard({ bets, hasValue }: { bets: WinBet[]; hasValue: boolean }) {
+  return (
+    <div className="betting-card win-card">
+      <div className="betting-card-title">
+        <span className="betting-icon">&#x1F3AF;</span>
+        獨贏 / 位置 (WIN / PLACE)
+      </div>
+      <div className="betting-card-body">
+        {!hasValue ? (
+          <div className="betting-no-value">
+            獨贏彩池無顯著價值，建議改下連贏 / 位置 Q
+          </div>
+        ) : (
+          bets.map(({ row, ev, kelly, units, betType }) => (
+            <div key={row.runner_id} className="win-bet-row">
+              <div className="win-bet-horse">
+                <span className="win-bet-no">#{row.horse_no}</span>
+                <span className="win-bet-name">{row.horse_name}</span>
+                <span className="win-bet-type">{betType}</span>
+              </div>
+              <div className="win-bet-details">
+                <span className="win-bet-odds">賠率 {fmtOdds(row.win_odds)}</span>
+                <span className="win-bet-ev">EV {fmtEV(ev)}</span>
+                <span className="win-bet-kelly">Kelly {fmtKelly(kelly)}</span>
+              </div>
+              <div className="win-bet-amount">
+                {units} 注 &times; $10 = <strong>HKD {units * 10}</strong>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  )
+}
 
-  if (!hasData) {
+function QCard({ combos }: { combos: QCombination[] }) {
+  if (combos.length === 0) {
     return (
-      <div className="betting-empty">
-        暫無投注策略數據（需要 EV &gt; 0.15 的馬匹）
+      <div className="betting-card q-card">
+        <div className="betting-card-title">
+          <span className="betting-icon">&#x1F40E;</span>
+          連贏 Q / 位置 Q (QP)
+        </div>
+        <div className="betting-card-body">
+          <div className="betting-no-value">數據不足，無法計算連贏組合</div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="betting-card q-card">
+      <div className="betting-card-title">
+        <span className="betting-icon">&#x1F40E;</span>
+        連贏 Q / 位置 Q (QP)
+        <span className="betting-card-sub">P_ij = P_final_i &times; P_final_j &times; 1.05</span>
+      </div>
+      <div className="betting-card-body">
+        {combos.map((combo, ci) => (
+          <div key={ci} className="q-combo">
+            <div className="q-anchor">
+              <span className="q-anchor-label">馬膽</span>
+              <span className="q-anchor-no">#{combo.anchor.horse_no}</span>
+              <span className="q-anchor-name">{combo.anchor.horse_name}</span>
+              <span className="q-anchor-prob">
+                P_final {(getPFinal(combo.anchor) * 100).toFixed(1)}%
+              </span>
+            </div>
+            <div className="q-legs">
+              <span className="q-legs-label">腳</span>
+              {combo.legs.map(({ row, pPair }) => (
+                <div key={row.runner_id} className="q-leg">
+                  <span className="q-leg-no">#{row.horse_no}</span>
+                  <span className="q-leg-name">{row.horse_name}</span>
+                  <span className="q-leg-prob">
+                    P_pair {(pPair * 100).toFixed(1)}%
+                  </span>
+                </div>
+              ))}
+            </div>
+            <div className="q-cost">
+              {combo.legs.length} 注 &times; $10 = <strong>HKD {combo.totalCost}</strong>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function getPFinal(row: RaceRow): number {
+  return row.prediction?.final_prob ?? 0
+}
+
+function SummaryBar({ totalBet, overlays, underlays }: { totalBet: number; overlays: OverlayHorse[]; underlays: { row: RaceRow; ratio: number }[] }) {
+  return (
+    <div className="betting-summary">
+      <div className="betting-summary-item">
+        <span className="betting-summary-label">總建議注碼</span>
+        <span className="betting-summary-value">HKD {totalBet}</span>
+      </div>
+      <div className="betting-summary-item">
+        <span className="betting-summary-label">Overlay 冷門</span>
+        <span className="betting-summary-value overlay-count">{overlays.length} 匹</span>
+      </div>
+      <div className="betting-summary-item">
+        <span className="betting-summary-label">Underlay 過熱</span>
+        <span className="betting-summary-value underlay-count">{underlays.length} 匹</span>
+      </div>
+    </div>
+  )
+}
+
+export function BettingStrategy({ rows }: BettingStrategyProps) {
+  const engine = runBettingEngine(rows)
+
+  const hasAnyData = engine.winPoolValue || engine.qCombos.length > 0 || engine.overlays.length > 0
+
+  if (!hasAnyData) {
+    return (
+      <div className="betting-section animate-fade-in">
+        <div className="betting-header">
+          <span className="betting-badge">&#x1F4B0; 最佳實戰投注策略</span>
+          <span className="betting-sublabel">Quant Betting Recommendations</span>
+        </div>
+        <div className="betting-empty">
+          暫無投注策略數據（賠率尚未同步或無正 EV 馬匹）
+        </div>
       </div>
     )
   }
@@ -37,103 +193,20 @@ export function BettingStrategy({ rows, bankroll = DEFAULT_BANKROLL }: BettingSt
     <div className="betting-section animate-fade-in">
       <div className="betting-header">
         <span className="betting-badge">&#x1F4B0; 最佳實戰投注策略</span>
-        <span className="betting-sublabel">Quant Betting Recommendations</span>
+        <span className="betting-sublabel">Benter Quant Betting Engine</span>
       </div>
 
+      <SummaryBar
+        totalBet={engine.totalRecommendedBet}
+        overlays={engine.overlays}
+        underlays={engine.underlays}
+      />
+
       <div className="betting-grid">
-        {/* WIN / PLACE */}
-        <div className="betting-card win-card">
-          <div className="betting-card-title">
-            <span className="betting-icon">&#x1F3AF;</span>
-            獨贏 (WIN) / 位置 (PLACE)
-          </div>
-          {bestWin ? (
-            <div className="betting-card-body">
-              <div className="bet-horse">
-                <span className="bet-horse-no">#{bestWin.horse_no}</span>
-                <span className="bet-horse-name">{bestWin.horse_name}</span>
-              </div>
-              <div className="bet-details">
-                <div className="bet-detail-row">
-                  <span className="bet-detail-label">賠率</span>
-                  <span className="bet-detail-value">{fmtOdds(bestWin.win_odds)}</span>
-                </div>
-                <div className="bet-detail-row">
-                  <span className="bet-detail-label">EV</span>
-                  <span className="bet-detail-value ev-positive">{fmtEV(bestWin.prediction?.expected_value ?? null)}</span>
-                </div>
-                <div className="bet-detail-row">
-                  <span className="bet-detail-label">Kelly%</span>
-                  <span className="bet-detail-value kelly-value">{fmtKelly(bestWin.prediction?.kelly_fraction ?? null)}</span>
-                </div>
-              </div>
-              <div className="bet-amount">
-                建議注碼: <strong>HKD {Math.round((bestWin.prediction?.kelly_fraction ?? 0) * bankroll)}</strong>
-              </div>
-            </div>
-          ) : (
-            <div className="betting-card-empty">暫無正 EV 馬匹</div>
-          )}
-        </div>
-
-        {/* Q / QP */}
-        <div className="betting-card q-card">
-          <div className="betting-card-title">
-            <span className="betting-icon">&#x1F40E;</span>
-            連贏 (Q) / 位置 Q (QP)
-          </div>
-          {qCombo ? (
-            <div className="betting-card-body">
-              <div className="bet-combo">
-                <span className="bet-anchor">
-                  #{qCombo.anchor.horse_no} {qCombo.anchor.horse_name}
-                </span>
-                <span className="bet-drag">膽拖</span>
-                <div className="bet-legs">
-                  {qCombo.legs.map(h => (
-                    <span key={h.runner_id} className="bet-leg">
-                      #{h.horse_no} {h.horse_name}
-                    </span>
-                  ))}
-                </div>
-              </div>
-              <div className="bet-combo-note">
-                一膽三腳 · 共 {qCombo.legs.length} 注
-              </div>
-            </div>
-          ) : (
-            <div className="betting-card-empty">數據不足</div>
-          )}
-        </div>
-
-        {/* Trio */}
-        <div className="betting-card trio-card">
-          <div className="betting-card-title">
-            <span className="betting-icon">&#x1F3C6;</span>
-            單T (Trio) / 三重彩
-          </div>
-          {trioCombo ? (
-            <div className="betting-card-body">
-              <div className="trio-horses">
-                {trioCombo.map((h, i) => (
-                  <div key={h.runner_id} className="trio-horse">
-                    <span className="trio-rank">#{i + 1}</span>
-                    <span className="trio-no">#{h.horse_no}</span>
-                    <span className="trio-name">{h.horse_name}</span>
-                    <span className="trio-score">
-                      AI {computeAIScore(h)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-              <div className="bet-combo-note">
-                Top 4 精算組合 · 最高勝率
-              </div>
-            </div>
-          ) : (
-            <div className="betting-card-empty">數據不足</div>
-          )}
-        </div>
+        <OverlayCard overlays={engine.overlays} />
+        <UnderlayCard underlays={engine.underlays} />
+        <WinPlaceCard bets={engine.winBets} hasValue={engine.winPoolValue} />
+        <QCard combos={engine.qCombos} />
       </div>
     </div>
   )

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Batch scrape horse profiles for a specific race date."""
+import argparse
 import os
 import sys
 import json
@@ -47,13 +48,25 @@ def get_horses_from_date(race_date: str) -> List[str]:
     print(f"Found {len(all_horses)} unique horses")
     return list(all_horses)
 
-def batch_scrape_horses(race_date: str):
+def get_latest_race_date(supabase) -> str:
+    """Get the most recent race date from the database."""
+    result = supabase.table('races').select('race_date').order('race_date', desc=True).limit(1).execute()
+    if result.data:
+        return result.data[0]['race_date']
+    from datetime import datetime
+    return datetime.now().strftime('%Y-%m-%d')
+
+
+def batch_scrape_horses(race_date: str, limit: int = 0):
     """Scrape all horses from a specific race date."""
     horse_codes = get_horses_from_date(race_date)
-    
+
     if not horse_codes:
         return
-    
+
+    if limit > 0:
+        horse_codes = horse_codes[:limit]
+
     print(f"\nScraping {len(horse_codes)} horse profiles...")
     
     success_count = 0
@@ -87,9 +100,29 @@ def batch_scrape_horses(race_date: str):
     print(f"  Total: {len(horse_codes)}")
 
 if __name__ == '__main__':
-    # Scrape all horses from 2026-10-01
-    target_date = '2026-10-01'
+    parser = argparse.ArgumentParser(description='Batch scrape horse profiles')
+    parser.add_argument('--date', type=str, default=None, help='Race date to scrape horses from (YYYY-MM-DD, default: latest race date in DB)')
+    parser.add_argument('--limit', type=int, default=0, help='Max number of horses to scrape (0 = all)')
+    args = parser.parse_args()
+
+    if args.date:
+        target_date = args.date
+    else:
+        env_path = Path(__file__).parent.parent / '.env.local'
+        if env_path.exists():
+            with open(env_path, 'r', encoding='utf-8') as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith('#') and '=' in line:
+                        key, value = line.split('=', 1)
+                        os.environ[key] = value
+        from supabase import create_client
+        url = os.getenv('NEXT_PUBLIC_SUPABASE_URL')
+        key = os.getenv('SUPABASE_SERVICE_KEY')
+        supa = create_client(url, key)
+        target_date = get_latest_race_date(supa)
+
     print(f"Batch scraping horse profiles for {target_date}")
     print(f"{'='*60}")
-    
-    batch_scrape_horses(target_date)
+
+    batch_scrape_horses(target_date, args.limit)

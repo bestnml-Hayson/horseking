@@ -1,0 +1,51 @@
+name: Daily Data Cleanup
+
+on:
+  schedule:
+    # Run every day at 5 AM HKT (9 PM UTC previous day)
+    - cron: '0 21 * * *'  # Every day 21:00 UTC = 05:00 HKT
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+  SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+
+jobs:
+  daily-cleanup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install --quiet --upgrade pip
+          pip install --quiet -r requirements.txt
+          python -c "from supabase import create_client; print('[OK] supabase loaded')"
+
+      - name: Run daily data cleanup
+        run: |
+          echo "=== [DailyCleanup] $(date -u '+%Y-%m-%d %H:%M:%S UTC') ==="
+          python scripts/daily_cleanup.py --days 7
+          echo "=== [DailyCleanup] Done ==="
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Daily Data Cleanup" >> $GITHUB_STEP_SUMMARY
+          echo "- Trigger: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Time: $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
+          echo "- Status: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
