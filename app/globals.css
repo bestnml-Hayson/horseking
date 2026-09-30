@@ -965,6 +965,24 @@ html, body {
   font-variant-numeric: tabular-nums;
 }
 
+.q-anchor-ev {
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.q-anchor-ev.ev-positive {
+  color: #10b981;
+  background: #10b98115;
+}
+
+.q-anchor-ev.ev-negative {
+  color: #ef4444;
+  background: #ef444415;
+}
+
 .q-legs {
   display: flex;
   flex-direction: column;

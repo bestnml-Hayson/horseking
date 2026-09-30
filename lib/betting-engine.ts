@@ -32,6 +32,7 @@ export interface QCombination {
   anchor: RaceRow
   legs: QLeg[]
   totalCost: number
+  anchorEV: number
 }
 
 export interface BettingEngineResult {
@@ -74,7 +75,7 @@ export function identifyOverlays(rows: RaceRow[]): OverlayHorse[] {
       return {
         row,
         ratio,
-        label: `模型高估 ${(ratio * 100 - 100).toFixed(0)}%`,
+        label: `模型評分高於市場 ${(ratio * 100 - 100).toFixed(0)}%`,
       }
     })
     .filter((x): x is OverlayHorse => x !== null)
@@ -119,13 +120,21 @@ export function getWinRecommendations(rows: RaceRow[]): { bets: WinBet[]; hasVal
 
 export function getQCombinations(rows: RaceRow[]): QCombination[] {
   const overlays = identifyOverlays(rows)
+  const underlays = identifyUnderlays(rows)
+  const underlayIds = new Set(underlays.map(u => u.row.runner_id))
+
   const sorted = [...rows]
     .filter(r => getPFinal(r) > 0)
     .sort((a, b) => getPFinal(b) - getPFinal(a))
 
   if (sorted.length < 2) return []
 
-  const anchor = sorted[0]
+  const positiveEV = sorted.filter(r => getEV(r) > 0 && !underlayIds.has(r.runner_id))
+  const candidates = positiveEV.length > 0
+    ? [...positiveEV].sort((a, b) => getPModel(b) - getPModel(a))
+    : sorted.filter(r => !underlayIds.has(r.runner_id))
+
+  const anchor = candidates[0] ?? sorted[0]
   const overlayIds = new Set(overlays.map(o => o.row.runner_id))
 
   const coldLegs = sorted
@@ -150,6 +159,7 @@ export function getQCombinations(rows: RaceRow[]): QCombination[] {
     anchor,
     legs: qLegs,
     totalCost,
+    anchorEV: getEV(anchor),
   }]
 }
 

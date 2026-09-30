@@ -124,6 +124,9 @@ function QCard({ combos }: { combos: QCombination[] }) {
               <span className="q-anchor-prob">
                 P_final {(getPFinal(combo.anchor) * 100).toFixed(1)}%
               </span>
+              <span className={`q-anchor-ev ${combo.anchorEV > 0 ? 'ev-positive' : 'ev-negative'}`}>
+                EV {fmtEV(combo.anchorEV)}
+              </span>
             </div>
             <div className="q-legs">
               <span className="q-legs-label">腳</span>
