@@ -200,17 +200,13 @@ export function getGoingInfo(race: Race | undefined): { label: string; bias: str
  * Sort rows by P_model (pure ability, no odds) descending.
  * Ensures "AI 精選 4 膽" reflects true model strength ranking.
  */
-export function sortByPModel(rows: RaceRow[]): RaceRow[] {
-  return [...rows].sort((a, b) =>
-    (b.prediction?.raw_model_prob ?? 0) - (a.prediction?.raw_model_prob ?? 0)
-  )
-}
-
 /**
- * Get top N picks sorted by P_model (pure ability).
+ * Get top N picks sorted by P_final (model + market fusion).
  */
 export function getTopPicks(rows: RaceRow[], n: number = 4): RaceRow[] {
-  return sortByPModel(rows).slice(0, n)
+  return [...rows].sort((a, b) =>
+    (b.prediction?.final_prob ?? 0) - (a.prediction?.final_prob ?? 0)
+  ).slice(0, n)
 }
 
 /**
