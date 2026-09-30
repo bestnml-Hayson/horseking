@@ -114,29 +114,26 @@ export function TopPicksCards({ picks, totalRunners, paceLabel, onHorseClick }: 
                     {isOddsPending(row.win_odds) ? '待定' : odds}
                   </div>
                 </div>
-                {row.gear && (() => {
-                  const gearParts = row.gear.split('/').map(g => g.trim()).filter(Boolean)
-                  const hasNewGear = gearParts.some(g => g.endsWith('1'))
-                  if (hasNewGear) {
-                    return (
-                      <div className="pick-stat">
-                        <div className="pick-stat-label">配備</div>
-                        <div className="pick-stat-value" style={{ color: '#f59e0b', fontWeight: 600 }}>
-                          {row.gear} 初戴
-                        </div>
-                      </div>
-                    )
-                  }
-                  return null
-                })()}
-                {row.rest_days != null && row.rest_days >= 60 && (
-                  <div className="pick-stat">
-                    <div className="pick-stat-label">休養</div>
-                    <div className="pick-stat-value" style={{ color: row.rest_days >= 90 ? '#ef4444' : '#f59e0b' }}>
-                      {row.rest_days} 天
-                    </div>
+                <div className="pick-stat">
+                  <div className="pick-stat-label">配備</div>
+                  <div className="pick-stat-value" style={{ color: (() => {
+                    if (!row.gear) return 'var(--text-muted)'
+                    const gearParts = row.gear.split('/').map(g => g.trim()).filter(Boolean)
+                    return gearParts.some(g => g.endsWith('1')) ? '#f59e0b' : 'var(--text-muted)'
+                  })(), fontWeight: 600, fontSize: '13px' }}>
+                    {(() => {
+                      if (!row.gear) return '-'
+                      const gearParts = row.gear.split('/').map(g => g.trim()).filter(Boolean)
+                      return gearParts.some(g => g.endsWith('1')) ? `${row.gear} 初戴` : '-'
+                    })()}
                   </div>
-                )}
+                </div>
+                <div className="pick-stat">
+                  <div className="pick-stat-label">休養</div>
+                  <div className="pick-stat-value" style={{ color: row.rest_days != null && row.rest_days >= 90 ? '#ef4444' : row.rest_days != null && row.rest_days >= 60 ? '#f59e0b' : 'var(--text-muted)', fontSize: '13px' }}>
+                    {row.rest_days != null && row.rest_days >= 60 ? `${row.rest_days} 天` : '-'}
+                  </div>
+                </div>
               </div>
 
               <div className="pick-form">

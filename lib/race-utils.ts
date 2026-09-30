@@ -461,17 +461,17 @@ export function generateHorseInsight(
   if (pModel != null && pMarket != null && ev != null) {
     const caseA = pModel >= 0.08 && ev > 0
     const caseB = pModel >= 0.08 && ev < -0.20
-    const caseC = pModel < 0.0714 && ev < -0.25
+    const caseC = pModel < 0.0714 && pMarket > pModel
     const caseD = pModel >= 0.075 && pMarket < 0.05
 
     if (caseA) {
-      parts.push(`AI 量化實力頂尖 (P_model ${pModelPct.toFixed(1)}%)；市場賠率具備高值博率 (+EV ${fmtEV(ev)})，為重點投注目標`)
+      parts.push(`AI 評估基礎實力頂尖 (P_model ${pModelPct.toFixed(1)}%)，且賠率具備值博率 (EV ${fmtEV(ev)})，為重點獨贏/頭膽目標`)
     } else if (caseB) {
-      parts.push(`AI 量化評估實力屬第一梯隊 (P_model ${pModelPct.toFixed(1)}%)，但市場資金高度追捧（賠率過熱，EV ${fmtEV(ev)}），獨贏性價比低，建議轉向連贏/位置 Q 拖碼`)
+      parts.push(`AI 評估屬第一梯隊 (P_model ${pModelPct.toFixed(1)}%)；但市場資金過度追捧 (P_market ${pMarketPct.toFixed(1)}%) 導致獨贏性價比低，建議做連贏/位置 Q 拖碼`)
     } else if (caseC) {
-      parts.push(`近況/久休數據令 AI 評分偏低 (P_model ${pModelPct.toFixed(1)}%)；市場賠率盲目過熱，存在極高陷阱風險，嚴禁單獨追捧`)
+      parts.push(`近況或久休令 AI 模型評分偏低 (P_model ${pModelPct.toFixed(1)}%)；市場賠率盲目過熱 (EV ${fmtEV(ev)})，存在陷阱風險，不宜單獨追捧`)
     } else if (caseD) {
-      parts.push(`AI 評估硬實力被市場嚴重忽視 (P_model ${pModelPct.toFixed(1)}%，市場僅 ${pMarketPct.toFixed(1)}%)，具備冷門爆發潛質，位置 (Place) / 位置 Q 極佳配腳`)
+      parts.push(`AI 評估硬實力被市場嚴重忽視 (P_model ${pModelPct.toFixed(1)}% vs P_market ${pMarketPct.toFixed(1)}%)，具備爆冷潛質，極佳位置/位置 Q 配腳`)
     }
   }
 

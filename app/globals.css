@@ -367,6 +367,8 @@ html, body {
   transition: all 0.3s ease;
   animation: fade-in 0.4s ease-out forwards;
   opacity: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .pick-card::before {
@@ -476,9 +478,10 @@ html, body {
 .odds-pending { color: var(--accent-amber); font-size: 14px; font-style: italic; }
 
 .pick-form {
-  margin-bottom: 12px;
-  padding-top: 12px;
+  margin-bottom: 0;
+  padding-top: 10px;
   border-top: 1px solid var(--border-primary);
+  flex-shrink: 0;
 }
 
 .pick-form-label {
@@ -525,6 +528,9 @@ html, body {
   font-size: 12.5px;
   line-height: 1.7;
   color: var(--text-secondary);
+  flex: 1;
+  overflow-y: auto;
+  min-height: 60px;
 }
 
 .picks-empty {
@@ -2296,9 +2302,9 @@ html, body {
    Top Picks Cards - Benter Stats
    ===================================================================== */
 .pick-benter-stats {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px 12px;
   padding: 8px 0;
   border-top: 1px solid rgba(255, 255, 255, 0.06);
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
@@ -2309,14 +2315,16 @@ html, body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 2px 0;
+  padding: 3px 0;
+  min-height: 24px;
 }
 
 .benter-stat-row.highlight {
   background: rgba(16, 185, 129, 0.08);
   border-radius: 4px;
-  padding: 4px 6px;
+  padding: 3px 6px;
   margin: 0 -6px;
+  grid-column: 1 / -1;
 }
 
 .benter-label {
@@ -2344,6 +2352,8 @@ html, body {
   justify-content: center;
   gap: 1rem;
   padding: 6px 0;
+  min-height: 48px;
+  align-items: center;
 }
 
 /* ===== Enhanced Horse Detail Drawer ===== */
