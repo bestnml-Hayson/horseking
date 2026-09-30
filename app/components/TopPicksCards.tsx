@@ -116,22 +116,14 @@ export function TopPicksCards({ picks, totalRunners, paceLabel, onHorseClick }: 
                 </div>
                 <div className="pick-stat">
                   <div className="pick-stat-label">配備</div>
-                  <div className="pick-stat-value" style={{ color: (() => {
-                    if (!row.gear) return 'var(--text-muted)'
-                    const gearParts = row.gear.split('/').map(g => g.trim()).filter(Boolean)
-                    return gearParts.some(g => g.endsWith('1')) ? '#f59e0b' : 'var(--text-muted)'
-                  })(), fontWeight: 600, fontSize: '13px' }}>
-                    {(() => {
-                      if (!row.gear) return '-'
-                      const gearParts = row.gear.split('/').map(g => g.trim()).filter(Boolean)
-                      return gearParts.some(g => g.endsWith('1')) ? `${row.gear} 初戴` : '-'
-                    })()}
+                  <div className="pick-stat-value" style={{ color: row.gear ? 'var(--text-primary)' : 'var(--text-muted)', fontWeight: 600, fontSize: '13px' }}>
+                    {row.gear ?? '-'}
                   </div>
                 </div>
                 <div className="pick-stat">
                   <div className="pick-stat-label">休養</div>
-                  <div className="pick-stat-value" style={{ color: row.rest_days != null && row.rest_days >= 90 ? '#ef4444' : row.rest_days != null && row.rest_days >= 60 ? '#f59e0b' : 'var(--text-muted)', fontSize: '13px' }}>
-                    {row.rest_days != null && row.rest_days >= 60 ? `${row.rest_days} 天` : '-'}
+                  <div className="pick-stat-value" style={{ color: row.rest_days != null && row.rest_days >= 90 ? '#ef4444' : row.rest_days != null && row.rest_days >= 60 ? '#f59e0b' : 'var(--text-primary)', fontSize: '13px' }}>
+                    {row.rest_days != null ? `${row.rest_days} 天` : '-'}
                   </div>
                 </div>
               </div>
