@@ -17,6 +17,7 @@ function getHKTDate(): string {
 export async function fetchLatestRaces(): Promise<Race[]> {
   const supabase = getSupabase()
   const today = getHKTDate()
+  console.log(`[fetchLatestRaces] today = ${today}`)
 
   const { data: allCandidateRaces, error: candidateError } = await supabase
     .from('races')
@@ -30,17 +31,30 @@ export async function fetchLatestRaces(): Promise<Race[]> {
     throw candidateError
   }
 
+  console.log(`[fetchLatestRaces] races >= ${today}: ${allCandidateRaces?.length ?? 0} found`)
+  if (allCandidateRaces && allCandidateRaces.length > 0) {
+    console.log(`[fetchLatestRaces] first 3 candidates:`, allCandidateRaces.slice(0, 3).map(r => `${r.race_id} (${r.race_date} ${r.venue})`))
+  }
+
   let targetDate: string | null = null
   let targetVenue: string | null = null
 
   if (allCandidateRaces && allCandidateRaces.length > 0) {
     const raceIds = allCandidateRaces.map(r => r.race_id)
-    const { data: existingRunners } = await supabase
+    const { data: existingRunners, error: runnersError } = await supabase
       .from('race_runners')
       .select('race_id')
       .in('race_id', raceIds)
 
+    if (runnersError) {
+      console.error('[fetchLatestRaces] runner check error:', runnersError)
+    }
+
     const validRaceIds = new Set(existingRunners?.map(r => r.race_id) ?? [])
+    console.log(`[fetchLatestRaces] runners found for ${validRaceIds.size} of ${raceIds.length} candidate races`)
+    if (validRaceIds.size > 0) {
+      console.log(`[fetchLatestRaces] valid race_ids:`, Array.from(validRaceIds).slice(0, 3))
+    }
     for (const race of allCandidateRaces) {
       if (validRaceIds.has(race.race_id)) {
         targetDate = race.race_date
@@ -51,6 +65,7 @@ export async function fetchLatestRaces(): Promise<Race[]> {
   }
 
   if (!targetDate) {
+    console.log(`[fetchLatestRaces] No today-races with runners, falling back to most recent`)
     const { data: latestRaces } = await supabase
       .from('races')
       .select('race_id, race_date, venue')
@@ -58,6 +73,7 @@ export async function fetchLatestRaces(): Promise<Race[]> {
       .order('race_no', { ascending: true })
 
     if (latestRaces && latestRaces.length > 0) {
+      console.log(`[fetchLatestRaces] fallback: ${latestRaces.length} total races, most recent: ${latestRaces[0].race_date} ${latestRaces[0].venue}`)
       const raceIds = latestRaces.map(r => r.race_id)
       const { data: existingRunners } = await supabase
         .from('race_runners')
@@ -65,6 +81,7 @@ export async function fetchLatestRaces(): Promise<Race[]> {
         .in('race_id', raceIds)
 
       const validRaceIds = new Set(existingRunners?.map(r => r.race_id) ?? [])
+      console.log(`[fetchLatestRaces] fallback runners: ${validRaceIds.size} of ${raceIds.length} races have runners`)
       for (const race of latestRaces) {
         if (validRaceIds.has(race.race_id)) {
           targetDate = race.race_date

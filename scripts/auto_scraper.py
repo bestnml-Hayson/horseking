@@ -480,8 +480,19 @@ def scrape_hkjc_races(date_str: str, venue: str) -> List[Dict]:
                         page.wait_for_timeout(3000)
 
                 except Exception as e:
+                    err_str = str(e)
                     print(f"    [RETRY {attempt+1}/3] R{race_no} odds: {e}")
-                    page.wait_for_timeout(2000)
+                    if 'crashed' in err_str.lower() or 'crash' in err_str.lower():
+                        print(f"    [FALLBACK] R{race_no}: page crashed, assigning default odds 10.0")
+                        for h in race_data['horses']:
+                            if h['win_odds'] <= 0:
+                                h['win_odds'] = 10.0
+                        odds_scraped = True
+                        break
+                    try:
+                        page.wait_for_timeout(2000)
+                    except Exception:
+                        pass
 
             if not odds_scraped:
                 matched = sum(1 for h in race_data['horses'] if h['win_odds'] > 0)
@@ -490,7 +501,10 @@ def scrape_hkjc_races(date_str: str, venue: str) -> List[Dict]:
                     for h in race_data['horses']:
                         h['win_odds'] = 10.0
 
-        browser.close()
+        try:
+            browser.close()
+        except Exception:
+            pass
 
     print(f"\n[Scraper] Total: {len(all_races)} races scraped")
     return all_races
