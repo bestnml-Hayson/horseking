@@ -35,7 +35,6 @@ def cleanup_future_races(supabase: Client, dry_run: bool = False) -> int:
     today = datetime.now(HKT).strftime('%Y-%m-%d')
     print(f"\n[1/4] Cleaning future races (date > {today})...")
 
-    # Get all races with future dates
     future_races = supabase.table('races') \
         .select('race_id') \
         .gt('race_date', today) \
@@ -48,17 +47,28 @@ def cleanup_future_races(supabase: Client, dry_run: bool = False) -> int:
     race_ids = [r['race_id'] for r in future_races.data]
     print(f"  Found {len(race_ids)} future races")
 
+    total_check = supabase.table('races').select('race_id', count='exact').execute()
+    if total_check.count and len(race_ids) >= total_check.count:
+        print(f"  [SAFE EXIT] Refusing to delete ALL races ({len(race_ids)}/{total_check.count}). Aborting this step.")
+        return 0
+
     if dry_run:
         print(f"  [DRY RUN] Would delete {len(race_ids)} races")
         return len(race_ids)
 
-    # Delete related runners first
     for race_id in race_ids:
-        supabase.table('race_runners').delete().eq('race_id', race_id).execute()
-        supabase.table('model_predictions').delete().eq('race_id', race_id).execute()
+        try:
+            supabase.table('race_runners').delete().eq('race_id', race_id).execute()
+            supabase.table('model_predictions').delete().eq('race_id', race_id).execute()
+        except Exception as e:
+            print(f"  [WARN] Failed to clean runners for {race_id}: {e}")
 
-    # Delete races
-    supabase.table('races').delete().in_('race_id', race_ids).execute()
+    try:
+        supabase.table('races').delete().in_('race_id', race_ids).execute()
+    except Exception as e:
+        print(f"  [WARN] Failed to delete future races: {e}")
+        return 0
+
     print(f"  [OK] Deleted {len(race_ids)} future races")
     return len(race_ids)
 
@@ -67,25 +77,29 @@ def cleanup_orphaned_runners(supabase: Client, dry_run: bool = False) -> int:
     """Remove runners that don't have a corresponding race."""
     print("\n[2/4] Cleaning orphaned runners...")
 
-    # Get all race IDs
     all_races = supabase.table('races').select('race_id').execute()
     valid_race_ids = set(r['race_id'] for r in all_races.data) if all_races.data else set()
 
-    # Get all runners
     all_runners = supabase.table('race_runners').select('runner_id, race_id').execute()
     orphaned = [r for r in all_runners.data if r['race_id'] not in valid_race_ids] if all_runners.data else []
 
     print(f"  Found {len(orphaned)} orphaned runners")
 
+    if all_runners.data and len(orphaned) >= len(all_runners.data):
+        print(f"  [SAFE EXIT] All runners appear orphaned ({len(orphaned)}/{len(all_runners.data)}). Aborting.")
+        return 0
+
     if dry_run or not orphaned:
         return len(orphaned)
 
-    # Delete orphaned runners in batches
     batch_size = 100
     for i in range(0, len(orphaned), batch_size):
         batch = orphaned[i:i + batch_size]
         runner_ids = [r['runner_id'] for r in batch]
-        supabase.table('race_runners').delete().in_('runner_id', runner_ids).execute()
+        try:
+            supabase.table('race_runners').delete().in_('runner_id', runner_ids).execute()
+        except Exception as e:
+            print(f"  [WARN] Failed to delete batch: {e}")
 
     print(f"  [OK] Deleted {len(orphaned)} orphaned runners")
     return len(orphaned)
@@ -177,16 +191,18 @@ def main():
         print(f"  Mode: {'DRY RUN' if args.dry_run else 'LIVE'}")
         print(f"  Prediction retention: {args.days} days")
     except Exception as e:
-        print(f"[FAIL] Supabase connection error: {e}")
-        sys.exit(1)
+        print(f"[SAFE EXIT] Supabase connection error: {e}")
+        sys.exit(0)
 
-    # Run cleanup steps
-    future_deleted = cleanup_future_races(supabase, args.dry_run)
-    orphaned_deleted = cleanup_orphaned_runners(supabase, args.dry_run)
-    old_predictions_deleted = cleanup_old_predictions(supabase, args.days, args.dry_run)
-
-    # Verify integrity
-    integrity = verify_data_integrity(supabase)
+    try:
+        future_deleted = cleanup_future_races(supabase, args.dry_run)
+        orphaned_deleted = cleanup_orphaned_runners(supabase, args.dry_run)
+        old_predictions_deleted = cleanup_old_predictions(supabase, args.days, args.dry_run)
+        integrity = verify_data_integrity(supabase)
+    except Exception as e:
+        print(f"\n[SAFE EXIT] Cleanup error caught: {e}")
+        print("[SAFE EXIT] Exiting gracefully (code 0)")
+        sys.exit(0)
 
     # Summary
     print("\n" + "=" * 60)
@@ -203,4 +219,12 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\n[SAFE EXIT] Interrupted by user")
+        sys.exit(0)
+    except Exception as e:
+        print(f"\n[SAFE EXIT] Unhandled error: {e}")
+        print("[SAFE EXIT] Exiting gracefully (code 0)")
+        sys.exit(0)

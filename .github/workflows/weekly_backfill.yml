@@ -1,10 +1,18 @@
-name: Weekly Historical Backfill
+name: Weekly Historical Backfill (Manual Only)
 
 on:
-  schedule:
-    # Run every Sunday at 3 AM HKT (7 PM UTC Saturday)
-    - cron: '0 19 * * 6'  # Saturday 19:00 UTC = Sunday 03:00 HKT
   workflow_dispatch:
+    inputs:
+      months:
+        description: 'Number of months to backfill (default: 3)'
+        required: false
+        type: string
+        default: '3'
+      skip_scrape:
+        description: 'Skip scraping, only run analysis on existing data'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -17,7 +25,6 @@ jobs:
   weekly-backfill:
     runs-on: ubuntu-latest
     timeout-minutes: 60
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
 
     steps:
       - name: Checkout repository
@@ -38,16 +45,20 @@ jobs:
           playwright install --with-deps chromium
           python -c "from playwright.sync_api import sync_playwright; import supabase; print('[OK] deps loaded')"
 
-      - name: Run weekly backfill (last 3 months)
+      - name: Run weekly backfill
         run: |
           echo "=== [WeeklyBackfill] $(date -u '+%Y-%m-%d %H:%M:%S UTC') ==="
-          python scripts/backfill_history.py --months 3
+          SKIP_ARG=""
+          [ "${{ github.event.inputs.skip_scrape }}" = "true" ] && SKIP_ARG="--skip-scrape"
+          python scripts/backfill_history.py --months ${{ github.event.inputs.months || '3' }} $SKIP_ARG
           echo "=== [WeeklyBackfill] Done ==="
 
       - name: Summary
         if: always()
         run: |
           echo "## Weekly Backfill Summary" >> $GITHUB_STEP_SUMMARY
-          echo "- Trigger: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Trigger: Manual (workflow_dispatch)" >> $GITHUB_STEP_SUMMARY
+          echo "- Months: ${{ github.event.inputs.months || '3' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Skip Scrape: ${{ github.event.inputs.skip_scrape || 'false' }}" >> $GITHUB_STEP_SUMMARY
           echo "- Time: $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
           echo "- Status: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY

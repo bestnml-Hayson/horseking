@@ -1,9 +1,21 @@
-name: Smart Sync (Dynamic Frequency)
+name: Smart Sync (Manual Only)
 
 on:
-  schedule:
-    - cron: '*/15 * * * *'
   workflow_dispatch:
+    inputs:
+      date:
+        description: 'Race date (YYYY-MM-DD). Leave empty for auto-detect.'
+        required: false
+        type: string
+      venue:
+        description: 'Venue (ST/HV/auto). Leave empty for auto-detect.'
+        required: false
+        type: string
+      mode:
+        description: 'Sync mode: full (scrape+model), odds-only (update odds only)'
+        required: false
+        type: string
+        default: 'full'
 
 permissions:
   contents: read
@@ -19,7 +31,6 @@ env:
 jobs:
   smart-sync:
     runs-on: ubuntu-latest
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     timeout-minutes: 25
 
     steps:
@@ -44,13 +55,26 @@ jobs:
       - name: Run Smart Sync
         run: |
           echo "=== [SmartSync] $(date -u '+%Y-%m-%d %H:%M:%S UTC') ==="
-          python scripts/smart_sync.py
+          MODE="${{ github.event.inputs.mode || 'full' }}"
+          DATE_ARG=""
+          VENUE_ARG=""
+          [ -n "${{ github.event.inputs.date }}" ] && DATE_ARG="--date ${{ github.event.inputs.date }}"
+          [ -n "${{ github.event.inputs.venue }}" ] && VENUE_ARG="--venue ${{ github.event.inputs.venue }}"
+
+          if [ "$MODE" = "odds-only" ]; then
+            python scripts/auto_scraper.py $DATE_ARG $VENUE_ARG --odds-only
+          else
+            python scripts/smart_sync.py $DATE_ARG $VENUE_ARG
+          fi
           echo "=== [SmartSync] Done ==="
 
       - name: Summary
         if: always()
         run: |
           echo "## Smart Sync Summary" >> $GITHUB_STEP_SUMMARY
-          echo "- Trigger: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Trigger: Manual (workflow_dispatch)" >> $GITHUB_STEP_SUMMARY
+          echo "- Date: ${{ github.event.inputs.date || 'auto' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Venue: ${{ github.event.inputs.venue || 'auto' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Mode: ${{ github.event.inputs.mode || 'full' }}" >> $GITHUB_STEP_SUMMARY
           echo "- Time: $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
           echo "- Status: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY

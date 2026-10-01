@@ -1,26 +1,26 @@
-name: Monthly Horse Update
+name: Monthly Horse Update (Manual Only)
 
 on:
-  push:
-    branches: [main]
-  schedule:
-    - cron: '0 20 28-31 * *'
   workflow_dispatch:
+    inputs:
+      limit:
+        description: 'Max number of horses to update (default: 500)'
+        required: false
+        type: string
+        default: '500'
 
 permissions:
   contents: read
 
-jobs:
-  guard:
-    if: github.event_name == 'push'
-    runs-on: ubuntu-latest
-    steps:
-      - run: echo "Monthly update runs on schedule only"
+env:
+  SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+  SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
 
+jobs:
   update:
-    if: github.event_name != 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 120
+
     steps:
       - uses: actions/checkout@v4
         with:
@@ -36,17 +36,18 @@ jobs:
           pip install --quiet -r requirements.txt
           playwright install --with-deps chromium
 
-      - name: Check HKT date and run scraper
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+      - name: Run monthly horse profile update
         run: |
-          HKT_HOUR=$(TZ='Asia/Hong_Kong' date +%H)
-          HKT_DAY=$(TZ='Asia/Hong_Kong' date +%d)
+          echo "=== [MonthlyHorseUpdate] $(date -u '+%Y-%m-%d %H:%M:%S UTC') ==="
           echo "HKT: $(TZ='Asia/Hong_Kong' date '+%Y-%m-%d %H:%M')"
-          if [ "$HKT_DAY" = "01" ] && [ "$HKT_HOUR" -ge "4" ]; then
-            echo "Running monthly horse profile update"
-            python scripts/batch_horse_scraper.py --limit 500
-          else
-            echo "Skipped: Not 1st of month in HKT"
-          fi
+          python scripts/batch_horse_scraper.py --limit ${{ github.event.inputs.limit || '500' }}
+          echo "=== [MonthlyHorseUpdate] Done ==="
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Monthly Horse Update Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- Trigger: Manual (workflow_dispatch)" >> $GITHUB_STEP_SUMMARY
+          echo "- Limit: ${{ github.event.inputs.limit || '500' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Time: $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
+          echo "- Status: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
