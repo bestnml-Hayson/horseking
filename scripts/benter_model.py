@@ -34,13 +34,16 @@ FRACTIONAL_KELLY = 0.25  # 1/4 Kelly 降低方差
 TEMPERATURE = 1.0     # Softmax 溫度參數
 
 # 評分維度權重 (總和 = 1.0)
-W_FORM = 0.25         # 近況評分
-W_RATING = 0.18       # 往績評分 (past_rating)
-W_JOCKEY = 0.17       # 騎師勝率
-W_TRAINER = 0.13      # 練馬師勝率
-W_DRAW = 0.12         # 檔位優勢
-W_WEIGHT_CHANGE = 0.08  # 體重變化 (減磅為佳)
-W_REST_DAYS = 0.07    # 休養天數 (適中為佳)
+W_FORM = 0.23         # 近況評分
+W_RATING = 0.16       # 往績評分 (past_rating)
+W_JOCKEY = 0.15       # 騎師勝率
+W_TRAINER = 0.12      # 練馬師勝率
+W_DRAW = 0.10         # 檔位優勢
+W_WEIGHT_CHANGE = 0.07  # 體重變化 (減磅為佳)
+W_REST_DAYS = 0.06    # 休養天數 (適中為佳)
+W_BEST_TIME = 0.03    # 最佳時間 (越低越快)
+W_SEASON_PRIZE = 0.03  # 本季獎金 (越高越好)
+W_WEIGHT_CARRIED_DIFF = 0.03  # 負磅差異 (越低越佳)
 
 
 def get_supabase_client() -> Client:
@@ -114,9 +117,61 @@ def normalize_features(runners: List[Dict]) -> List[Dict]:
     # gear_change: binary - new gear (e.g., B1 first time) may indicate improvement
     for r in runners:
         gear = r.get('gear', '') or ''
-        # Gear codes ending in 1 often indicate first-time use (B1, TT1, etc.)
         has_new_gear = any(gear.endswith('1') or gear.endswith('B1') for g in gear.split('/') if g.strip())
         r['gear_change_norm'] = 0.7 if has_new_gear else 0.5
+
+    # best_time: parse "M:SS.cc" format, lower is faster = better
+    bt_vals = []
+    for r in runners:
+        bt = r.get('best_time')
+        if bt and isinstance(bt, str):
+            try:
+                parts = bt.split(':')
+                if len(parts) == 2:
+                    seconds = int(parts[0]) * 60 + float(parts[1])
+                else:
+                    seconds = float(bt)
+                bt_vals.append(seconds)
+                r['_best_time_sec'] = seconds
+            except (ValueError, IndexError):
+                r['_best_time_sec'] = None
+        else:
+            r['_best_time_sec'] = None
+    if bt_vals:
+        bt_min, bt_max = min(bt_vals), max(bt_vals)
+        bt_rng = bt_max - bt_min if bt_max != bt_min else 1.0
+        for r in runners:
+            bt = r.get('_best_time_sec')
+            if bt is None:
+                r['best_time_norm'] = 0.5
+            else:
+                r['best_time_norm'] = max(0.0, min(1.0, 1.0 - (bt - bt_min) / bt_rng))
+
+    # season_prize: higher total prize money this season = better horse
+    sp_vals = [r.get('season_prize') for r in runners
+               if r.get('season_prize') is not None and r.get('season_prize') > 0]
+    if sp_vals:
+        sp_min, sp_max = min(sp_vals), max(sp_vals)
+        sp_rng = sp_max - sp_min if sp_max != sp_min else 1.0
+        for r in runners:
+            sp = r.get('season_prize')
+            if sp is None or sp <= 0:
+                r['season_prize_norm'] = 0.3
+            else:
+                r['season_prize_norm'] = max(0.0, min(1.0, (sp - sp_min) / sp_rng))
+
+    # weight_carried_diff: lower = carrying less weight relative to assignment = better
+    wcd_vals = [r.get('weight_carried_diff') for r in runners
+                if r.get('weight_carried_diff') is not None]
+    if wcd_vals:
+        wcd_min, wcd_max = min(wcd_vals), max(wcd_vals)
+        wcd_rng = wcd_max - wcd_min if wcd_max != wcd_min else 1.0
+        for r in runners:
+            wcd = r.get('weight_carried_diff')
+            if wcd is None:
+                r['weight_carried_diff_norm'] = 0.5
+            else:
+                r['weight_carried_diff_norm'] = max(0.0, min(1.0, 1.0 - (wcd - wcd_min) / wcd_rng))
 
     return runners
 
@@ -134,6 +189,9 @@ def compute_raw_score(runner: Dict) -> float:
         W_DRAW          * runner.get('draw_norm', 0.5) +
         W_WEIGHT_CHANGE * runner.get('weight_change_norm', 0.5) +
         W_REST_DAYS     * runner.get('rest_days_norm', 0.5) +
+        W_BEST_TIME     * runner.get('best_time_norm', 0.5) +
+        W_SEASON_PRIZE  * runner.get('season_prize_norm', 0.5) +
+        W_WEIGHT_CARRIED_DIFF * runner.get('weight_carried_diff_norm', 0.5) +
         0.02            * runner.get('gear_change_norm', 0.5)
     )
     return score
