@@ -117,6 +117,10 @@ def main():
     if mode == 'positioning':
         print("[SmartSync] Positioning mode: scraping race cards...")
         rc = run_cmd(f"python scripts/auto_scraper.py --date {date_str} --venue auto")
+        if venue and rc == 0:
+            print("[SmartSync] Race day positioning: also running Benter model...")
+            rc2 = run_cmd("python scripts/benter_model.py supabase")
+            rc = max(rc, rc2)
         sys.exit(rc)
 
     elif mode == 'odds':
