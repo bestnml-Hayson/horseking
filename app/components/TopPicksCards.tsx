@@ -89,7 +89,7 @@ export function TopPicksCards({ picks, totalRunners, paceLabel, onHorseClick }: 
                 </div>
                 <div className="benter-stat-row">
                   <span className="benter-label">P_market</span>
-                  <span className="benter-value market-val">{oddsPending ? '待定' : fmtPct(pMarket)}</span>
+                  <span className="benter-value market-val">{fmtPct(pMarket)}</span>
                 </div>
                 <div className="benter-stat-row highlight">
                   <span className="benter-label">P_final</span>
