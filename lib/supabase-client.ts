@@ -1,5 +1,5 @@
 import { createBrowserClient } from '@supabase/ssr'
-import type { Race, RaceRunner, ModelPrediction, Horse, HorseDetail } from './types'
+import type { Race, RaceRunner, ModelPrediction, Horse, HorseDetail, RaceRow } from './types'
 
 function getSupabase() {
   return createBrowserClient(
@@ -281,4 +281,41 @@ export async function fetchRecentForm(horseIds: string[]): Promise<Map<string, s
   }
 
   return formMap
+}
+
+export async function fetchAllRaceData(races: Race[]): Promise<Map<string, RaceRow[]>> {
+  const result = new Map<string, RaceRow[]>()
+  if (races.length === 0) return result
+
+  const supabase = getSupabase()
+  const raceIds = races.map(r => r.race_id)
+
+  const [runnersRes, predictionsRes] = await Promise.all([
+    supabase.from('race_runners').select('*').in('race_id', raceIds).order('horse_no', { ascending: true }),
+    supabase.from('model_predictions').select('*').in('race_id', raceIds),
+  ])
+
+  const allRunners = runnersRes.data ?? []
+  const allPredictions = predictionsRes.data ?? []
+
+  const horseIds = Array.from(new Set(allRunners.map(r => r.horse_id)))
+  const horses = await fetchHorses(horseIds)
+  const horseMap = new Map(horses.map(h => [h.horse_id, h]))
+
+  const predMap = new Map<string, ModelPrediction>()
+  for (const p of allPredictions) {
+    predMap.set(p.runner_id, p)
+  }
+
+  for (const race of races) {
+    const runners = allRunners.filter(r => r.race_id === race.race_id)
+    const rows: RaceRow[] = runners.map(r => ({
+      ...r,
+      horse_name: horseMap.get(r.horse_id)?.horse_name ?? r.horse_id,
+      prediction: predMap.get(r.runner_id) ?? null,
+    }))
+    result.set(race.race_id, rows)
+  }
+
+  return result
 }

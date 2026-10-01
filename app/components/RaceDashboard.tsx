@@ -1,13 +1,15 @@
 'use client'
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { fetchLatestRaces, fetchRaceRunners, fetchPredictions, fetchHorses, fetchRecentForm } from '@/lib/supabase-client'
+import { fetchLatestRaces, fetchRaceRunners, fetchPredictions, fetchHorses, fetchRecentForm, fetchAllRaceData } from '@/lib/supabase-client'
 import type { Race, RaceRunner, ModelPrediction, Horse, RaceRow } from '@/lib/types'
 import { getTopPicks, estimateRaceTime, predictPace, isOddsPending, computeClientPredictions } from '@/lib/race-utils'
+import { generateTreble, type TrebleResult } from '@/lib/treble-engine'
 import { PacingBriefing } from './PacingBriefing'
 import { AIRaceAnalysis } from './AIRaceAnalysis'
 import { TopPicksCards } from './TopPicksCards'
 import { BettingStrategy } from './BettingStrategy'
+import { TrebleCard } from './TrebleCard'
 import { RaceTable } from './RaceTable'
 import { SkeletonTable } from './SkeletonTable'
 import { HorseDetailDrawer } from './HorseDetailDrawer'
@@ -24,6 +26,7 @@ export function RaceDashboard() {
   const [drawerHorseId, setDrawerHorseId] = useState<string | null>(null)
   const [drawerHorseName, setDrawerHorseName] = useState<string>('')
   const [drawerRaceRow, setDrawerRaceRow] = useState<RaceRow | null>(null)
+  const [trebleData, setTrebleData] = useState<TrebleResult | null>(null)
 
   const loadRaceData = useCallback(async (raceId: string) => {
     setLoading(true)
@@ -118,6 +121,24 @@ export function RaceDashboard() {
     }, REFRESH_INTERVAL)
     return () => clearInterval(timer)
   }, [selectedRaceId, loadRaceData])
+
+  useEffect(() => {
+    if (races.length < 3) return
+    let cancelled = false
+    async function loadTreble() {
+      try {
+        const allData = await fetchAllRaceData(races)
+        if (cancelled) return
+        const result = generateTreble(allData, races)
+        if (cancelled) return
+        setTrebleData(result)
+      } catch (e) {
+        console.error('[RaceDashboard] treble fetch error:', e)
+      }
+    }
+    loadTreble()
+    return () => { cancelled = true }
+  }, [races])
 
   const selectedRace = races.find(r => r.race_id === selectedRaceId)
   const topPicks = useMemo(() => getTopPicks(rows, 4), [rows])
@@ -248,6 +269,9 @@ export function RaceDashboard() {
 
       {/* Section 4: Betting Strategy */}
       <BettingStrategy rows={rows} />
+
+      {/* Section 4.5: 3T Treble Recommendations */}
+      {trebleData && <TrebleCard treble={trebleData} />}
 
       {/* Section 5: Full Analysis Table */}
       <div className="full-table-section animate-fade-in">
