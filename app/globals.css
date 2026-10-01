@@ -904,232 +904,122 @@ html, body {
 
 .quartet-summary strong { color: #a371f7; font-size: 14px; }
 
-/* ===== 3T Treble Section ===== */
-.treble-section {
-  margin-top: 20px;
+/* ===== 3T Treble Inline ===== */
+.treble-inline {
+  margin-top: 16px;
+  padding: 14px 16px;
+  background: var(--bg-card);
+  border: 1px solid rgba(210, 153, 34, 0.2);
+  border-radius: 14px;
 }
 
-.treble-header {
+.treble-inline-header {
   display: flex;
   align-items: baseline;
-  gap: 10px;
-  margin-bottom: 14px;
+  gap: 8px;
+  margin-bottom: 10px;
 }
 
-.treble-badge {
-  font-size: 15px;
+.treble-inline-badge {
+  font-size: 13px;
   font-weight: 800;
-  color: var(--text-primary);
-  padding: 6px 14px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, rgba(210, 153, 34, 0.15), rgba(163, 113, 247, 0.12));
-  border: 1px solid rgba(210, 153, 34, 0.25);
+  color: var(--accent-amber);
 }
 
-.treble-sublabel {
+.treble-inline-sub {
   font-size: 11px;
   color: var(--text-muted);
 }
 
-.treble-race-picks {
+.treble-inline-picks {
   display: flex;
-  gap: 10px;
-  overflow-x: auto;
-  padding-bottom: 8px;
-  margin-bottom: 16px;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
 }
 
-.treble-race-col {
+.treble-inline-race {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  min-width: 160px;
-  flex: 1;
-  padding: 10px;
-  border-radius: 12px;
-  background: var(--bg-card);
-  border: 1px solid var(--border-primary);
+  gap: 3px;
+  min-width: 140px;
 }
 
-.treble-race-label {
-  font-size: 11px;
+.treble-inline-raceno {
+  font-size: 10px;
   font-weight: 800;
   color: var(--accent-amber);
   text-transform: uppercase;
-  margin-bottom: 4px;
 }
 
-.treble-pick {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 8px;
-  border-radius: 8px;
+.treble-inline-horse {
   font-size: 12px;
-  background: var(--bg-elevated);
-  border: 1px solid var(--border-primary);
-}
-
-.treble-pick-top {
-  background: rgba(210, 153, 34, 0.08);
-  border-color: rgba(210, 153, 34, 0.25);
-}
-
-.treble-pick-no {
-  font-weight: 800;
-  color: var(--accent-amber);
-  min-width: 24px;
-}
-
-.treble-pick-name {
-  flex: 1;
-  font-weight: 600;
-  color: var(--text-primary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  min-width: 60px;
-}
-
-.treble-pick-stats {
+  color: var(--text-secondary);
   display: flex;
-  gap: 4px;
-  width: 100%;
   align-items: center;
+  gap: 4px;
 }
 
-.treble-pick-prob {
-  font-size: 11px;
+.treble-inline-top {
   font-weight: 700;
+  color: var(--text-primary);
+}
+
+.treble-inline-p {
+  font-size: 10px;
+  font-weight: 600;
   color: var(--accent-green);
   font-variant-numeric: tabular-nums;
 }
 
-.treble-pick-ev {
-  font-size: 10px;
-  font-weight: 600;
-  color: #10b981;
-  background: rgba(16, 185, 129, 0.1);
-  padding: 1px 4px;
-  border-radius: 3px;
+.treble-inline-combos {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
-.treble-pick-odds {
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--text-muted);
-  margin-left: auto;
-  font-variant-numeric: tabular-nums;
-}
-
-.treble-combos {
-  background: var(--bg-card);
-  border: 1px solid var(--border-primary);
-  border-radius: 14px;
-  padding: 16px;
-}
-
-.treble-combos-title {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text-primary);
-  margin-bottom: 10px;
-}
-
-.treble-combo-row {
+.treble-inline-combo {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  border-radius: 10px;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 8px;
   background: var(--bg-elevated);
   border: 1px solid var(--border-primary);
-  margin-bottom: 6px;
+  font-size: 12px;
 }
 
-.treble-combo-row:first-of-type {
+.treble-inline-combo:first-child {
   background: rgba(210, 153, 34, 0.06);
   border-color: rgba(210, 153, 34, 0.2);
 }
 
-.treble-combo-rank {
-  font-size: 14px;
+.treble-inline-rank {
+  font-size: 12px;
   font-weight: 800;
   color: var(--accent-amber);
-  min-width: 24px;
+  min-width: 20px;
 }
 
-.treble-combo-legs {
+.treble-inline-legs {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   flex: 1;
   flex-wrap: wrap;
 }
 
-.treble-combo-leg {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 12px;
-}
-
-.treble-combo-leg-race {
-  font-size: 10px;
-  font-weight: 700;
-  color: var(--accent-amber);
-  background: rgba(210, 153, 34, 0.12);
-  padding: 1px 4px;
-  border-radius: 3px;
-}
-
-.treble-combo-leg-horse {
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.treble-combo-leg-prob {
+.treble-inline-leg {
   font-size: 11px;
+  color: var(--text-secondary);
   font-weight: 600;
-  color: var(--accent-green);
-  font-variant-numeric: tabular-nums;
 }
 
-.treble-combo-meta {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  flex-shrink: 0;
-}
-
-.treble-combo-p {
-  font-size: 12px;
+.treble-inline-odds {
+  font-size: 11px;
   font-weight: 700;
   color: var(--accent-green);
   font-variant-numeric: tabular-nums;
-}
-
-.treble-combo-odds {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--accent-amber);
-  font-variant-numeric: tabular-nums;
-  padding: 2px 6px;
-  border-radius: 4px;
-  background: rgba(210, 153, 34, 0.1);
-}
-
-.treble-cost-note {
-  font-size: 12px;
-  color: var(--text-muted);
-  padding-top: 10px;
-  border-top: 1px solid var(--border-primary);
-  margin-top: 8px;
-}
-
-.treble-cost-note strong {
-  color: var(--accent-amber);
-  font-size: 14px;
+  white-space: nowrap;
 }
 
 .betting-empty {
