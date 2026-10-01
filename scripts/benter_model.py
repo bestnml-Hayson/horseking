@@ -35,15 +35,17 @@ TEMPERATURE = 1.0     # Softmax 溫度參數
 
 # 評分維度權重 (總和 = 1.0)
 W_FORM = 0.23         # 近況評分
-W_RATING = 0.16       # 往績評分 (past_rating)
-W_JOCKEY = 0.15       # 騎師勝率
-W_TRAINER = 0.12      # 練馬師勝率
-W_DRAW = 0.10         # 檔位優勢
-W_WEIGHT_CHANGE = 0.07  # 體重變化 (減磅為佳)
-W_REST_DAYS = 0.06    # 休養天數 (適中為佳)
+W_RATING = 0.14       # 往績評分 (past_rating)
+W_JOCKEY = 0.13       # 騎師勝率
+W_TRAINER = 0.11      # 練馬師勝率
+W_DRAW = 0.09         # 檔位優勢
+W_WEIGHT_CHANGE = 0.06  # 體重變化 (減磅為佳)
+W_REST_DAYS = 0.05    # 休養天數 (適中為佳)
 W_BEST_TIME = 0.03    # 最佳時間 (越低越快)
 W_SEASON_PRIZE = 0.03  # 本季獎金 (越高越好)
 W_WEIGHT_CARRIED_DIFF = 0.03  # 負磅差異 (越低越佳)
+W_CLASS_STRENGTH = 0.04  # 班次適應 (評分高於班次平均為佳)
+W_WEIGHT_DISTANCE = 0.04  # 體重路程交互 (輕磅跑長途為佳)
 
 
 def get_supabase_client() -> Client:
@@ -54,7 +56,7 @@ def get_supabase_client() -> Client:
 # =====================================================================
 # 1. 特徵標準化
 # =====================================================================
-def normalize_features(runners: List[Dict]) -> List[Dict]:
+def normalize_features(runners: List[Dict], distance: Optional[int] = None) -> List[Dict]:
     """Min-Max 標準化各特徵到 [0, 1] 區間"""
     if not runners:
         return runners
@@ -173,6 +175,54 @@ def normalize_features(runners: List[Dict]) -> List[Dict]:
             else:
                 r['weight_carried_diff_norm'] = max(0.0, min(1.0, 1.0 - (wcd - wcd_min) / wcd_rng))
 
+    # class_strength: horse official_rating vs race average → higher = classing above rivals
+    ratings = [r.get('official_rating') for r in runners if r.get('official_rating') is not None]
+    if ratings:
+        avg_rating = sum(ratings) / len(ratings)
+        cs_vals = []
+        for r in runners:
+            rating = r.get('official_rating')
+            if rating is not None:
+                cs = rating - avg_rating
+                r['_class_strength'] = cs
+                cs_vals.append(cs)
+            else:
+                r['_class_strength'] = 0.0
+                cs_vals.append(0.0)
+        cs_min, cs_max = min(cs_vals), max(cs_vals)
+        cs_rng = cs_max - cs_min if cs_max != cs_min else 1.0
+        for r in runners:
+            cs = r.get('_class_strength', 0.0)
+            r['class_strength_norm'] = max(0.0, min(1.0, (cs - cs_min) / cs_rng))
+    else:
+        for r in runners:
+            r['class_strength_norm'] = 0.5
+
+    # weight_distance: declared_weight × distance interaction → lighter over distance = better
+    if distance and distance > 0:
+        wd_vals = []
+        for r in runners:
+            dw = r.get('declared_weight')
+            if dw is not None and dw > 0:
+                wd = dw * distance / 100000.0
+                r['_weight_distance'] = wd
+                wd_vals.append(wd)
+            else:
+                r['_weight_distance'] = None
+        if wd_vals:
+            wd_min, wd_max = min(wd_vals), max(wd_vals)
+            wd_rng = wd_max - wd_min if wd_max != wd_min else 1.0
+            for r in runners:
+                wd = r.get('_weight_distance')
+                if wd is None:
+                    r['weight_distance_norm'] = 0.5
+                else:
+                    # Lower weight-distance burden = better
+                    r['weight_distance_norm'] = max(0.0, min(1.0, 1.0 - (wd - wd_min) / wd_rng))
+    else:
+        for r in runners:
+            r['weight_distance_norm'] = 0.5
+
     return runners
 
 
@@ -192,6 +242,8 @@ def compute_raw_score(runner: Dict) -> float:
         W_BEST_TIME     * runner.get('best_time_norm', 0.5) +
         W_SEASON_PRIZE  * runner.get('season_prize_norm', 0.5) +
         W_WEIGHT_CARRIED_DIFF * runner.get('weight_carried_diff_norm', 0.5) +
+        W_CLASS_STRENGTH * runner.get('class_strength_norm', 0.5) +
+        W_WEIGHT_DISTANCE * runner.get('weight_distance_norm', 0.5) +
         0.02            * runner.get('gear_change_norm', 0.5)
     )
     return score
@@ -305,13 +357,13 @@ def compute_kelly(p_final: float, odds_win: float, fraction: float = FRACTIONAL_
 # =====================================================================
 # 8. 單場賽事完整計算流程
 # =====================================================================
-def analyze_race(runners: List[Dict]) -> List[Dict]:
+def analyze_race(runners: List[Dict], distance: Optional[int] = None) -> List[Dict]:
     """
     兩階段完整計算流程：
       階段一：normalize → raw_score → softmax → P_model（純實力，不含賠率）
       階段二：market_implied → benter_fusion → P_final → EV → Kelly
     """
-    runners = normalize_features(runners)
+    runners = normalize_features(runners, distance=distance)
 
     raw_scores = [compute_raw_score(r) for r in runners]
     p_models = softmax_probabilities(raw_scores)
@@ -390,9 +442,25 @@ def run_analysis(supabase: Client, race_ids: Optional[List[str]] = None,
     races_data = fetch_races_with_runners(supabase, race_ids)
     print(f"  Found {len(races_data)} races")
 
+    # Fetch race distances from races table
+    race_distances = {}
+    all_race_ids = list(races_data.keys())
+    if all_race_ids:
+        batch_size = 500
+        for i in range(0, len(all_race_ids), batch_size):
+            batch_ids = all_race_ids[i:i + batch_size]
+            try:
+                resp = supabase.table('races').select('race_id,distance').in_('race_id', batch_ids).execute()
+                for row in (resp.data or []):
+                    race_distances[row['race_id']] = row.get('distance')
+            except Exception as e:
+                print(f"  WARNING: could not fetch race distances: {e}")
+        print(f"  Fetched distances for {len(race_distances)} races")
+
     all_predictions = []
     for race_id, runners in races_data.items():
-        predictions = analyze_race(runners)
+        distance = race_distances.get(race_id)
+        predictions = analyze_race(runners, distance=distance)
         all_predictions.extend(predictions)
 
     print(f"  Computed predictions for {len(all_predictions)} runners")
