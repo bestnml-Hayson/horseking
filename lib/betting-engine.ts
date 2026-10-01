@@ -35,12 +35,35 @@ export interface QCombination {
   anchorEV: number
 }
 
+export interface DarkHorse {
+  row: RaceRow
+  modelRank: number
+  marketRank: number
+  ev: number
+  odds: number
+}
+
+export interface TrioCombination {
+  horses: RaceRow[]
+  pTrio: number
+  estimatedOdds: number
+}
+
+export interface QuartetCombination {
+  horses: RaceRow[]
+  pQuartet: number
+  estimatedOdds: number
+}
+
 export interface BettingEngineResult {
   overlays: OverlayHorse[]
   underlays: UnderlayHorse[]
   winBets: WinBet[]
   winPoolValue: boolean
   qCombos: QCombination[]
+  darkHorses: DarkHorse[]
+  trio: TrioCombination | null
+  quartet: QuartetCombination | null
   totalRecommendedBet: number
 }
 
@@ -163,14 +186,66 @@ export function getQCombinations(rows: RaceRow[]): QCombination[] {
   }]
 }
 
+export function identifyDarkHorses(rows: RaceRow[]): DarkHorse[] {
+  const modelSorted = [...rows].sort((a, b) => getPModel(b) - getPModel(a))
+  const marketSorted = [...rows].sort((a, b) => getPMarket(b) - getPMarket(a))
+
+  return rows
+    .map(row => {
+      const modelRank = modelSorted.indexOf(row) + 1
+      const marketRank = marketSorted.indexOf(row) + 1
+      const ev = getEV(row)
+      const odds = row.win_odds ?? 0
+      return { row, modelRank, marketRank, ev, odds }
+    })
+    .filter(d => d.modelRank <= 5 && d.marketRank > 5 && d.odds > 15 && d.ev > 0.03)
+    .sort((a, b) => b.ev - a.ev)
+    .slice(0, 3)
+}
+
+export function getTrioCombination(rows: RaceRow[]): TrioCombination | null {
+  const sorted = [...rows]
+    .filter(r => getPFinal(r) > 0)
+    .sort((a, b) => getPFinal(b) - getPFinal(a))
+
+  if (sorted.length < 3) return null
+
+  const top3 = sorted.slice(0, 3)
+  const pTrio = top3.reduce((p, r) => p * getPFinal(r), 1) * 1.1
+  const avgOdds = top3.reduce((s, r) => s + (r.win_odds ?? 10), 0) / 3
+  const estimatedOdds = avgOdds * avgOdds * 0.3
+
+  return { horses: top3, pTrio, estimatedOdds }
+}
+
+export function getQuartetCombination(rows: RaceRow[]): QuartetCombination | null {
+  const sorted = [...rows]
+    .filter(r => getPFinal(r) > 0)
+    .sort((a, b) => getPFinal(b) - getPFinal(a))
+
+  if (sorted.length < 4) return null
+
+  const top4 = sorted.slice(0, 4)
+  const pQuartet = top4.reduce((p, r) => p * getPFinal(r), 1) * 1.15
+  const avgOdds = top4.reduce((s, r) => s + (r.win_odds ?? 10), 0) / 4
+  const estimatedOdds = avgOdds * avgOdds * avgOdds * 0.15
+
+  return { horses: top4, pQuartet, estimatedOdds }
+}
+
 export function runBettingEngine(rows: RaceRow[]): BettingEngineResult {
   const overlays = identifyOverlays(rows)
   const underlays = identifyUnderlays(rows)
   const { bets: winBets, hasValue: winPoolValue } = getWinRecommendations(rows)
   const qCombos = getQCombinations(rows)
+  const darkHorses = identifyDarkHorses(rows)
+  const trio = getTrioCombination(rows)
+  const quartet = getQuartetCombination(rows)
 
   const totalBet = winBets.reduce((s, b) => s + b.units * UNIT, 0) +
-    qCombos.reduce((s, q) => s + q.totalCost, 0)
+    qCombos.reduce((s, q) => s + q.totalCost, 0) +
+    (trio ? UNIT : 0) +
+    (quartet ? UNIT * 4 : 0)
 
   return {
     overlays,
@@ -178,6 +253,9 @@ export function runBettingEngine(rows: RaceRow[]): BettingEngineResult {
     winBets,
     winPoolValue,
     qCombos,
+    darkHorses,
+    trio,
+    quartet,
     totalRecommendedBet: totalBet,
   }
 }

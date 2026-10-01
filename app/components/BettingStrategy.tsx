@@ -2,7 +2,7 @@
 
 import type { RaceRow } from '@/lib/types'
 import { runBettingEngine } from '@/lib/betting-engine'
-import type { OverlayHorse, WinBet, QCombination } from '@/lib/betting-engine'
+import type { OverlayHorse, WinBet, QCombination, DarkHorse, TrioCombination, QuartetCombination } from '@/lib/betting-engine'
 import { fmtOdds, fmtEV, fmtKelly } from '@/lib/race-utils'
 
 interface BettingStrategyProps {
@@ -154,6 +154,96 @@ function getPFinal(row: RaceRow): number {
   return row.prediction?.final_prob ?? 0
 }
 
+function DarkHorseCard({ darkHorses }: { darkHorses: DarkHorse[] }) {
+  if (darkHorses.length === 0) return null
+  return (
+    <div className="betting-card dark-horse-card">
+      <div className="betting-card-title">
+        <span className="betting-icon">&#x1F4A5;</span>
+        爆冷馬 Dark Horses
+        <span className="betting-card-sub">模型排名 &le;5 市場排名 &gt;5</span>
+      </div>
+      <div className="betting-card-body">
+        {darkHorses.map(({ row, modelRank, marketRank, ev, odds }) => (
+          <div key={row.runner_id} className="dark-horse-row">
+            <div className="dark-horse-horse">
+              <span className="dark-horse-no">#{row.horse_no}</span>
+              <span className="dark-horse-name">{row.horse_name}</span>
+            </div>
+            <div className="dark-horse-stats">
+              <span className="dark-horse-odds">{odds.toFixed(0)}x</span>
+              <span className="dark-horse-ev ev-positive">EV {fmtEV(ev)}</span>
+            </div>
+            <div className="dark-horse-ranks">
+              <span className="rank-badge model-rank">模型 #{modelRank}</span>
+              <span className="rank-badge market-rank">市場 #{marketRank}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function TrioCard({ trio }: { trio: TrioCombination | null }) {
+  if (!trio) return null
+  return (
+    <div className="betting-card trio-card">
+      <div className="betting-card-title">
+        <span className="betting-icon">&#x1F3C6;</span>
+        三重彩 Tierce
+        <span className="betting-card-sub">首三名順序</span>
+      </div>
+      <div className="betting-card-body">
+        <div className="trio-combo">
+          {trio.horses.map((h, i) => (
+            <div key={h.runner_id} className="trio-horse">
+              <span className="trio-position">{i === 0 ? '冠' : i === 1 ? '亞' : '季'}</span>
+              <span className="trio-no">#{h.horse_no}</span>
+              <span className="trio-name">{h.horse_name}</span>
+              <span className="trio-prob">P {(getPFinal(h) * 100).toFixed(1)}%</span>
+            </div>
+          ))}
+        </div>
+        <div className="trio-summary">
+          <span>P_trio: {(trio.pTrio * 100).toFixed(2)}%</span>
+          <span>估計賠率: ~{trio.estimatedOdds.toFixed(0)}x</span>
+          <span>1 注 &times; $10 = <strong>HKD 10</strong></span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function QuartetCard({ quartet }: { quartet: QuartetCombination | null }) {
+  if (!quartet) return null
+  return (
+    <div className="betting-card quartet-card">
+      <div className="betting-card-title">
+        <span className="betting-icon">&#x1F3C5;</span>
+        四連環 Quartet
+        <span className="betting-card-sub">首四名任意順序</span>
+      </div>
+      <div className="betting-card-body">
+        <div className="quartet-combo">
+          {quartet.horses.map((h) => (
+            <div key={h.runner_id} className="quartet-horse">
+              <span className="quartet-no">#{h.horse_no}</span>
+              <span className="quartet-name">{h.horse_name}</span>
+              <span className="quartet-prob">{(getPFinal(h) * 100).toFixed(1)}%</span>
+            </div>
+          ))}
+        </div>
+        <div className="quartet-summary">
+          <span>P_quartet: {(quartet.pQuartet * 100).toFixed(3)}%</span>
+          <span>估計賠率: ~{quartet.estimatedOdds.toFixed(0)}x</span>
+          <span>4 注 &times; $10 = <strong>HKD 40</strong></span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function SummaryBar({ totalBet, overlays, underlays }: { totalBet: number; overlays: OverlayHorse[]; underlays: { row: RaceRow; ratio: number }[] }) {
   return (
     <div className="betting-summary">
@@ -176,7 +266,7 @@ function SummaryBar({ totalBet, overlays, underlays }: { totalBet: number; overl
 export function BettingStrategy({ rows }: BettingStrategyProps) {
   const engine = runBettingEngine(rows)
 
-  const hasAnyData = engine.winPoolValue || engine.qCombos.length > 0 || engine.overlays.length > 0
+  const hasAnyData = engine.winPoolValue || engine.qCombos.length > 0 || engine.overlays.length > 0 || engine.darkHorses.length > 0
 
   if (!hasAnyData) {
     return (
@@ -210,6 +300,9 @@ export function BettingStrategy({ rows }: BettingStrategyProps) {
         <UnderlayCard underlays={engine.underlays} />
         <WinPlaceCard bets={engine.winBets} hasValue={engine.winPoolValue} />
         <QCard combos={engine.qCombos} />
+        <DarkHorseCard darkHorses={engine.darkHorses} />
+        <TrioCard trio={engine.trio} />
+        <QuartetCard quartet={engine.quartet} />
       </div>
     </div>
   )

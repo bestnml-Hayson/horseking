@@ -740,6 +740,170 @@ html, body {
   color: var(--accent-green);
 }
 
+.trio-combo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.trio-position {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--accent-purple);
+  min-width: 24px;
+  text-align: center;
+}
+
+.trio-prob {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent-green);
+  font-variant-numeric: tabular-nums;
+}
+
+.trio-summary {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: var(--text-muted);
+  padding-top: 8px;
+  border-top: 1px solid var(--border-primary);
+}
+
+.trio-summary strong { color: var(--accent-purple); font-size: 14px; }
+
+.dark-horse-card { border-top: 3px solid #f0883e; }
+
+.dark-horse-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(240, 136, 62, 0.06);
+  border: 1px solid rgba(240, 136, 62, 0.15);
+}
+
+.dark-horse-horse {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+}
+
+.dark-horse-no {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: rgba(240, 136, 62, 0.15);
+  color: #f0883e;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.dark-horse-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.dark-horse-stats {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.dark-horse-odds {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.dark-horse-ev {
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.dark-horse-ranks {
+  display: flex;
+  gap: 4px;
+}
+
+.rank-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.rank-badge.model-rank {
+  background: rgba(16, 185, 129, 0.12);
+  color: #10b981;
+}
+
+.rank-badge.market-rank {
+  background: rgba(248, 81, 73, 0.12);
+  color: #f85149;
+}
+
+.quartet-card { border-top: 3px solid #a371f7; }
+
+.quartet-combo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.quartet-horse {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-primary);
+  font-size: 13px;
+}
+
+.quartet-no {
+  font-weight: 800;
+  color: var(--accent-purple);
+  min-width: 28px;
+}
+
+.quartet-name {
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.quartet-prob {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent-amber);
+  font-variant-numeric: tabular-nums;
+}
+
+.quartet-summary {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: var(--text-muted);
+  padding-top: 8px;
+  border-top: 1px solid var(--border-primary);
+}
+
+.quartet-summary strong { color: #a371f7; font-size: 14px; }
+
 .betting-empty {
   text-align: center;
   padding: 32px;
