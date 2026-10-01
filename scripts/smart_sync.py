@@ -22,6 +22,9 @@ import sys
 import subprocess
 from datetime import datetime, timedelta, time as dtime
 from typing import Optional
+from zoneinfo import ZoneInfo
+
+HKT = ZoneInfo('Asia/Hong_Kong')
 
 RACE_DAY_WEEKDAYS = {
     'ST': [2, 5],       # Wed, Sat
@@ -86,7 +89,7 @@ def run_cmd(cmd: str) -> int:
 
 
 def main():
-    now = datetime.now()
+    now = datetime.now(HKT)
     date_str = now.strftime('%Y-%m-%d')
     venue = get_venue_for_date(now)
     race_times = estimate_race_times(date_str, venue or 'ST')
@@ -94,7 +97,7 @@ def main():
     mode = determine_mode(now, venue, race_times)
 
     print("=" * 60)
-    print(f"[SmartSync] {now.strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"[SmartSync] {now.strftime('%Y-%m-%d %H:%M:%S HKT')}")
     print(f"  Venue:  {venue or 'N/A (non-race day)'}")
     print(f"  Mode:   {mode}")
     if race_times:
@@ -109,21 +112,22 @@ def main():
         sys.exit(0)
 
     env = os.environ.copy()
+    venue_arg = venue if venue else 'auto'
 
     if mode == 'positioning':
         print("[SmartSync] Positioning mode: scraping race cards...")
-        rc = run_cmd(f"python scripts/auto_scraper.py --date {date_str} --venue {venue}")
+        rc = run_cmd(f"python scripts/auto_scraper.py --date {date_str} --venue {venue_arg}")
         sys.exit(rc)
 
     elif mode == 'odds':
         print("[SmartSync] Odds mode: full sync + Benter...")
-        rc1 = run_cmd(f"python scripts/auto_scraper.py --date {date_str} --venue {venue}")
+        rc1 = run_cmd(f"python scripts/auto_scraper.py --date {date_str} --venue {venue_arg}")
         rc2 = run_cmd("python scripts/benter_model.py supabase")
         sys.exit(max(rc1, rc2))
 
     elif mode == 'highfreq':
         print("[SmartSync] High-frequency mode: launching pacing loop...")
-        rc = run_cmd(f"python scripts/live_high_frequency_pacing.py --date {date_str} --venue {venue}")
+        rc = run_cmd(f"python scripts/live_high_frequency_pacing.py --date {date_str} --venue {venue_arg}")
         sys.exit(rc)
 
 

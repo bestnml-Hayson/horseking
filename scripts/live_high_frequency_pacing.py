@@ -21,6 +21,9 @@ import argparse
 import subprocess
 from datetime import datetime, timedelta, time as dtime
 from typing import Optional
+from zoneinfo import ZoneInfo
+
+HKT = ZoneInfo('Asia/Hong_Kong')
 
 try:
     from supabase import create_client, Client
@@ -84,9 +87,9 @@ def main():
     print(f"[HighFreq] {date_str} {venue}")
     print(f"  Poll interval: {POLL_INTERVAL}s")
     print(f"  Max duration:  {args.max_minutes} min")
-    next_race = find_next_race(race_times, datetime.now())
+    next_race = find_next_race(race_times, datetime.now(HKT))
     if next_race:
-        mins = (next_race['start_time'] - datetime.now()).total_seconds() / 60
+        mins = (next_race['start_time'] - datetime.now(HKT)).total_seconds() / 60
         print(f"  Next race:     R{next_race['race_no']} @ {next_race['start_time'].strftime('%H:%M')} ({mins:.0f} min)")
     print("=" * 60)
 
@@ -98,7 +101,7 @@ def main():
             print(f"\n[HighFreq] Max duration ({args.max_minutes} min) reached. Exiting.")
             break
 
-        now = datetime.now()
+        now = datetime.now(HKT)
         next_race = find_next_race(race_times, now)
 
         if next_race is None:
@@ -129,7 +132,7 @@ def main():
             print(f"\n[HighFreq] Race R{next_race['race_no']} has started. Final sync done. Exiting.")
             break
 
-        remaining = (next_race['start_time'] - datetime.now()).total_seconds()
+        remaining = (next_race['start_time'] - datetime.now(HKT)).total_seconds()
         sleep_time = min(POLL_INTERVAL, max(remaining, 0)) if remaining > 0 else POLL_INTERVAL
         time.sleep(sleep_time)
 

@@ -27,6 +27,9 @@ import re
 import argparse
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
+from zoneinfo import ZoneInfo
+
+HKT = ZoneInfo('Asia/Hong_Kong')
 
 try:
     from supabase import create_client, Client
@@ -736,6 +739,41 @@ def auto_detect_venue(today: datetime) -> str:
     return None
 
 
+def detect_venue_from_hkjc(date_str: str) -> Optional[str]:
+    """Check HKJC website to determine actual venue for a given date."""
+    try:
+        from playwright.sync_api import sync_playwright
+    except ImportError:
+        return None
+
+    date_slash = date_str.replace('-', '/')
+    for venue in ['ST', 'HV']:
+        try:
+            url = f"https://racing.hkjc.com/racing/information/Chinese/Racing/RaceCard.aspx?RaceDate={date_slash}&Racecourse={venue}&RaceNo=1"
+            with sync_playwright() as p:
+                browser = p.chromium.launch(headless=True, args=['--no-sandbox', '--disable-gpu'])
+                page = browser.new_page()
+                page.goto(url, wait_until='domcontentloaded', timeout=20000)
+                page.wait_for_timeout(3000)
+                horse_count = page.evaluate('''() => {
+                    const tables = document.querySelectorAll('table');
+                    for (const t of tables) {
+                        const rows = t.querySelectorAll('tr');
+                        if (rows.length >= 5) return rows.length - 1;
+                    }
+                    return 0;
+                }''')
+                browser.close()
+                if horse_count > 0:
+                    venue_name = '沙田' if venue == 'ST' else '跑馬地'
+                    print(f"[AutoDetect] HKJC confirms venue: {venue_name} ({venue}) for {date_str}")
+                    return venue
+        except Exception as e:
+            print(f"[AutoDetect] {venue} check failed: {e}")
+            continue
+    return None
+
+
 # =====================================================================
 # Race time estimation (HKJC typical schedule)
 # =====================================================================
@@ -841,17 +879,35 @@ def update_odds_in_supabase(supabase: Client, date_str: str, venue: str, odds_ma
 # =====================================================================
 def main():
     parser = argparse.ArgumentParser(description='HKJC Race Data Scraper + Supabase Upsert')
-    parser.add_argument('--date', help='Race date (YYYY-MM-DD). Auto-detects today if omitted.')
-    parser.add_argument('--venue', choices=['ST', 'HV'], help='Venue code. Auto-detects if omitted.')
+    parser.add_argument('--date', help='Race date (YYYY-MM-DD). Auto-detects today (HKT) if omitted.')
+    parser.add_argument('--venue', choices=['ST', 'HV', 'auto'], help='Venue code. "auto" detects from HKJC. Auto-detects by weekday if omitted.')
     parser.add_argument('--dry-run', action='store_true', help='Scrape but do not write to Supabase')
     parser.add_argument('--fetch-live', action='store_true', help='Auto-detect date/venue and write live data to Supabase')
     parser.add_argument('--clear-only', action='store_true', help='Only clear old data, do not scrape')
     parser.add_argument('--odds-only', action='store_true', help='Scrape and update odds only (no clear, no full rewrite)')
     args = parser.parse_args()
 
-    today = datetime.now()
+    today = datetime.now(HKT)
     date_str = args.date or today.strftime('%Y-%m-%d')
-    venue = args.venue or auto_detect_venue(today)
+
+    if args.venue == 'auto':
+        venue = detect_venue_from_hkjc(date_str)
+        if not venue:
+            venue = auto_detect_venue(today)
+            print(f"[AutoDetect] HKJC detection failed, falling back to weekday mapping: {venue}")
+    elif args.venue:
+        venue = args.venue
+    else:
+        detected = detect_venue_from_hkjc(date_str)
+        venue = detected or auto_detect_venue(today)
+        if detected:
+            pass
+        else:
+            print(f"[AutoDetect] Using weekday-based venue: {venue}")
+
+    if not venue:
+        print(f"[INFO] No race day detected for {date_str}. Nothing to do.")
+        sys.exit(0)
 
     print("=" * 60)
     print(f"HKJC Auto Scraper - {date_str} {venue}")

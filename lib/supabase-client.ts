@@ -8,9 +8,15 @@ function getSupabase() {
   )
 }
 
+function getHKTDate(): string {
+  const now = new Date()
+  const hktStr = now.toLocaleDateString('en-CA', { timeZone: 'Asia/Hong_Kong' })
+  return hktStr
+}
+
 export async function fetchLatestRaces(): Promise<Race[]> {
   const supabase = getSupabase()
-  const today = new Date().toISOString().split('T')[0]
+  const today = getHKTDate()
 
   const { data: allCandidateRaces, error: candidateError } = await supabase
     .from('races')
@@ -223,7 +229,7 @@ export async function fetchRecentForm(horseIds: string[]): Promise<Map<string, s
   const supabase = getSupabase()
   const formMap = new Map<string, string>()
 
-  const today = new Date().toISOString().split('T')[0]
+  const today = getHKTDate()
 
   const batchSize = 50
   for (let i = 0; i < horseIds.length; i += batchSize) {

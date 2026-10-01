@@ -16,6 +16,9 @@ import sys
 import argparse
 from datetime import datetime, timedelta
 from typing import Dict, List
+from zoneinfo import ZoneInfo
+
+HKT = ZoneInfo('Asia/Hong_Kong')
 
 try:
     from supabase import create_client, Client
@@ -29,7 +32,7 @@ from common import get_supabase
 
 def cleanup_future_races(supabase: Client, dry_run: bool = False) -> int:
     """Remove race data for future dates."""
-    today = datetime.now().strftime('%Y-%m-%d')
+    today = datetime.now(HKT).strftime('%Y-%m-%d')
     print(f"\n[1/4] Cleaning future races (date > {today})...")
 
     # Get all races with future dates
@@ -90,7 +93,7 @@ def cleanup_orphaned_runners(supabase: Client, dry_run: bool = False) -> int:
 
 def cleanup_old_predictions(supabase: Client, days: int = 90, dry_run: bool = False) -> int:
     """Remove predictions older than N days."""
-    cutoff_date = (datetime.now() - timedelta(days=days)).strftime('%Y-%m-%d')
+    cutoff_date = (datetime.now(HKT) - timedelta(days=days)).strftime('%Y-%m-%d')
     print(f"\n[3/4] Cleaning predictions older than {days} days (before {cutoff_date})...")
 
     # Get old race IDs
@@ -141,7 +144,7 @@ def verify_data_integrity(supabase: Client) -> Dict[str, int]:
     checks['total_predictions'] = predictions.count if predictions.count else 0
 
     # Check for null odds in today's races
-    today = datetime.now().strftime('%Y-%m-%d')
+    today = datetime.now(HKT).strftime('%Y-%m-%d')
     today_races = supabase.table('races').select('race_id').eq('race_date', today).execute()
     if today_races.data:
         race_ids = [r['race_id'] for r in today_races.data]
@@ -170,7 +173,7 @@ def main():
 
     try:
         supabase = get_supabase()
-        print(f"[DailyCleanup] {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        print(f"[DailyCleanup] {datetime.now(HKT).strftime('%Y-%m-%d %H:%M:%S')}")
         print(f"  Mode: {'DRY RUN' if args.dry_run else 'LIVE'}")
         print(f"  Prediction retention: {args.days} days")
     except Exception as e:
