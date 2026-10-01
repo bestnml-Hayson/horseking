@@ -159,13 +159,13 @@ export function getQCombinations(rows: RaceRow[]): QCombination[] {
 
   const anchor = candidates[0] ?? sorted[0]
   const overlayIds = new Set(overlays.map(o => o.row.runner_id))
+  const nonAnchor = sorted.filter(r => r.runner_id !== anchor.runner_id)
 
-  const coldLegs = sorted
-    .slice(1)
+  const coldLegs = nonAnchor
     .filter(r => overlayIds.has(r.runner_id))
     .slice(0, 3)
 
-  const fallbackLegs = sorted.slice(1, 4)
+  const fallbackLegs = nonAnchor.slice(0, 3)
   const legs = coldLegs.length >= 2 ? coldLegs : fallbackLegs
 
   const anchorPFinal = getPFinal(anchor)
