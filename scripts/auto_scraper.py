@@ -874,10 +874,16 @@ def update_odds_in_supabase(supabase: Client, date_str: str, venue: str, odds_ma
     """Update win_odds in existing race_runners without clearing data."""
     date_path = date_str.replace('-', '')
     total_updated = 0
+    total_skipped = 0
 
     for race_no, horse_odds in odds_map.items():
         race_id = f"{venue}-{date_path}-{int(race_no):02d}"
         for horse_no, win_odds in horse_odds.items():
+            # CRITICAL: Never overwrite with invalid odds (0, null, < 1.0)
+            if win_odds is None or win_odds <= 1.0:
+                total_skipped += 1
+                continue
+
             runner_id = f"{race_id}_H{int(horse_no):02d}"
             try:
                 retry_supabase(lambda: supabase.table('race_runners').update({
@@ -887,7 +893,7 @@ def update_odds_in_supabase(supabase: Client, date_str: str, venue: str, odds_ma
             except Exception as e:
                 print(f"    [WARN] {runner_id}: {e}")
 
-    print(f"  [OK] Updated {total_updated} odds entries")
+    print(f"  [OK] Updated {total_updated} odds entries, skipped {total_skipped} invalid")
     return total_updated
 
 
