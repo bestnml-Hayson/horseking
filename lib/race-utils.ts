@@ -3,7 +3,8 @@ import { getFormColor } from './color-utils'
 
 export { getFormColor }
 
-const ALPHA = 0.25
+const MODEL_WEIGHT = 0.5
+const MARKET_WEIGHT = 0.5
 const FRACTIONAL_KELLY = 0.25
 const W_FORM = 0.30
 const W_RATING = 0.20
@@ -70,8 +71,7 @@ export function computeClientPredictions(rows: RaceRow[]): RaceRow[] {
   return rows.map((row, i) => {
     const pModel = pModels[i]
     const pMarket = pMarkets[i]
-    const eps = 1e-10
-    const pFinal = Math.exp(ALPHA * Math.log(Math.max(pModel, eps)) + (1 - ALPHA) * Math.log(Math.max(pMarket, eps)))
+    const pFinal = MODEL_WEIGHT * pModel + MARKET_WEIGHT * pMarket
     const odds = row.win_odds
     const ev = (odds != null && odds > 1) ? pFinal * odds - 1 : 0
     const fullKelly = (odds != null && odds > 1 && ev > 0) ? ev / (odds - 1) : 0
@@ -83,6 +83,41 @@ export function computeClientPredictions(rows: RaceRow[]): RaceRow[] {
       runner_id: row.runner_id,
       raw_model_prob: Math.round(pModel * 10000) / 10000,
       market_implied_prob: Math.round(pMarket * 10000) / 10000,
+      final_prob: Math.max(0, Math.min(1, Math.round(pFinal * 10000) / 10000)),
+      expected_value: Math.round(ev * 10000) / 10000,
+      kelly_fraction: Math.round(kelly * 100000) / 100000,
+    }
+
+    return { ...row, prediction }
+  })
+}
+
+/**
+ * Recompute P_final, EV, Kelly from existing P_model and P_market values.
+ * Uses the new linear fusion: P_final = 0.5*P_model + 0.5*P_market.
+ * Preserves server-computed P_model and P_market, only updates fusion output.
+ */
+export function recomputePFusion(rows: RaceRow[]): RaceRow[] {
+  return rows.map(row => {
+    const pModel = row.prediction?.raw_model_prob ?? 0
+    const pMarket = row.prediction?.market_implied_prob ?? 0
+    const pFinal = MODEL_WEIGHT * pModel + MARKET_WEIGHT * pMarket
+    const odds = row.win_odds
+    const ev = (odds != null && odds > 1) ? pFinal * odds - 1 : 0
+    const fullKelly = (odds != null && odds > 1 && ev > 0) ? ev / (odds - 1) : 0
+    const kelly = Math.max(0, fullKelly * FRACTIONAL_KELLY)
+
+    const prediction: ModelPrediction = {
+      ...(row.prediction ?? {
+        prediction_id: `client-${row.runner_id}`,
+        race_id: row.race_id,
+        runner_id: row.runner_id,
+        raw_model_prob: pModel,
+        market_implied_prob: pMarket,
+        final_prob: pFinal,
+        expected_value: ev,
+        kelly_fraction: kelly,
+      }),
       final_prob: Math.max(0, Math.min(1, Math.round(pFinal * 10000) / 10000)),
       expected_value: Math.round(ev * 10000) / 10000,
       kelly_fraction: Math.round(kelly * 100000) / 100000,

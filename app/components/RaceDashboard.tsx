@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { fetchRaceRunners, fetchPredictions, fetchHorses, fetchRecentForm } from '@/lib/supabase-client'
 import type { Race, RaceRunner, ModelPrediction, Horse, RaceRow } from '@/lib/types'
-import { getTopPicks, estimateRaceTime, predictPace, isOddsPending, computeClientPredictions } from '@/lib/race-utils'
+import { getTopPicks, estimateRaceTime, predictPace, isOddsPending, computeClientPredictions, recomputePFusion } from '@/lib/race-utils'
 import { PacingBriefing } from './PacingBriefing'
 import { AIRaceAnalysis } from './AIRaceAnalysis'
 import { TopPicksCards } from './TopPicksCards'
@@ -70,6 +70,8 @@ export function RaceDashboard({ races }: RaceDashboardProps) {
       if ((noPredictions || allMarketNull) && raceRows.length > 0) {
         console.log('[RaceDashboard] Predictions missing or incomplete, computing client-side fallback')
         raceRows = computeClientPredictions(raceRows)
+      } else if (raceRows.length > 0) {
+        raceRows = recomputePFusion(raceRows)
       }
 
       setRows(raceRows)
@@ -110,7 +112,13 @@ export function RaceDashboard({ races }: RaceDashboardProps) {
 
   const selectedRace = races.find(r => r.race_id === selectedRaceId)
   const topPicks = useMemo(() => getTopPicks(rows, 4), [rows])
-  const topPickId = topPicks.length > 0 ? topPicks[0].runner_id : null
+  const topPickId = useMemo(() => {
+    if (topPicks.length === 0) return null
+    const best = topPicks[0]
+    const ev = best.prediction?.expected_value ?? 0
+    return ev > 0 ? best.runner_id : null
+  }, [topPicks])
+  const hasPositiveEV = useMemo(() => rows.some(r => (r.prediction?.expected_value ?? 0) > 0), [rows])
   const paceInfo = useMemo(() => predictPace(rows), [rows])
 
   const handleHorseClick = useCallback((horseId: string, horseName: string) => {
@@ -245,11 +253,11 @@ export function RaceDashboard({ races }: RaceDashboardProps) {
             &#x1F4CA; 全馬匹 Benter 模型精算數據
           </span>
           <span className="full-table-sub">
-            P_model (模型評分) × P_market (市場賠率) → P_final (融合勝率) · Sorted by P_final
+            P_model (模型評分) × P_market (市場賠率) → P_final (50% 線性融合) · Sorted by P_final
           </span>
         </div>
         <div className="full-table-body">
-          {loading && rows.length === 0 ? <SkeletonTable /> : <RaceTable rows={rows} topPickId={topPickId} onHorseClick={handleHorseClick} />}
+          {loading && rows.length === 0 ? <SkeletonTable /> : <RaceTable rows={rows} topPickId={topPickId} hasPositiveEV={hasPositiveEV} onHorseClick={handleHorseClick} />}
         </div>
       </div>
 

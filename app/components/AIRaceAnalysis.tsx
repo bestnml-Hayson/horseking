@@ -78,7 +78,7 @@ export function AIRaceAnalysis({ race, rows }: AIRaceAnalysisProps) {
               </span>
               <span className="legend-item">
                 <span className="legend-dot dot-final" />
-                P_final = 25% + 75% 融合
+                P_final = 50% 模型 + 50% 市場
               </span>
             </div>
           </div>

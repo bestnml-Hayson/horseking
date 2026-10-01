@@ -9,6 +9,7 @@ const VALUE_THRESHOLD = 0.15
 interface RaceTableProps {
   rows: RaceRow[]
   topPickId: string | null
+  hasPositiveEV?: boolean
   onHorseClick?: (horseId: string, horseName: string) => void
 }
 
@@ -17,7 +18,7 @@ function fmtProb(p: number | null): string {
   return (p * 100).toFixed(1) + '%'
 }
 
-export function RaceTable({ rows, topPickId, onHorseClick }: RaceTableProps) {
+export function RaceTable({ rows, topPickId, hasPositiveEV = true, onHorseClick }: RaceTableProps) {
   if (rows.length === 0) {
     return (
       <div className="table-empty">
@@ -36,6 +37,11 @@ export function RaceTable({ rows, topPickId, onHorseClick }: RaceTableProps) {
 
   return (
     <div className="race-table-scroll">
+      {!hasPositiveEV && (
+        <div className="no-ev-warning">
+          本場無正期望值馬匹，建議觀望
+        </div>
+      )}
       <table className="data-table benter-table">
         <thead>
           <tr>
