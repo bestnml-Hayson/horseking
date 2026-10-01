@@ -43,6 +43,29 @@ from common import get_supabase, batch_upsert, truncate, has_column, retry_supab
 # Re-export for live_high_frequency_pacing.py compatibility
 get_supabase_client = get_supabase
 
+
+def compute_form_score(form_history: str) -> float:
+    """Compute recent form score from form_history string (e.g. '7-7-5-10-13-14').
+    Uses last 3 finishes with weights [0.5, 0.3, 0.2].
+    rank_score = max(0, 100 - (pos-1)*8). Returns 50.0 if no valid data."""
+    if not form_history:
+        return 50.0
+    parts = re.split(r'[-/]', form_history)
+    positions = []
+    for p in parts:
+        p = p.strip()
+        if p.isdigit():
+            positions.append(int(p))
+    if not positions:
+        return 50.0
+    weights = [0.5, 0.3, 0.2]
+    score = 0.0
+    for i, pos in enumerate(positions[:3]):
+        if pos > 0:
+            rank_score = max(0, 100 - (pos - 1) * 8)
+            score += rank_score * weights[i]
+    return round(score, 2)
+
 # Valid going values for HKJC races
 VALID_GOING_VALUES = {'好至黏快', '好至快地', '好至黏地', '好地', '快地', '慢地', '軟地', '黏地', '好至軟地'}
 
@@ -725,7 +748,7 @@ def write_to_supabase(supabase: Client, races: List[Dict], dry_run: bool = False
                 'draw': horse.get('draw'),
                 'win_odds': horse.get('win_odds', 0),
                 'past_rating': official_rating if official_rating else 50.0,
-                'recent_form_score': 50.0,
+                'recent_form_score': compute_form_score(form_history),
                 'jockey_win_rate': real_jwr if real_jwr is not None else 0.10,
                 'trainer_win_rate': real_twr if real_twr is not None else 0.10,
                 'weight_carried_diff': wcd,
