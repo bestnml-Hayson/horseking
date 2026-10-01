@@ -61,8 +61,11 @@ export function RaceDashboard() {
         return r
       })
 
-      if (predictions.length === 0 && raceRows.length > 0) {
-        console.log('[RaceDashboard] No predictions from DB, computing client-side fallback')
+      const noPredictions = predictions.length === 0
+      const allMarketNull = !noPredictions && predictions.every(p => p.market_implied_prob == null)
+
+      if ((noPredictions || allMarketNull) && raceRows.length > 0) {
+        console.log('[RaceDashboard] Predictions missing or incomplete, computing client-side fallback')
         raceRows = computeClientPredictions(raceRows)
       }
 

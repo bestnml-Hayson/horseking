@@ -169,14 +169,20 @@ def market_implied_probabilities(odds: List[float]) -> List[float]:
     """
     P_market_i = (1 / O_i) / sum(1 / O_j)
     去除過round (overround) 使總和 = 1
+    缺少賠率的馬匹使用有效賠率的平均倒數作為 fallback
     """
     if not odds:
         return []
+
+    valid_recips = [1.0 / o for o in odds if o is not None and o > 1.0]
+    avg_recip = sum(valid_recips) / len(valid_recips) if valid_recips else 0.0
 
     reciprocals = []
     for o in odds:
         if o is not None and o > 1.0:
             reciprocals.append(1.0 / o)
+        elif avg_recip > 0:
+            reciprocals.append(avg_recip)
         else:
             reciprocals.append(0.0)
 
@@ -261,14 +267,13 @@ def analyze_race(runners: List[Dict]) -> List[Dict]:
         win_odds = r.get('win_odds')
         odds_available = win_odds is not None and win_odds > 1.0
 
+        p_market = p_markets[i]
+        p_final = benter_fusion(p_model, p_market)
+
         if odds_available:
-            p_market = p_markets[i]
-            p_final = benter_fusion(p_model, p_market)
             ev = compute_ev(p_final, win_odds)
             kelly = compute_kelly(p_final, win_odds)
         else:
-            p_market = None
-            p_final = None
             ev = None
             kelly = None
 
@@ -280,8 +285,8 @@ def analyze_race(runners: List[Dict]) -> List[Dict]:
             'horse_no': r.get('horse_no'),
             'horse_id': r.get('horse_id'),
             'raw_model_prob': round(p_model, 5),
-            'market_implied_prob': round(p_market, 5) if p_market is not None else None,
-            'final_prob': round(p_final, 5) if p_final is not None else None,
+            'market_implied_prob': round(p_market, 5),
+            'final_prob': round(p_final, 5),
             'expected_value': ev,
             'kelly_fraction': kelly,
             'is_value_bet': is_value_bet,

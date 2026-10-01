@@ -440,38 +440,55 @@ def scrape_hkjc_races(date_str: str, venue: str) -> List[Dict]:
         odds_url_base = f"https://bet.hkjc.com/ch/racing/wp/{date_str}/{venue}/{{race_no}}"
         for race_data in all_races:
             race_no = race_data['race_no']
-            try:
-                page.goto(odds_url_base.format(race_no=race_no), wait_until='domcontentloaded', timeout=20000)
+            odds_scraped = False
+
+            for attempt in range(3):
                 try:
-                    page.wait_for_selector('.rc-odds-row', timeout=10000)
-                except Exception:
-                    page.wait_for_timeout(5000)
+                    page.goto(odds_url_base.format(race_no=race_no), wait_until='domcontentloaded', timeout=20000)
+                    try:
+                        page.wait_for_selector('.rc-odds-row', timeout=8000)
+                    except Exception:
+                        page.wait_for_timeout(5000)
 
-                odds_map = page.evaluate('''() => {
-                    const map = {};
-                    const rows = document.querySelectorAll('.rc-odds-row');
-                    rows.forEach(row => {
-                        const cells = row.querySelectorAll('td');
-                        if (cells.length >= 8) {
-                            const horseNo = parseInt(cells[0].textContent.trim());
-                            const winOdds = parseFloat(cells[7].textContent.trim()) || 0;
-                            if (!isNaN(horseNo) && horseNo > 0) {
-                                map[horseNo] = winOdds;
+                    odds_map = page.evaluate('''() => {
+                        const map = {};
+                        const rows = document.querySelectorAll('.rc-odds-row');
+                        rows.forEach(row => {
+                            const cells = row.querySelectorAll('td');
+                            if (cells.length >= 8) {
+                                const horseNo = parseInt(cells[0].textContent.trim());
+                                const winOdds = parseFloat(cells[7].textContent.trim()) || 0;
+                                if (!isNaN(horseNo) && horseNo > 0 && winOdds > 1.0) {
+                                    map[horseNo] = winOdds;
+                                }
                             }
-                        }
-                    });
-                    return map;
-                }''')
+                        });
+                        return map;
+                    }''')
 
-                for h in race_data['horses']:
-                    if h['horse_no'] in odds_map:
-                        h['win_odds'] = odds_map[h['horse_no']]
+                    for h in race_data['horses']:
+                        if h['horse_no'] in odds_map:
+                            h['win_odds'] = odds_map[h['horse_no']]
 
+                    matched = sum(1 for h in race_data['horses'] if h['win_odds'] > 0)
+                    if matched > 0:
+                        print(f"    [OK] R{race_no}: {matched}/{len(race_data['horses'])} horses with odds")
+                        odds_scraped = True
+                        break
+                    else:
+                        print(f"    [RETRY {attempt+1}/3] R{race_no}: 0 horses with odds, retrying...")
+                        page.wait_for_timeout(3000)
+
+                except Exception as e:
+                    print(f"    [RETRY {attempt+1}/3] R{race_no} odds: {e}")
+                    page.wait_for_timeout(2000)
+
+            if not odds_scraped:
                 matched = sum(1 for h in race_data['horses'] if h['win_odds'] > 0)
-                print(f"    [OK] R{race_no}: {matched}/{len(race_data['horses'])} horses with odds")
-
-            except Exception as e:
-                print(f"    [WARN] R{race_no} odds: {e}")
+                if matched == 0:
+                    print(f"    [FALLBACK] R{race_no}: assigning default odds 10.0 (live scrape failed)")
+                    for h in race_data['horses']:
+                        h['win_odds'] = 10.0
 
         browser.close()
 
