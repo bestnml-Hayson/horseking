@@ -36,6 +36,8 @@ from auto_scraper import (
     scrape_odds_only,
     update_odds_in_supabase,
     estimate_race_times,
+    detect_venue_from_hkjc,
+    auto_detect_venue,
 )
 
 POLL_INTERVAL = 10
@@ -75,12 +77,21 @@ def run_benter():
 def main():
     parser = argparse.ArgumentParser(description='High-frequency odds polling loop')
     parser.add_argument('--date', required=True, help='Race date (YYYY-MM-DD)')
-    parser.add_argument('--venue', required=True, choices=['ST', 'HV'], help='Venue code')
+    parser.add_argument('--venue', required=True, choices=['ST', 'HV', 'auto'], help='Venue code')
     parser.add_argument('--max-minutes', type=int, default=MAX_LOOP_MINUTES, help='Max loop duration in minutes')
     args = parser.parse_args()
 
     date_str = args.date
-    venue = args.venue
+    if args.venue == 'auto':
+        venue = detect_venue_from_hkjc(date_str)
+        if not venue:
+            from datetime import datetime as dt
+            venue = auto_detect_venue(dt.now(HKT).replace(tzinfo=None))
+        if not venue:
+            print("[FAIL] Could not detect venue")
+            sys.exit(1)
+    else:
+        venue = args.venue
     max_seconds = args.max_minutes * 60
 
     supabase = get_supabase_or_exit()

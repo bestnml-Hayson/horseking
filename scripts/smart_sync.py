@@ -113,22 +113,21 @@ def main():
         sys.exit(0)
 
     env = os.environ.copy()
-    venue_arg = venue if venue else 'auto'
 
     if mode == 'positioning':
         print("[SmartSync] Positioning mode: scraping race cards...")
-        rc = run_cmd(f"python scripts/auto_scraper.py --date {date_str} --venue {venue_arg}")
+        rc = run_cmd(f"python scripts/auto_scraper.py --date {date_str} --venue auto")
         sys.exit(rc)
 
     elif mode == 'odds':
         print("[SmartSync] Odds mode: full sync + Benter...")
-        rc1 = run_cmd(f"python scripts/auto_scraper.py --date {date_str} --venue {venue_arg}")
+        rc1 = run_cmd(f"python scripts/auto_scraper.py --date {date_str} --venue auto")
         rc2 = run_cmd("python scripts/benter_model.py supabase")
         sys.exit(max(rc1, rc2))
 
     elif mode == 'highfreq':
         print("[SmartSync] High-frequency mode: launching pacing loop...")
-        rc = run_cmd(f"python scripts/live_high_frequency_pacing.py --date {date_str} --venue {venue_arg}")
+        rc = run_cmd(f"python scripts/live_high_frequency_pacing.py --date {date_str} --venue auto")
         sys.exit(rc)
 
 
