@@ -89,7 +89,8 @@ def run_cmd(cmd: str) -> int:
 
 
 def main():
-    now = datetime.now(HKT)
+    now_hkt = datetime.now(HKT)
+    now = now_hkt.replace(tzinfo=None)
     date_str = now.strftime('%Y-%m-%d')
     venue = get_venue_for_date(now)
     race_times = estimate_race_times(date_str, venue or 'ST')

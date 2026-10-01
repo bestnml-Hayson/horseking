@@ -42,6 +42,10 @@ POLL_INTERVAL = 10
 MAX_LOOP_MINUTES = 20
 
 
+def now_hkt():
+    return datetime.now(HKT).replace(tzinfo=None)
+
+
 def get_supabase_or_exit() -> Client:
     supabase = get_supabase_client()
     if not supabase:
@@ -87,9 +91,9 @@ def main():
     print(f"[HighFreq] {date_str} {venue}")
     print(f"  Poll interval: {POLL_INTERVAL}s")
     print(f"  Max duration:  {args.max_minutes} min")
-    next_race = find_next_race(race_times, datetime.now(HKT))
+    next_race = find_next_race(race_times, now_hkt())
     if next_race:
-        mins = (next_race['start_time'] - datetime.now(HKT)).total_seconds() / 60
+        mins = (next_race['start_time'] - now_hkt()).total_seconds() / 60
         print(f"  Next race:     R{next_race['race_no']} @ {next_race['start_time'].strftime('%H:%M')} ({mins:.0f} min)")
     print("=" * 60)
 
@@ -101,7 +105,7 @@ def main():
             print(f"\n[HighFreq] Max duration ({args.max_minutes} min) reached. Exiting.")
             break
 
-        now = datetime.now(HKT)
+        now = now_hkt()
         next_race = find_next_race(race_times, now)
 
         if next_race is None:
@@ -132,7 +136,7 @@ def main():
             print(f"\n[HighFreq] Race R{next_race['race_no']} has started. Final sync done. Exiting.")
             break
 
-        remaining = (next_race['start_time'] - datetime.now(HKT)).total_seconds()
+        remaining = (next_race['start_time'] - now_hkt()).total_seconds()
         sleep_time = min(POLL_INTERVAL, max(remaining, 0)) if remaining > 0 else POLL_INTERVAL
         time.sleep(sleep_time)
 
