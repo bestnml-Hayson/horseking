@@ -904,56 +904,47 @@ html, body {
 
 .quartet-summary strong { color: #a371f7; font-size: 14px; }
 
-/* ===== 3T Treble Inline ===== */
+/* ===== 3T Treble Inline (in nav bar) ===== */
 .treble-inline {
-  margin-top: 16px;
-  padding: 14px 16px;
-  background: var(--bg-card);
-  border: 1px solid rgba(210, 153, 34, 0.2);
-  border-radius: 14px;
-}
-
-.treble-inline-header {
   display: flex;
-  align-items: baseline;
-  gap: 8px;
-  margin-bottom: 10px;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 14px;
+  margin-left: auto;
+  background: rgba(210, 153, 34, 0.06);
+  border: 1px solid rgba(210, 153, 34, 0.2);
+  border-radius: 10px;
 }
 
 .treble-inline-badge {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 800;
   color: var(--accent-amber);
-}
-
-.treble-inline-sub {
-  font-size: 11px;
-  color: var(--text-muted);
+  white-space: nowrap;
 }
 
 .treble-inline-picks {
   display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin-bottom: 10px;
+  gap: 14px;
+  align-items: center;
 }
 
 .treble-inline-race {
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  min-width: 140px;
+  gap: 2px;
+  min-width: 110px;
 }
 
 .treble-inline-raceno {
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 800;
   color: var(--accent-amber);
   text-transform: uppercase;
 }
 
 .treble-inline-horse {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-secondary);
   display: flex;
   align-items: center;
@@ -966,60 +957,10 @@ html, body {
 }
 
 .treble-inline-p {
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 600;
   color: var(--accent-green);
   font-variant-numeric: tabular-nums;
-}
-
-.treble-inline-combos {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.treble-inline-combo {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 10px;
-  border-radius: 8px;
-  background: var(--bg-elevated);
-  border: 1px solid var(--border-primary);
-  font-size: 12px;
-}
-
-.treble-inline-combo:first-child {
-  background: rgba(210, 153, 34, 0.06);
-  border-color: rgba(210, 153, 34, 0.2);
-}
-
-.treble-inline-rank {
-  font-size: 12px;
-  font-weight: 800;
-  color: var(--accent-amber);
-  min-width: 20px;
-}
-
-.treble-inline-legs {
-  display: flex;
-  gap: 6px;
-  flex: 1;
-  flex-wrap: wrap;
-}
-
-.treble-inline-leg {
-  font-size: 11px;
-  color: var(--text-secondary);
-  font-weight: 600;
-}
-
-.treble-inline-odds {
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--accent-green);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
 }
 
 .betting-empty {
@@ -1574,7 +1515,7 @@ html, body {
   background: var(--bg-card);
   border: 1px solid var(--border-primary);
   border-radius: 14px;
-  width: fit-content;
+  align-items: center;
 }
 
 .app-tab {
