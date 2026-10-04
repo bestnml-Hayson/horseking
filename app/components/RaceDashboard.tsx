@@ -141,7 +141,7 @@ export function RaceDashboard({ races }: RaceDashboardProps) {
   const oddsTotal = rows.length
   const oddsAllReady = oddsTotal > 0 && oddsReady === oddsTotal
 
-  const selectedRaceTime = selectedRace?.race_time ?? estimateRaceTime(selectedRace?.venue, selectedRace?.race_no ?? 1)
+  const selectedRaceTime = selectedRace?.race_time ?? estimateRaceTime(selectedRace?.venue, selectedRace?.race_no ?? 1, selectedRace?.race_date)
 
   return (
     <div className="dashboard-root">
@@ -167,7 +167,7 @@ export function RaceDashboard({ races }: RaceDashboardProps) {
 
         <div className="race-pills">
           {races.map(race => {
-            const raceTime = race.race_time ?? estimateRaceTime(race.venue, race.race_no)
+            const raceTime = race.race_time ?? estimateRaceTime(race.venue, race.race_no, race.race_date)
             return (
               <button
                 key={race.race_id}

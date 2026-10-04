@@ -327,7 +327,17 @@ export function parseFormHistory(form: string | null | undefined): number[] {
  * Shatin: first race 13:00 (day) / 19:15 (night), ~35 min apart
  * Happy Valley: first race 19:15, ~30 min apart
  */
+const ACTUAL_RACE_TIMES: Record<string, string[]> = {
+  '2026-10-04': ['12:30', '13:00', '13:30', '14:00', '14:30', '15:00', '15:35', '16:05', '16:35', '17:10', '17:45'],
+}
+
 export function estimateRaceTime(venue: string | undefined, raceNo: number, raceDate?: string | null): string {
+  if (raceDate) {
+    const d = typeof raceDate === 'string' ? raceDate.slice(0, 10) : null
+    const times = d ? ACTUAL_RACE_TIMES[d] : undefined
+    if (times && raceNo >= 1 && raceNo <= times.length) return times[raceNo - 1]
+  }
+
   const isHV = venue === 'HV'
   const baseHour = isHV ? 19 : 13
   const baseMin = isHV ? 15 : 0
