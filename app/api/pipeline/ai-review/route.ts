@@ -69,12 +69,12 @@ function generateCommentary(
 
 async function reviewRace(supabase: ReturnType<typeof getServerSupabase>, raceId: string): Promise<ReviewResult | null> {
   const [raceResp, runnersResp, predsResp] = await Promise.all([
-    supabase.from('races').select('race_no').eq('race_id', raceId).single(),
+    supabase.from('races').select('race_date,venue,race_no').eq('race_id', raceId).single(),
     supabase.from('race_runners').select('*').eq('race_id', raceId),
     supabase.from('model_predictions').select('*').eq('race_id', raceId),
   ])
 
-  const raceMeta = raceResp.data as { race_no: number } | null
+  const raceMeta = raceResp.data as { race_date: string; venue: string; race_no: number } | null
   const runners = (runnersResp.data ?? []) as Runner[]
   const preds = (predsResp.data ?? []) as Prediction[]
 
@@ -148,6 +148,9 @@ async function reviewRace(supabase: ReturnType<typeof getServerSupabase>, raceId
 
   const aiPerfRow = {
     race_id: raceId,
+    race_date: raceMeta?.race_date,
+    venue: raceMeta?.venue,
+    race_no: raceMeta?.race_no,
     top1_pick_runner_id: top1.runner_id,
     top1_pick_finish_pos: top1Finish,
     top1_hit: top1Hit,

@@ -202,6 +202,9 @@ def review_single_race(supabase, race_id: str) -> Optional[Dict]:
 
     ai_perf = {
         'race_id': race_id,
+        'race_date': race_meta.get('race_date'),
+        'venue': race_meta.get('venue'),
+        'race_no': race_no,
         'top1_pick_runner_id': top1_pred['runner_id'],
         'top1_pick_finish_pos': top1_finish,
         'top1_hit': top1_hit,
