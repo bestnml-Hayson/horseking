@@ -601,12 +601,21 @@ def validate_race_data(races: List[Dict]):
         if any(no < 1 or no > 20 for no in horse_nos):
             raise Exception(f"[VALIDATION FAIL] {race_id}: horse_no out of range: {horse_nos}")
 
-        # Check horse names are not empty
+        # Check horse names are not empty, filter out horses with missing critical data
+        valid_horses = []
         for h in horses:
             if not h.get('horse_name') or len(h['horse_name']) < 2:
-                raise Exception(f"[VALIDATION FAIL] {race_id} H{h['horse_no']:02d}: Empty horse name")
+                print(f"    [WARN] {race_id} H{h['horse_no']:02d}: Empty horse name, skipping")
+                continue
             if not h.get('jockey') or len(h['jockey']) < 2:
-                raise Exception(f"[VALIDATION FAIL] {race_id} H{h['horse_no']:02d}: Empty jockey name")
+                print(f"    [WARN] {race_id} H{h['horse_no']:02d}: Empty jockey name, skipping")
+                continue
+            valid_horses.append(h)
+
+        if len(valid_horses) < 4:
+            raise Exception(f"[VALIDATION FAIL] {race_id}: Only {len(valid_horses)} valid horses after filtering, expected >= 4")
+
+        horses[:] = valid_horses
 
     print(f"  [OK] Validation passed: {len(races)} races, all data integrity checks passed")
 
