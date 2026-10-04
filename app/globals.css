@@ -3173,3 +3173,332 @@ html, body {
   color: var(--text-muted);
   margin: 0 4px;
 }
+
+/* ===== Dual Betting View ===== */
+.dual-betting {
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary);
+  border-radius: 16px;
+  padding: 20px;
+  margin-top: 24px;
+}
+
+.dual-betting-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.dual-betting-icon {
+  font-size: 28px;
+  filter: drop-shadow(0 0 8px rgba(88, 166, 255, 0.4));
+}
+
+.dual-betting-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.dual-betting-sub {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.dual-betting-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 768px) {
+  .dual-betting-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.dual-view {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid;
+}
+
+.view-a {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.04), rgba(59, 130, 246, 0.02));
+  border-color: rgba(59, 130, 246, 0.2);
+}
+
+.view-b {
+  background: linear-gradient(135deg, rgba(255, 100, 50, 0.04), rgba(255, 200, 50, 0.02));
+  border-color: rgba(255, 150, 50, 0.2);
+}
+
+.view-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.view-badge {
+  font-size: 10px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.view-a-badge {
+  background: linear-gradient(135deg, #2563eb, #3b82f6);
+  color: #fff;
+}
+
+.view-b-badge {
+  background: linear-gradient(135deg, #ff6b35, #ff8c42);
+  color: #fff;
+}
+
+.view-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.view-desc {
+  font-size: 11px;
+  color: var(--text-muted);
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.view-horses {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.view-horse {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: rgba(15, 23, 42, 0.4);
+  border-radius: 10px;
+  border: 1px solid var(--border-primary);
+  transition: all 0.15s ease;
+}
+
+.view-horse:hover {
+  border-color: var(--border-secondary);
+  background: rgba(15, 23, 42, 0.6);
+}
+
+.view-horse-top {
+  border-color: rgba(59, 130, 246, 0.3);
+  background: rgba(59, 130, 246, 0.06);
+}
+
+.view-horse-longshot {
+  border-color: rgba(255, 150, 50, 0.2);
+}
+
+.view-rank {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text-muted);
+  min-width: 24px;
+}
+
+.view-horse-top .view-rank {
+  color: var(--accent-blue);
+}
+
+.view-horse-name {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+  transition: color 0.15s ease;
+}
+
+.view-horse-name:hover {
+  color: var(--accent-blue);
+}
+
+.view-horse-stats {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.vh-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  align-items: flex-end;
+}
+
+.vh-label {
+  font-size: 8px;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.vh-val {
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+}
+
+.vh-pfinal {
+  color: var(--accent-blue);
+  font-weight: 700;
+}
+
+.vh-odds {
+  color: var(--accent-amber);
+}
+
+.vh-odds-high {
+  color: #ff8c42;
+  font-weight: 700;
+}
+
+.vh-pmodel {
+  color: #d2a8ff;
+}
+
+.vh-pmarket {
+  color: var(--text-muted);
+}
+
+.vh-edge {
+  color: var(--accent-green);
+  font-weight: 700;
+}
+
+.vh-ev-pos {
+  color: var(--accent-green);
+}
+
+.vh-ev-neg {
+  color: var(--accent-red);
+  opacity: 0.7;
+}
+
+.view-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: rgba(59, 130, 246, 0.06);
+  border: 1px solid rgba(59, 130, 246, 0.15);
+  border-radius: 8px;
+  font-size: 12px;
+}
+
+.view-summary-label {
+  color: var(--text-muted);
+  font-size: 10px;
+}
+
+.view-summary-val {
+  font-weight: 700;
+  color: var(--accent-blue);
+  font-variant-numeric: tabular-nums;
+}
+
+.view-summary-sep {
+  color: var(--text-muted);
+  margin: 0 4px;
+}
+
+.view-bet-type {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.bet-tag {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.bet-tag-win {
+  background: rgba(59, 130, 246, 0.12);
+  color: #3b82f6;
+  border: 1px solid rgba(59, 130, 246, 0.25);
+}
+
+.bet-tag-quinella {
+  background: rgba(245, 158, 11, 0.12);
+  color: #d29922;
+  border: 1px solid rgba(245, 158, 11, 0.25);
+}
+
+.bet-tag-place {
+  background: rgba(16, 185, 129, 0.12);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+.bet-tag-longshot {
+  background: rgba(255, 100, 50, 0.12);
+  color: #ff8c42;
+  border: 1px solid rgba(255, 100, 50, 0.25);
+}
+
+.view-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 24px 16px;
+  text-align: center;
+}
+
+.view-empty-icon {
+  font-size: 28px;
+  opacity: 0.5;
+}
+
+.view-empty-text {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.view-empty-sub {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.longshot-ev-alert {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--accent-green);
+  background: rgba(63, 185, 80, 0.08);
+  border: 1px solid rgba(63, 185, 80, 0.2);
+  border-radius: 6px;
+  padding: 3px 8px;
+  margin-top: 4px;
+  width: 100%;
+  text-align: center;
+}

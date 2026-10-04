@@ -13,6 +13,7 @@ import { SkeletonTable } from './SkeletonTable'
 import { HorseDetailDrawer } from './HorseDetailDrawer'
 import { LongshotCard } from './LongshotCard'
 import { generateLongshotStrategy } from '@/lib/longshot-engine'
+import { DualBettingView } from './DualBettingView'
 
 const REFRESH_INTERVAL = 15000
 
@@ -249,7 +250,10 @@ export function RaceDashboard({ races }: RaceDashboardProps) {
       {/* Section 4: Betting Strategy */}
       <BettingStrategy rows={rows} />
 
-      {/* Section 4b: Longshot Overlay Strategy */}
+      {/* Section 4b: Dual Betting View (Max Probability + Longshot Overlay) */}
+      <DualBettingView rows={rows} onHorseClick={handleHorseClick} />
+
+      {/* Section 4c: Longshot Overlay Strategy (detailed hot-cold combo) */}
       {longshotResult && <LongshotCard result={longshotResult} onHorseClick={handleHorseClick} />}
 
       {/* Section 5: Full Analysis Table */}
