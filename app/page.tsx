@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { RaceDashboard } from './components/RaceDashboard'
 import { AIPerformance } from './components/AIPerformance'
 import { TrebleCard } from './components/TrebleCard'
+import { PipelineControl } from './components/PipelineControl'
 import { fetchLatestRaces, fetchAllRaceData } from '@/lib/supabase-client'
 import { generateTreble, type TrebleResult } from '@/lib/treble-engine'
 import type { Race } from '@/lib/types'
@@ -50,6 +51,10 @@ export default function Home() {
           Benter 量化分析 Dashboard &mdash; Softmax Multinomial Logit + Market Odds Fusion + 1/4 Kelly Criterion
         </div>
       </header>
+
+      {races.length > 0 && (
+        <PipelineControl date={races[0].race_date} />
+      )}
 
       <nav className="app-tabs">
         <button

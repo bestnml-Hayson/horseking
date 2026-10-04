@@ -357,7 +357,7 @@ def compute_kelly(p_final: float, odds_win: float, fraction: float = FRACTIONAL_
 # =====================================================================
 # 8. 單場賽事完整計算流程
 # =====================================================================
-def analyze_race(runners: List[Dict], distance: Optional[int] = None) -> List[Dict]:
+def analyze_race(runners: List[Dict], distance: Optional[int] = None, pre_race: bool = False) -> List[Dict]:
     """
     兩階段完整計算流程：
       階段一：normalize → raw_score → softmax → P_model（純實力，不含賠率）
@@ -367,6 +367,27 @@ def analyze_race(runners: List[Dict], distance: Optional[int] = None) -> List[Di
 
     raw_scores = [compute_raw_score(r) for r in runners]
     p_models = softmax_probabilities(raw_scores)
+
+    if pre_race:
+        # Pre-race mode: P_model only, no market data
+        results = []
+        for i, r in enumerate(runners):
+            p_model = p_models[i]
+            results.append({
+                'runner_id': r.get('runner_id'),
+                'race_id': r.get('race_id'),
+                'horse_no': r.get('horse_no'),
+                'horse_id': r.get('horse_id'),
+                'raw_model_prob': round(p_model, 5),
+                'market_implied_prob': None,
+                'final_prob': None,
+                'expected_value': None,
+                'kelly_fraction': None,
+                'is_value_bet': False,
+                'win_odds': r.get('win_odds'),
+            })
+        results.sort(key=lambda x: x['raw_model_prob'], reverse=True)
+        return results
 
     odds_list = [r.get('win_odds') for r in runners]
     p_markets = market_implied_probabilities(odds_list)
@@ -436,9 +457,10 @@ def fetch_races_with_runners(supabase: Client, race_ids: Optional[List[str]] = N
 
 
 def run_analysis(supabase: Client, race_ids: Optional[List[str]] = None,
-                 dry_run: bool = False) -> List[Dict]:
+                 dry_run: bool = False, pre_race: bool = False) -> List[Dict]:
     """主分析流程：讀取 → 計算 → (寫入) Supabase"""
-    print("Fetching race_runners from Supabase...")
+    mode_str = " [PRE-RACE: P_model only]" if pre_race else ""
+    print(f"Fetching race_runners from Supabase{mode_str}...")
     races_data = fetch_races_with_runners(supabase, race_ids)
     print(f"  Found {len(races_data)} races")
 
@@ -460,7 +482,7 @@ def run_analysis(supabase: Client, race_ids: Optional[List[str]] = None,
     all_predictions = []
     for race_id, runners in races_data.items():
         distance = race_distances.get(race_id)
-        predictions = analyze_race(runners, distance=distance)
+        predictions = analyze_race(runners, distance=distance, pre_race=pre_race)
         all_predictions.extend(predictions)
 
     print(f"  Computed predictions for {len(all_predictions)} runners")

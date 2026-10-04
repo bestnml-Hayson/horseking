@@ -6,6 +6,7 @@ export interface Race {
   distance: number | null
   going: string | null
   class_level: string | null
+  is_finished?: boolean
   race_time?: string | null
   track_course?: string | null
 }

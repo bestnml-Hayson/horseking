@@ -168,7 +168,7 @@ def compute_weight_diffs(supabase, horse_entries: list) -> dict:
 # =====================================================================
 # HKJC Scraper (Playwright headless browser)
 # =====================================================================
-def scrape_hkjc_races(date_str: str, venue: str) -> List[Dict]:
+def scrape_hkjc_races(date_str: str, venue: str, skip_odds: bool = False) -> List[Dict]:
     try:
         from playwright.sync_api import sync_playwright
     except ImportError:
@@ -458,71 +458,74 @@ def scrape_hkjc_races(date_str: str, venue: str) -> List[Dict]:
                 if race_no > 1:
                     break
 
-        # Second pass: fetch odds from bet.hkjc.com
-        print(f"\n  [Odds] Fetching live odds from bet.hkjc.com...")
-        odds_url_base = f"https://bet.hkjc.com/ch/racing/wp/{date_str}/{venue}/{{race_no}}"
-        for race_data in all_races:
-            race_no = race_data['race_no']
-            odds_scraped = False
+        # Second pass: fetch odds from bet.hkjc.com (skip in pre-race mode)
+        if skip_odds:
+            print(f"\n  [Pre-Race] Skipping odds scraping (pre-race mode)")
+        else:
+            print(f"\n  [Odds] Fetching live odds from bet.hkjc.com...")
+            odds_url_base = f"https://bet.hkjc.com/ch/racing/wp/{date_str}/{venue}/{{race_no}}"
+            for race_data in all_races:
+                race_no = race_data['race_no']
+                odds_scraped = False
 
-            for attempt in range(3):
-                try:
-                    page.goto(odds_url_base.format(race_no=race_no), wait_until='domcontentloaded', timeout=20000)
+                for attempt in range(3):
                     try:
-                        page.wait_for_selector('.rc-odds-row', timeout=8000)
-                    except Exception:
-                        page.wait_for_timeout(5000)
+                        page.goto(odds_url_base.format(race_no=race_no), wait_until='domcontentloaded', timeout=20000)
+                        try:
+                            page.wait_for_selector('.rc-odds-row', timeout=8000)
+                        except Exception:
+                            page.wait_for_timeout(5000)
 
-                    odds_map = page.evaluate('''() => {
-                        const map = {};
-                        const rows = document.querySelectorAll('.rc-odds-row');
-                        rows.forEach(row => {
-                            const cells = row.querySelectorAll('td');
-                            if (cells.length >= 8) {
-                                const horseNo = parseInt(cells[0].textContent.trim());
-                                const winOdds = parseFloat(cells[7].textContent.trim()) || 0;
-                                if (!isNaN(horseNo) && horseNo > 0 && winOdds > 1.0) {
-                                    map[horseNo] = winOdds;
+                        odds_map = page.evaluate('''() => {
+                            const map = {};
+                            const rows = document.querySelectorAll('.rc-odds-row');
+                            rows.forEach(row => {
+                                const cells = row.querySelectorAll('td');
+                                if (cells.length >= 8) {
+                                    const horseNo = parseInt(cells[0].textContent.trim());
+                                    const winOdds = parseFloat(cells[7].textContent.trim()) || 0;
+                                    if (!isNaN(horseNo) && horseNo > 0 && winOdds > 1.0) {
+                                        map[horseNo] = winOdds;
+                                    }
                                 }
-                            }
-                        });
-                        return map;
-                    }''')
+                            });
+                            return map;
+                        }''')
 
-                    for h in race_data['horses']:
-                        if h['horse_no'] in odds_map:
-                            h['win_odds'] = odds_map[h['horse_no']]
-
-                    matched = sum(1 for h in race_data['horses'] if h['win_odds'] > 0)
-                    if matched > 0:
-                        print(f"    [OK] R{race_no}: {matched}/{len(race_data['horses'])} horses with odds")
-                        odds_scraped = True
-                        break
-                    else:
-                        print(f"    [RETRY {attempt+1}/3] R{race_no}: 0 horses with odds, retrying...")
-                        page.wait_for_timeout(3000)
-
-                except Exception as e:
-                    err_str = str(e)
-                    print(f"    [RETRY {attempt+1}/3] R{race_no} odds: {e}")
-                    if 'crashed' in err_str.lower() or 'crash' in err_str.lower():
-                        print(f"    [FALLBACK] R{race_no}: page crashed, assigning default odds 10.0")
                         for h in race_data['horses']:
-                            if h['win_odds'] <= 0:
-                                h['win_odds'] = 10.0
-                        odds_scraped = True
-                        break
-                    try:
-                        page.wait_for_timeout(2000)
-                    except Exception:
-                        pass
+                            if h['horse_no'] in odds_map:
+                                h['win_odds'] = odds_map[h['horse_no']]
 
-            if not odds_scraped:
-                matched = sum(1 for h in race_data['horses'] if h['win_odds'] > 0)
-                if matched == 0:
-                    print(f"    [FALLBACK] R{race_no}: assigning default odds 10.0 (live scrape failed)")
-                    for h in race_data['horses']:
-                        h['win_odds'] = 10.0
+                        matched = sum(1 for h in race_data['horses'] if h['win_odds'] > 0)
+                        if matched > 0:
+                            print(f"    [OK] R{race_no}: {matched}/{len(race_data['horses'])} horses with odds")
+                            odds_scraped = True
+                            break
+                        else:
+                            print(f"    [RETRY {attempt+1}/3] R{race_no}: 0 horses with odds, retrying...")
+                            page.wait_for_timeout(3000)
+
+                    except Exception as e:
+                        err_str = str(e)
+                        print(f"    [RETRY {attempt+1}/3] R{race_no} odds: {e}")
+                        if 'crashed' in err_str.lower() or 'crash' in err_str.lower():
+                            print(f"    [FALLBACK] R{race_no}: page crashed, assigning default odds 10.0")
+                            for h in race_data['horses']:
+                                if h['win_odds'] <= 0:
+                                    h['win_odds'] = 10.0
+                            odds_scraped = True
+                            break
+                        try:
+                            page.wait_for_timeout(2000)
+                        except Exception:
+                            pass
+
+                if not odds_scraped:
+                    matched = sum(1 for h in race_data['horses'] if h['win_odds'] > 0)
+                    if matched == 0:
+                        print(f"    [FALLBACK] R{race_no}: assigning default odds 10.0 (live scrape failed)")
+                        for h in race_data['horses']:
+                            h['win_odds'] = 10.0
 
         try:
             browser.close()
@@ -954,6 +957,7 @@ def main():
     parser.add_argument('--fetch-live', action='store_true', help='Auto-detect date/venue and write live data to Supabase')
     parser.add_argument('--clear-only', action='store_true', help='Only clear old data, do not scrape')
     parser.add_argument('--odds-only', action='store_true', help='Scrape and update odds only (no clear, no full rewrite)')
+    parser.add_argument('--pre-race', action='store_true', help='Pre-race mode: scrape racecard only (no odds), run Benter P_model')
     args = parser.parse_args()
 
     today = datetime.now(HKT)
@@ -1003,7 +1007,7 @@ def main():
             print("[WARN] No odds scraped")
         return
 
-    races = scrape_hkjc_races(date_str, venue)
+    races = scrape_hkjc_races(date_str, venue, skip_odds=args.pre_race)
 
     if not races:
         print("\n[WARN] No races scraped. No races today or HKJC page structure changed.")
@@ -1013,6 +1017,23 @@ def main():
     validate_scraped_data(races)
 
     write_to_supabase(supabase, races, dry_run=args.dry_run)
+
+    # Pre-race mode: set is_finished=False and run Benter P_model
+    if args.pre_race and not args.dry_run and supabase:
+        print(f"\n[Pre-Race] Setting is_finished=False and running Benter model...")
+        race_ids = [r['race_id'] for r in races]
+        for rid in race_ids:
+            retry_supabase(lambda rid=rid: supabase.table('races').update({'is_finished': False}).eq('race_id', rid).execute())
+        print(f"  [OK] is_finished set to False for {len(race_ids)} races")
+
+        # Run Benter model for P_model only
+        try:
+            from benter_model import run_analysis
+            run_analysis(supabase, race_ids=race_ids, dry_run=False, pre_race=True)
+            print(f"  [OK] Benter P_model computed for {len(race_ids)} races")
+        except Exception as e:
+            print(f"  [WARN] Benter model failed: {e}")
+            print(f"  [INFO] Run manually: python scripts/benter_model.py supabase")
 
     total_horses = sum(len(r['horses']) for r in races)
     print(f"\n{'=' * 60}")

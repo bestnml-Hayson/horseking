@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS races (
     distance        INTEGER,
     going           VARCHAR(32),
     class_level     VARCHAR(32),
+    is_finished     BOOLEAN DEFAULT FALSE,
     created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
     CONSTRAINT races_uq UNIQUE (race_date, venue, race_no)
