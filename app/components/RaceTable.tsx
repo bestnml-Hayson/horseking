@@ -74,6 +74,7 @@ export function RaceTable({ rows, topPickId, hasPositiveEV = true, onHorseClick 
             const isValue = ev !== null && ev > VALUE_THRESHOLD
             const isTopPick = row.runner_id === topPickId
             const isValueBet = isValue && kelly !== null && kelly > 0
+            const isTopByPFinal = idx === 0 && !isTopPick
             const formPositions = parseFormHistory(row.form_history)
 
             let evClass = 'ev-negative'
@@ -185,10 +186,13 @@ export function RaceTable({ rows, topPickId, hasPositiveEV = true, onHorseClick 
                     {isTopPick && (
                       <span className="badge badge-ai-pick">AI 首選</span>
                     )}
+                    {isTopByPFinal && (
+                      <span className="badge badge-top-pfinal">勝率最高</span>
+                    )}
                     {isValueBet && (
                       <span className="badge badge-value">VALUE</span>
                     )}
-                    {!isTopPick && !isValueBet && pFinal !== null && pFinal < 0.05 && (
+                    {!isTopPick && !isTopByPFinal && !isValueBet && pFinal !== null && pFinal < 0.05 && (
                       <span className="badge badge-cold">冷門</span>
                     )}
                   </div>

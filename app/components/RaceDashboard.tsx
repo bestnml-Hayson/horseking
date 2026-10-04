@@ -11,6 +11,8 @@ import { BettingStrategy } from './BettingStrategy'
 import { RaceTable } from './RaceTable'
 import { SkeletonTable } from './SkeletonTable'
 import { HorseDetailDrawer } from './HorseDetailDrawer'
+import { LongshotCard } from './LongshotCard'
+import { generateLongshotStrategy } from '@/lib/longshot-engine'
 
 const REFRESH_INTERVAL = 15000
 
@@ -119,6 +121,7 @@ export function RaceDashboard({ races }: RaceDashboardProps) {
     return ev > 0 ? best.runner_id : null
   }, [topPicks])
   const hasPositiveEV = useMemo(() => rows.some(r => (r.prediction?.expected_value ?? 0) > 0), [rows])
+  const longshotResult = useMemo(() => generateLongshotStrategy(rows), [rows])
   const paceInfo = useMemo(() => predictPace(rows), [rows])
 
   const handleHorseClick = useCallback((horseId: string, horseName: string) => {
@@ -245,6 +248,9 @@ export function RaceDashboard({ races }: RaceDashboardProps) {
 
       {/* Section 4: Betting Strategy */}
       <BettingStrategy rows={rows} />
+
+      {/* Section 4b: Longshot Overlay Strategy */}
+      {longshotResult && <LongshotCard result={longshotResult} onHorseClick={handleHorseClick} />}
 
       {/* Section 5: Full Analysis Table */}
       <div className="full-table-section animate-fade-in">

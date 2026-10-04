@@ -2929,6 +2929,12 @@ html, body {
   animation: pulse-glow 3s ease-in-out infinite;
 }
 
+.badge-top-pfinal {
+  background: linear-gradient(135deg, #1e3a5f, #3b82f6);
+  color: #fff;
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.3);
+}
+
 /* ===== Kelly Display Enhancement ===== */
 .kelly-display {
   font-family: 'JetBrains Mono', 'SF Mono', ui-monospace, monospace;
@@ -2939,4 +2945,231 @@ html, body {
 .data-table thead th {
   background: linear-gradient(180deg, rgba(15, 23, 42, 0.95), rgba(15, 23, 42, 0.85));
   backdrop-filter: blur(4px);
+}
+
+/* ===== Longshot Overlay Strategy ===== */
+.longshot-section {
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary);
+  border-radius: 16px;
+  padding: 20px;
+  margin-top: 24px;
+}
+
+.longshot-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.longshot-icon {
+  font-size: 28px;
+  filter: drop-shadow(0 0 8px rgba(255, 100, 50, 0.5));
+}
+
+.longshot-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.longshot-sub {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.longshot-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+  padding-left: 4px;
+}
+
+.longshot-picks {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.longshot-pick-card {
+  display: flex;
+  gap: 12px;
+  padding: 12px;
+  background: linear-gradient(135deg, rgba(255, 100, 50, 0.04), rgba(255, 200, 50, 0.02));
+  border: 1px solid rgba(255, 150, 50, 0.15);
+  border-radius: 12px;
+  transition: all 0.2s ease;
+}
+
+.longshot-pick-card:hover {
+  border-color: rgba(255, 150, 50, 0.3);
+  background: linear-gradient(135deg, rgba(255, 100, 50, 0.08), rgba(255, 200, 50, 0.04));
+}
+
+.longshot-pick-rank {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--accent-amber);
+  min-width: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.longshot-pick-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.longshot-pick-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+  transition: color 0.15s ease;
+}
+
+.longshot-pick-name:hover {
+  color: var(--accent-blue);
+}
+
+.longshot-pick-stats {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.ls-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ls-stat-label {
+  font-size: 9px;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.ls-stat-val {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.ls-odds {
+  color: var(--accent-amber);
+}
+
+.ls-market {
+  color: var(--text-muted);
+}
+
+.ls-ev-pos {
+  color: var(--accent-green);
+}
+
+.ls-ev-neg {
+  color: var(--accent-red);
+}
+
+.longshot-pick-alert {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent-green);
+  background: rgba(63, 185, 80, 0.08);
+  border: 1px solid rgba(63, 185, 80, 0.2);
+  border-radius: 6px;
+  padding: 4px 8px;
+  margin-top: 4px;
+}
+
+.longshot-combo {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-primary);
+}
+
+.longshot-combo-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: rgba(15, 23, 42, 0.4);
+  border-radius: 10px;
+  flex-wrap: wrap;
+}
+
+.combo-anchor,
+.combo-leg {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.combo-tag {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.combo-tag.hot {
+  background: linear-gradient(135deg, #ff6b35, #ff8c42);
+  color: #fff;
+}
+
+.combo-tag.cold {
+  background: linear-gradient(135deg, #4a90d9, #6bb5ff);
+  color: #fff;
+}
+
+.combo-horse {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.combo-horse:hover {
+  color: var(--accent-blue);
+}
+
+.combo-p {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent-green);
+  font-variant-numeric: tabular-nums;
+}
+
+.combo-odds {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent-amber);
+  font-variant-numeric: tabular-nums;
+}
+
+.combo-arrow {
+  font-size: 16px;
+  color: var(--text-muted);
+  margin: 0 4px;
 }
