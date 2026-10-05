@@ -64,11 +64,14 @@ export async function GET(req: Request) {
       top3_total_hits: top3TotalHits,
     }
 
+    const debugUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL ?? 'MISSING'
+
     return NextResponse.json({
       ok: true,
       total_races: totalRaces,
       summary,
       records,
+      _debug: { supabase_url: debugUrl.substring(0, 30) + '...' },
     })
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Internal error'
