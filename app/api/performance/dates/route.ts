@@ -7,12 +7,19 @@ export async function GET() {
   try {
     const supabase = getServerSupabase()
 
-    // Debug: log env vars (without exposing full keys)
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL
-    const hasServiceKey = !!process.env.SUPABASE_SERVICE_KEY
-    console.log('[API /performance/dates] Supabase URL:', url?.substring(0, 30) + '...')
-    console.log('[API /performance/dates] Has service key:', hasServiceKey)
+    // Try querying races table for finished races with ai_performance data
+    const { data: raceDates, error: raceError } = await supabase
+      .from('races')
+      .select('race_date')
+      .eq('is_finished', true)
+      .not('race_date', 'is', null)
+      .order('race_date', { ascending: false })
 
+    if (raceError) {
+      console.error('[API /performance/dates] races query error:', raceError)
+    }
+
+    // Also try ai_performance table as fallback
     const { data: perfDates, error: perfError } = await supabase
       .from('ai_performance')
       .select('race_date')
@@ -20,16 +27,20 @@ export async function GET() {
       .order('race_date', { ascending: false })
 
     if (perfError) {
-      console.error('[API /performance/dates] error:', perfError)
-      return NextResponse.json({ ok: false, error: perfError.message }, { status: 500 })
+      console.error('[API /performance/dates] ai_performance query error:', perfError)
     }
 
-    console.log('[API /performance/dates] Raw rows count:', perfDates?.length ?? 0)
-    if (perfDates && perfDates.length > 0) {
-      console.log('[API /performance/dates] First 3 rows:', JSON.stringify(perfDates.slice(0, 3)))
-    }
+    console.log('[API /performance/dates] races rows:', raceDates?.length ?? 0)
+    console.log('[API /performance/dates] ai_performance rows:', perfDates?.length ?? 0)
 
     const dateSet = new Set<string>()
+
+    // Add dates from races table
+    for (const d of ((raceDates ?? []) as { race_date: string | null }[])) {
+      if (d.race_date) dateSet.add(d.race_date)
+    }
+
+    // Add dates from ai_performance table
     for (const d of ((perfDates ?? []) as { race_date: string | null }[])) {
       if (d.race_date) dateSet.add(d.race_date)
     }
@@ -39,7 +50,8 @@ export async function GET() {
       .sort()
       .reverse()
 
-    console.log('[API /performance/dates] Unique dates count:', uniqueDates.length)
+    console.log('[API /performance/dates] Total unique dates:', uniqueDates.length)
+    console.log('[API /performance/dates] Latest 5:', uniqueDates.slice(0, 5))
     console.log('[API /performance/dates] Has 2026-10-04:', uniqueDates.includes('2026-10-04'))
 
     return NextResponse.json({
