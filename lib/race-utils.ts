@@ -329,6 +329,7 @@ export function parseFormHistory(form: string | null | undefined): number[] {
  */
 const ACTUAL_RACE_TIMES: Record<string, string[]> = {
   '2026-10-04': ['12:30', '13:00', '13:30', '14:00', '14:30', '15:00', '15:35', '16:05', '16:35', '17:10', '17:45'],
+  '2026-10-07': ['18:35', '19:05', '19:35', '20:05', '20:35', '21:05', '21:35', '22:05', '22:35'],
 }
 
 export function estimateRaceTime(venue: string | undefined, raceNo: number, raceDate?: string | null): string {
