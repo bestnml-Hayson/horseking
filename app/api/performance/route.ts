@@ -1,42 +1,20 @@
 import { NextResponse } from 'next/server'
-import { getServerSupabase } from '@/lib/supabase-server'
+import { directFetch } from '@/lib/supabase-server'
 import type { AIPerformanceRecord } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url)
     const date = searchParams.get('date')
 
-    const supabase = getServerSupabase()
+    const perfData = await directFetch(
+      `ai_performance?race_date=eq.${date ?? 'not-a-date'}&select=*&order=analysis_date.desc`
+    )
 
-    let query = supabase
-      .from('ai_performance')
-      .select('*')
-      .order('analysis_date', { ascending: false })
-
-    if (date) {
-      query = query.eq('race_date', date)
-    }
-
-    const { data: perfData, error: perfError } = await query
-
-    if (perfError) {
-      if (perfError.message?.includes('Could not find') || perfError.code === '42P01') {
-        return NextResponse.json({
-          ok: true,
-          total_races: 0,
-          summary: { win_rate: 0, top3_rate: 0, avg_roi: 0, total_bets: 0, total_returns: 0, top1_hits: 0, top3_total_hits: 0 },
-          records: [],
-          table_missing: true,
-        })
-      }
-      console.error('[API /performance] error:', perfError)
-      return NextResponse.json({ ok: false, error: perfError.message }, { status: 500 })
-    }
-
-    const records = (perfData ?? []) as unknown as AIPerformanceRecord[]
+    const records = perfData as unknown as AIPerformanceRecord[]
 
     if (records.length === 0) {
       return NextResponse.json({
@@ -64,17 +42,21 @@ export async function GET(req: Request) {
       top3_total_hits: top3TotalHits,
     }
 
-    const debugUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL ?? 'MISSING'
-
     return NextResponse.json({
       ok: true,
       total_races: totalRaces,
       summary,
       records,
-      _debug: { supabase_url: debugUrl.substring(0, 30) + '...' },
     })
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Internal error'
+    if (message.includes('Could not find') || message.includes('42P01') || message.includes('relation')) {
+      return NextResponse.json({
+        ok: true, total_races: 0,
+        summary: { win_rate: 0, top3_rate: 0, avg_roi: 0, total_bets: 0, total_returns: 0, top1_hits: 0, top3_total_hits: 0 },
+        records: [], table_missing: true,
+      })
+    }
     console.error('[API /performance] unexpected error:', err)
     return NextResponse.json({ ok: false, error: message }, { status: 500 })
   }

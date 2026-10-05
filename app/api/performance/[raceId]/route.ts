@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server'
-import { getServerSupabase } from '@/lib/supabase-server'
+import { directFetch } from '@/lib/supabase-server'
 import type { AIPerformanceRecord, RaceRunner, ModelPrediction, ComparisonRow, Race } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 export async function GET(
   _req: Request,
@@ -10,73 +11,46 @@ export async function GET(
 ) {
   try {
     const { raceId } = params
-    const supabase = getServerSupabase()
 
-    const { data: perfData, error: perfError } = await supabase
-      .from('ai_performance')
-      .select('*')
-      .eq('race_id', raceId)
-      .single()
+    const [perfRows, runners, predictions, raceRows, results] = await Promise.all([
+      directFetch(`ai_performance?race_id=eq.${raceId}&select=*`).then(r => r as unknown as AIPerformanceRecord[]),
+      directFetch(`race_runners?race_id=eq.${raceId}&select=*&order=horse_no.asc`).then(r => r as unknown as RaceRunner[]),
+      directFetch(`model_predictions?race_id=eq.${raceId}&select=*`).then(r => r as unknown as ModelPrediction[]),
+      directFetch(`races?race_id=eq.${raceId}&select=*`).then(r => r as unknown as Race[]),
+      directFetch(`race_results?race_id=eq.${raceId}&select=*`).catch(() => [] as unknown[]),
+    ])
 
-    if (perfError || !perfData) {
+    const perf = perfRows[0]
+    if (!perf) {
       return NextResponse.json({ ok: false, error: 'No analysis found for this race' }, { status: 404 })
     }
 
-    const perf = perfData as unknown as AIPerformanceRecord
+    const raceInfo = raceRows[0] ?? null
+    const typedRunners = runners ?? []
+    const typedPredictions = predictions ?? []
 
-    const { data: runners } = await supabase
-      .from('race_runners')
-      .select('*')
-      .eq('race_id', raceId)
-      .order('horse_no', { ascending: true })
-
-    const typedRunners = (runners ?? []) as unknown as RaceRunner[]
     const horseIds = typedRunners.map((r) => r.horse_id).filter(Boolean)
-    const { data: horses } = horseIds.length > 0
-      ? await supabase
-          .from('horses')
-          .select('horse_id, horse_name')
-          .in('horse_id', horseIds)
-      : { data: [] as { horse_id: string; horse_name: string }[] }
-
-    const horseNameMap = new Map<string, string>((horses ?? []).map((h) => [h.horse_id, h.horse_name]))
-
-    const { data: predictions } = await supabase
-      .from('model_predictions')
-      .select('*')
-      .eq('race_id', raceId)
-
-    const { data: raceInfo } = await supabase
-      .from('races')
-      .select('*')
-      .eq('race_id', raceId)
-      .single()
-
-    const { data: results } = await supabase
-      .from('race_results')
-      .select('*')
-      .eq('race_id', raceId)
+    let horseNameMap = new Map<string, string>()
+    if (horseIds.length > 0) {
+      const horses = await directFetch(`horses?horse_id=in.(${horseIds.join(',')})&select=horse_id,horse_name`)
+      horseNameMap = new Map((horses as { horse_id: string; horse_name: string }[]).map((h) => [h.horse_id, h.horse_name]))
+    }
 
     const finishPosMap = new Map<number, number>()
-    if (results && results.length > 0) {
-      for (const r of results) {
-        const row = r as { horse_no: number | null; finish_position: number | null }
-        if (row.horse_no != null && row.finish_position != null) {
-          finishPosMap.set(row.horse_no, row.finish_position)
-        }
+    for (const r of (results as { horse_no: number | null; finish_position: number | null }[])) {
+      if (r.horse_no != null && r.finish_position != null) {
+        finishPosMap.set(r.horse_no, r.finish_position)
       }
     }
 
-    const typedPredictions = (predictions ?? []) as unknown as ModelPrediction[]
     const runnerMap = new Map(typedRunners.map((r) => [r.runner_id, r]))
-    const predMap = new Map(typedPredictions.map((p) => [p.runner_id, p]))
 
     const sortedPreds = typedPredictions.sort(
       (a, b) => (b.final_prob ?? 0) - (a.final_prob ?? 0)
     )
 
     let comparison: ComparisonRow[]
-    
+
     if (sortedPreds.length > 0) {
       comparison = sortedPreds.map((pred, idx) => {
         const runner = runnerMap.get(pred.runner_id)
@@ -170,7 +144,7 @@ export async function GET(
     return NextResponse.json({
       ok: true,
       race_id: raceId,
-      race_info: raceInfo as unknown as Race,
+      race_info: raceInfo,
       results,
       performance: perf,
       comparison,
