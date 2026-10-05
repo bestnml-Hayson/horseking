@@ -419,7 +419,7 @@ function ComparisonRow({ row, onHorseClick }: { row: ComparisonRow; onHorseClick
       </td>
       <td>
         <span className="odds-cell">
-          {row.win_odds && row.win_odds > 1.01 && row.win_odds !== 10.0
+          {row.win_odds && row.win_odds > 1.01
             ? `${row.win_odds.toFixed(1)}`
             : 'N/A'}
         </span>
