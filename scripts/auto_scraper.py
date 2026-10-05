@@ -487,10 +487,7 @@ def scrape_hkjc_races(date_str: str, venue: str, skip_odds: bool = False) -> Lis
                         err_str = str(e)
                         print(f"    [RETRY {attempt+1}/3] R{race_no} odds: {e}")
                         if 'crashed' in err_str.lower() or 'crash' in err_str.lower():
-                            print(f"    [FALLBACK] R{race_no}: page crashed, assigning default odds 10.0")
-                            for h in race_data['horses']:
-                                if h['win_odds'] <= 0:
-                                    h['win_odds'] = 10.0
+                            print(f"    [FALLBACK] R{race_no}: page crashed, leaving odds as 0 (will show N/A)")
                             odds_scraped = True
                             break
                         try:
@@ -501,9 +498,7 @@ def scrape_hkjc_races(date_str: str, venue: str, skip_odds: bool = False) -> Lis
                 if not odds_scraped:
                     matched = sum(1 for h in race_data['horses'] if h['win_odds'] > 0)
                     if matched == 0:
-                        print(f"    [FALLBACK] R{race_no}: assigning default odds 10.0 (live scrape failed)")
-                        for h in race_data['horses']:
-                            h['win_odds'] = 10.0
+                        print(f"    [FALLBACK] R{race_no}: live scrape failed, leaving odds as 0 (will show N/A)")
 
         try:
             browser.close()
