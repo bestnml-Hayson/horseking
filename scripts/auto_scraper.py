@@ -190,7 +190,8 @@ def scrape_hkjc_races(date_str: str, venue: str, skip_odds: bool = False) -> Lis
             print(f"  Scraping R{race_no}...")
 
             try:
-                racecard_url = f"https://racing.hkjc.com/racing/information/Chinese/Racing/RaceCard.aspx?RaceDate={date_slash}&Racecourse={venue}&RaceNo={race_no}"
+                # New HKJC URL format (2026+) - lowercase racedate, slash format
+                racecard_url = f"https://racing.hkjc.com/zh-hk/local/information/racecard?racedate={date_slash}&Racecourse={venue}&RaceNo={race_no}"
                 page.goto(racecard_url, wait_until='domcontentloaded', timeout=30000)
                 page.wait_for_timeout(4000)
 
@@ -211,7 +212,8 @@ def scrape_hkjc_races(date_str: str, venue: str, skip_odds: bool = False) -> Lis
                             const txt = firstRowCells[i].textContent.trim();
                             if (txt === '6次近績') { hasFormCol = true; colMap.form = i; }
                             if (txt === '馬名') { hasHorseCol = true; colMap.horseName = i; }
-                            if (txt === '評分' || txt === '評分*') colMap.rating = i;
+                            if (txt === '烙號') colMap.horseCode = i;
+                            if (txt === '評分' || txt === '評分*' || txt === '國際評分') colMap.rating = i;
                             if (txt === '負磅' || txt === '配磅') colMap.weight = i;
                             if (txt === '騎師') colMap.jockey = i;
                             if (txt === '檔位' || txt === '排位檔位') colMap.draw = i;
@@ -231,138 +233,114 @@ def scrape_hkjc_races(date_str: str, venue: str, skip_odds: bool = False) -> Lis
 
                         if (hasFormCol && hasHorseCol) {
                             const secondRowCells = rows.length > 1 ? rows[1].querySelectorAll('td') : [];
-                            if (secondRowCells.length >= 10) {
-                                const firstCell = secondRowCells[0].textContent.trim();
-                                const num = parseInt(firstCell);
-                                if (!isNaN(num) && num > 0 && num <= 20) {
-                                    targetTable = t;
-                                    break;
+                            if (secondRowCells.length >= 3) {
+                                const horseNameIdx = colMap.horseName !== undefined ? colMap.horseName : -1;
+                                if (horseNameIdx >= 0 && horseNameIdx < secondRowCells.length) {
+                                    const nameText = secondRowCells[horseNameIdx].textContent.trim();
+                                    if (nameText.length >= 2) {
+                                        targetTable = t;
+                                        break;
+                                    }
                                 }
                             }
                         }
                     }
                     if (!targetTable) return horses;
 
-                    const hasRatingCol = colMap.rating !== undefined;
                     const rows = targetTable.querySelectorAll('tr');
                     for (let ri = 1; ri < rows.length; ri++) {
                         const cells = rows[ri].querySelectorAll('td');
-                        if (cells.length < 10) continue;
+                        if (cells.length < 5) continue;
+
+                        const get = (key) => colMap[key] !== undefined ? cells[colMap[key]].textContent.trim() : '';
 
                         const horseNoText = cells[0].textContent.trim();
                         const horseNo = parseInt(horseNoText);
                         if (isNaN(horseNo) || horseNo <= 0 || horseNo > 20) continue;
 
-                        const formRaw = cells[1].textContent.trim();
-                        const formHistory = formRaw.replace(/[\\/]/g, '-').replace(/\\s+/g, '-').replace(/^-+|-+$/g, '');
-                        const horseName = cells[3].textContent.trim();
-                        const horseCode = cells[4].textContent.trim();
-                        const weight = parseFloat(cells[5].textContent.trim()) || 0;
-                        let jockey = cells[6].textContent.trim();
+                        const horseName = get('horseName');
+                        if (!horseName || horseName.length < 2) continue;
 
-                        let officialRating = null;
-                        if (hasRatingCol) {
-                            officialRating = parseFloat(cells[colMap.rating].textContent.trim()) || null;
-                        } else {
-                            const ratingGuess = parseFloat(cells[7].textContent.trim());
-                            if (!isNaN(ratingGuess) && ratingGuess > 0 && ratingGuess <= 140) {
-                                officialRating = ratingGuess;
-                            }
-                        }
-
-                        const draw = parseInt(cells[8].textContent.trim()) || 0;
-                        let trainer = cells[9].textContent.trim();
+                        const formRaw = get('form');
+                        const formHistory = formRaw.replace(/[\\\/]/g, '-').replace(/\\s+/g, '-').replace(/^-+|-+$/g, '');
+                        const horseCode = get('horseCode');
+                        const weight = parseFloat(get('weight')) || 0;
+                        let jockey = get('jockey');
+                        const officialRating = parseFloat(get('rating')) || null;
+                        const draw = parseInt(get('draw')) || 0;
+                        let trainer = get('trainer');
 
                         let declaredWeight = null;
                         if (colMap.declaredWeight !== undefined) {
-                            const dwText = cells[colMap.declaredWeight].textContent.trim();
-                            const dwVal = parseInt(dwText);
-                            if (!isNaN(dwVal) && dwVal > 800 && dwVal < 1500) {
-                                declaredWeight = dwVal;
-                            }
+                            const dwVal = parseInt(cells[colMap.declaredWeight].textContent.trim());
+                            if (!isNaN(dwVal) && dwVal > 800 && dwVal < 1500) declaredWeight = dwVal;
                         }
 
                         let weightChange = null;
                         if (colMap.weightChange !== undefined) {
-                            const wcText = cells[colMap.weightChange].textContent.trim().replace('+', '').replace('-', '');
-                            const wcVal = parseFloat(wcText);
-                            if (!isNaN(wcVal)) {
-                                const sign = cells[colMap.weightChange].textContent.trim().startsWith('-') ? -1 : 1;
-                                weightChange = sign * Math.abs(wcVal);
+                            const wcText = cells[colMap.weightChange].textContent.trim();
+                            if (wcText && wcText !== '-') {
+                                const wcVal = parseFloat(wcText.replace('+', '').replace('-', ''));
+                                if (!isNaN(wcVal)) {
+                                    const sign = wcText.trim().startsWith('-') ? -1 : 1;
+                                    weightChange = sign * Math.abs(wcVal);
+                                }
                             }
                         }
 
                         let bestTime = null;
                         if (colMap.bestTime !== undefined) {
                             const btText = cells[colMap.bestTime].textContent.trim();
-                            if (btText && /^\d{1,2}\.\d{2}\.\d{2}$/.test(btText)) {
-                                bestTime = btText;
-                            }
+                            if (btText && /^\d{1,2}\.\d{2}\.\d{2}$/.test(btText)) bestTime = btText;
                         }
 
                         let age = null;
                         if (colMap.age !== undefined) {
                             const ageVal = parseInt(cells[colMap.age].textContent.trim());
-                            if (!isNaN(ageVal) && ageVal > 0 && ageVal <= 20) {
-                                age = ageVal;
-                            }
+                            if (!isNaN(ageVal) && ageVal > 0 && ageVal <= 20) age = ageVal;
                         }
 
                         let gender = null;
                         if (colMap.gender !== undefined) {
                             const gText = cells[colMap.gender].textContent.trim();
-                            if (['閹', '雄', '雌'].includes(gText)) {
-                                gender = gText;
-                            }
+                            if (['閹', '雄', '雌'].includes(gText)) gender = gText;
                         }
 
                         let seasonPrize = null;
                         if (colMap.seasonPrize !== undefined) {
                             const spText = cells[colMap.seasonPrize].textContent.trim().replace(/,/g, '');
                             const spVal = parseFloat(spText);
-                            if (!isNaN(spVal) && spVal >= 0) {
-                                seasonPrize = spVal;
-                            }
+                            if (!isNaN(spVal) && spVal >= 0) seasonPrize = spVal;
                         }
 
                         let priority = null;
                         if (colMap.priority !== undefined) {
                             const pText = cells[colMap.priority].textContent.trim();
-                            if (pText && pText !== '') {
-                                priority = pText;
-                            }
+                            if (pText && pText !== '') priority = pText;
                         }
 
                         let daysSinceLastRun = null;
                         if (colMap.daysSinceLastRun !== undefined) {
                             const dVal = parseInt(cells[colMap.daysSinceLastRun].textContent.trim());
-                            if (!isNaN(dVal) && dVal >= 0 && dVal <= 999) {
-                                daysSinceLastRun = dVal;
-                            }
+                            if (!isNaN(dVal) && dVal >= 0 && dVal <= 999) daysSinceLastRun = dVal;
                         }
 
                         let gear = null;
                         if (colMap.gear !== undefined) {
                             const gText = cells[colMap.gear].textContent.trim();
-                            if (gText && gText !== '') {
-                                gear = gText;
-                            }
+                            if (gText && gText !== '' && gText !== '-') gear = gText;
                         }
 
                         let sire = null;
                         if (colMap.sire !== undefined) {
                             const sText = cells[colMap.sire].textContent.trim();
-                            if (sText && sText !== '') {
-                                sire = sText;
-                            }
+                            if (sText && sText !== '' && sText !== '-') sire = sText;
                         }
 
                         let dam = null;
                         if (colMap.dam !== undefined) {
                             const dText = cells[colMap.dam].textContent.trim();
-                            if (dText && dText !== '') {
-                                dam = dText;
-                            }
+                            if (dText && dText !== '' && dText !== '-') dam = dText;
                         }
 
                         jockey = jockey.split('(')[0].trim();
@@ -425,7 +403,7 @@ def scrape_hkjc_races(date_str: str, venue: str, skip_odds: bool = False) -> Lis
                     const distMatch = block.match(/(\d{3,4})米/);
                     const goingMatch = block.match(/好至黏快|好至快地|好至黏地|好地|快地|慢地|軟地|黏地/);
                     const classMatch = block.match(/第[一二三四五六七八九十]+班/);
-                    const trackMatch = block.match(/賽道\s*[:：]\s*(草地|全天候跑道| turf |all-weather)/i);
+                    const trackMatch = block.match(/(草地|全天候跑道)/);
 
                     return {
                         distance: distMatch ? parseInt(distMatch[1]) : null,
@@ -815,7 +793,8 @@ def detect_venue_from_hkjc(date_str: str) -> Optional[str]:
     date_slash = date_str.replace('-', '/')
     for venue in ['ST', 'HV']:
         try:
-            url = f"https://racing.hkjc.com/racing/information/Chinese/Racing/RaceCard.aspx?RaceDate={date_slash}&Racecourse={venue}&RaceNo=1"
+            # New HKJC URL format (2026+) - lowercase racedate
+            url = f"https://racing.hkjc.com/zh-hk/local/information/racecard?racedate={date_slash}&Racecourse={venue}&RaceNo=1"
             with sync_playwright() as p:
                 browser = p.chromium.launch(headless=True, args=['--no-sandbox', '--disable-gpu'])
                 page = browser.new_page()
@@ -825,7 +804,13 @@ def detect_venue_from_hkjc(date_str: str) -> Optional[str]:
                     const tables = document.querySelectorAll('table');
                     for (const t of tables) {
                         const rows = t.querySelectorAll('tr');
-                        if (rows.length >= 5) return rows.length - 1;
+                        if (rows.length < 5) continue;
+                        const firstRowCells = rows[0].querySelectorAll('td, th');
+                        let hasHorseCol = false;
+                        for (let i = 0; i < firstRowCells.length; i++) {
+                            if (firstRowCells[i].textContent.trim() === '馬名') { hasHorseCol = true; break; }
+                        }
+                        if (hasHorseCol) return rows.length - 1;
                     }
                     return 0;
                 }''')
