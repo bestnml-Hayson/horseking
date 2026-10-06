@@ -34,18 +34,23 @@ FRACTIONAL_KELLY = 0.25  # 1/4 Kelly 降低方差
 TEMPERATURE = 1.0     # Softmax 溫度參數
 
 # 評分維度權重 (總和 = 1.0)
-W_FORM = 0.23         # 近況評分
-W_RATING = 0.14       # 往績評分 (past_rating)
-W_JOCKEY = 0.13       # 騎師勝率
-W_TRAINER = 0.11      # 練馬師勝率
-W_DRAW = 0.09         # 檔位優勢
-W_WEIGHT_CHANGE = 0.06  # 體重變化 (減磅為佳)
-W_REST_DAYS = 0.05    # 休養天數 (適中為佳)
+W_FORM = 0.20         # 近況評分
+W_RATING = 0.12       # 往績評分 (past_rating)
+W_JOCKEY = 0.10       # 騎師勝率
+W_TRAINER = 0.09      # 練馬師勝率
+W_DRAW = 0.08         # 檔位優勢
+W_WEIGHT_CHANGE = 0.05  # 體重變化 (減磅為佳)
+W_REST_DAYS = 0.04    # 休養天數 (適中為佳)
 W_BEST_TIME = 0.03    # 最佳時間 (越低越快)
-W_SEASON_PRIZE = 0.03  # 本季獎金 (越高越好)
-W_WEIGHT_CARRIED_DIFF = 0.03  # 負磅差異 (越低越佳)
-W_CLASS_STRENGTH = 0.04  # 班次適應 (評分高於班次平均為佳)
-W_WEIGHT_DISTANCE = 0.04  # 體重路程交互 (輕磅跑長途為佳)
+W_SEASON_PRIZE = 0.02  # 本季獎金 (越高越好)
+W_WEIGHT_CARRIED_DIFF = 0.02  # 負磅差異 (越低越佳)
+W_CLASS_STRENGTH = 0.03  # 班次適應 (評分高於班次平均為佳)
+W_WEIGHT_DISTANCE = 0.03  # 體重路程交互 (輕磅跑長途為佳)
+
+# 人馬動態契合權重 (Synergy Multiplier)
+W_JOCKEY_HORSE_COMBO = 0.08   # 人馬合作效益分
+W_JOCKEY_TRACK_PROF = 0.06    # 騎師場地專長分
+W_JOCKEY_TRAINER_COMBO = 0.05 # 騎練合作勝率
 
 
 def get_supabase_client() -> Client:
@@ -227,11 +232,174 @@ def normalize_features(runners: List[Dict], distance: Optional[int] = None) -> L
 
 
 # =====================================================================
-# 2. 基礎評分計算 (Linear Score)
+# 1b. 人馬動態契合特徵 (Jockey-Horse Synergy Features)
+# =====================================================================
+def fetch_historical_results(supabase: Client, months: int = 6) -> List[Dict]:
+    """從 race_results 讀取近 N 個月的歷史賽果"""
+    from datetime import datetime, timedelta
+    cutoff = (datetime.now() - timedelta(days=months * 30)).strftime('%Y-%m-%d')
+
+    all_results = []
+    offset = 0
+    batch_size = 1000
+
+    while True:
+        try:
+            resp = supabase.table('race_results').select(
+                'race_id,race_date,venue,horse_no,horse_name,jockey,trainer,'
+                'finish_position,win_odds'
+            ).gte('race_date', cutoff).range(offset, offset + batch_size - 1).execute()
+            if not resp.data:
+                break
+            all_results.extend(resp.data)
+            if len(resp.data) < batch_size:
+                break
+            offset += batch_size
+        except Exception as e:
+            print(f"  WARNING: fetch_historical_results error: {e}")
+            break
+
+    print(f"  Fetched {len(all_results)} historical results (last {months} months)")
+    return all_results
+
+
+def build_synergy_matrices(history: List[Dict]) -> Tuple[Dict, Dict, Dict]:
+    """
+    建立三個契合矩陣：
+    1. jockey_horse_combo: (jockey, horse_name) → {starts, wins, places}
+    2. jockey_venue_stats: (jockey, venue) → {starts, wins, places}
+    3. jockey_trainer_combo: (jockey, trainer) → {starts, wins, places, roi_sum}
+    """
+    jh = defaultdict(lambda: {'starts': 0, 'wins': 0, 'places': 0})
+    jv = defaultdict(lambda: {'starts': 0, 'wins': 0, 'places': 0})
+    jt = defaultdict(lambda: {'starts': 0, 'wins': 0, 'places': 0, 'roi_sum': 0.0})
+
+    for r in history:
+        jockey = (r.get('jockey') or '').strip()
+        trainer = (r.get('trainer') or '').strip()
+        horse = (r.get('horse_name') or '').strip()
+        venue = (r.get('venue') or '').strip()
+        pos = r.get('finish_position')
+        odds = r.get('win_odds')
+
+        if not jockey:
+            continue
+
+        is_win = pos is not None and pos == 1
+        is_place = pos is not None and pos <= 3
+
+        if horse:
+            key = (jockey, horse)
+            jh[key]['starts'] += 1
+            if is_win:
+                jh[key]['wins'] += 1
+            if is_place:
+                jh[key]['places'] += 1
+
+        if venue:
+            key = (jockey, venue)
+            jv[key]['starts'] += 1
+            if is_win:
+                jv[key]['wins'] += 1
+            if is_place:
+                jv[key]['places'] += 1
+
+        if trainer:
+            key = (jockey, trainer)
+            jt[key]['starts'] += 1
+            if is_win:
+                jt[key]['wins'] += 1
+            if is_place:
+                jt[key]['places'] += 1
+            if odds and odds > 1.0:
+                jt[key]['roi_sum'] += (odds - 1.0) if is_win else -1.0
+
+    return dict(jh), dict(jv), dict(jt)
+
+
+def compute_synergy_features(
+    runners: List[Dict],
+    jh_combo: Dict,
+    jv_stats: Dict,
+    jt_combo: Dict,
+    venue: str | None = None,
+) -> List[Dict]:
+    """
+    為每匹馬計算三個契合特徵並標準化到 [0, 1]：
+    1. jockey_horse_combo_score: 人馬合作勝率 + 上名率
+    2. jockey_track_proficiency: 騎師在指定場地的勝率 + 上名率
+    3. jockey_trainer_combo_win_rate: 騎練合作勝率 + ROI
+    """
+    if not runners:
+        return runners
+
+    for r in runners:
+        jockey = (r.get('jockey') or '').strip()
+        trainer = (r.get('trainer') or '').strip()
+        horse = (r.get('horse_name') or '').strip()
+        v = venue or ''
+
+        # 1. jockey_horse_combo_score
+        jh_key = (jockey, horse)
+        jh_data = jh_combo.get(jh_key)
+        if jh_data and jh_data['starts'] >= 2:
+            win_rate = jh_data['wins'] / jh_data['starts']
+            place_rate = jh_data['places'] / jh_data['starts']
+            r['_jh_combo_raw'] = 0.6 * win_rate + 0.4 * place_rate
+        else:
+            r['_jh_combo_raw'] = None
+
+        # 2. jockey_track_proficiency
+        jv_key = (jockey, v)
+        jv_data = jv_stats.get(jv_key)
+        if jv_data and jv_data['starts'] >= 5:
+            win_rate = jv_data['wins'] / jv_data['starts']
+            place_rate = jv_data['places'] / jv_data['starts']
+            r['_jv_prof_raw'] = 0.6 * win_rate + 0.4 * place_rate
+        else:
+            r['_jv_prof_raw'] = None
+
+        # 3. jockey_trainer_combo_win_rate
+        jt_key = (jockey, trainer)
+        jt_data = jt_combo.get(jt_key)
+        if jt_data and jt_data['starts'] >= 3:
+            win_rate = jt_data['wins'] / jt_data['starts']
+            place_rate = jt_data['places'] / jt_data['starts']
+            roi = jt_data['roi_sum'] / jt_data['starts'] if jt_data['starts'] > 0 else 0
+            r['_jt_combo_raw'] = 0.5 * win_rate + 0.3 * place_rate + 0.2 * max(0, min(1, (roi + 1) / 2))
+        else:
+            r['_jt_combo_raw'] = None
+
+    # Min-Max normalize each feature to [0, 1]
+    for feat_key, norm_key in [('_jh_combo_raw', 'jockey_horse_combo_norm'),
+                                ('_jv_prof_raw', 'jockey_track_prof_norm'),
+                                ('_jt_combo_raw', 'jockey_trainer_combo_norm')]:
+        vals = [r.get(feat_key) for r in runners if r.get(feat_key) is not None]
+        if vals:
+            mn, mx = min(vals), max(vals)
+            rng = mx - mn if mx != mn else 1.0
+            for r in runners:
+                v = r.get(feat_key)
+                if v is None:
+                    r[norm_key] = 0.4
+                else:
+                    r[norm_key] = max(0.0, min(1.0, (v - mn) / rng))
+        else:
+            for r in runners:
+                r[norm_key] = 0.4
+
+    return runners
+
+
+# =====================================================================
+# 2. 基礎評分計算 (Linear Score + Synergy Multiplier)
 # =====================================================================
 def compute_raw_score(runner: Dict) -> float:
-    """加權線性綜合評分"""
-    score = (
+    """
+    加權線性綜合評分 + 人馬動態契合乘數 (Synergy Multiplier)
+    Score_final = Score_base × (1 + w1*Combo + w2*TrackProf + w3*JTCombo)
+    """
+    base_score = (
         W_FORM          * runner.get('recent_form_score_norm', 0.5) +
         W_RATING        * runner.get('past_rating_norm', 0.5) +
         W_JOCKEY        * runner.get('jockey_win_rate_norm', 0.5) +
@@ -246,7 +414,14 @@ def compute_raw_score(runner: Dict) -> float:
         W_WEIGHT_DISTANCE * runner.get('weight_distance_norm', 0.5) +
         0.02            * runner.get('gear_change_norm', 0.5)
     )
-    return score
+
+    synergy_multiplier = 1.0 + (
+        W_JOCKEY_HORSE_COMBO   * runner.get('jockey_horse_combo_norm', 0.4) +
+        W_JOCKEY_TRACK_PROF    * runner.get('jockey_track_prof_norm', 0.4) +
+        W_JOCKEY_TRAINER_COMBO * runner.get('jockey_trainer_combo_norm', 0.4)
+    )
+
+    return base_score * synergy_multiplier
 
 
 # =====================================================================
@@ -357,13 +532,20 @@ def compute_kelly(p_final: float, odds_win: float, fraction: float = FRACTIONAL_
 # =====================================================================
 # 8. 單場賽事完整計算流程
 # =====================================================================
-def analyze_race(runners: List[Dict], distance: Optional[int] = None, pre_race: bool = False) -> List[Dict]:
+def analyze_race(runners: List[Dict], distance: Optional[int] = None,
+                 pre_race: bool = False,
+                 synergy: Optional[Tuple[Dict, Dict, Dict]] = None,
+                 venue: Optional[str] = None) -> List[Dict]:
     """
     兩階段完整計算流程：
-      階段一：normalize → raw_score → softmax → P_model（純實力，不含賠率）
+      階段一：normalize → synergy features → raw_score (× synergy multiplier) → softmax → P_model
       階段二：market_implied → benter_fusion → P_final → EV → Kelly
     """
     runners = normalize_features(runners, distance=distance)
+
+    if synergy:
+        jh_combo, jv_stats, jt_combo = synergy
+        runners = compute_synergy_features(runners, jh_combo, jv_stats, jt_combo, venue=venue)
 
     raw_scores = [compute_raw_score(r) for r in runners]
     p_models = softmax_probabilities(raw_scores)
@@ -458,31 +640,72 @@ def fetch_races_with_runners(supabase: Client, race_ids: Optional[List[str]] = N
 
 def run_analysis(supabase: Client, race_ids: Optional[List[str]] = None,
                  dry_run: bool = False, pre_race: bool = False) -> List[Dict]:
-    """主分析流程：讀取 → 計算 → (寫入) Supabase"""
+    """主分析流程：讀取 → 計算 synergies → 計算 → (寫入) Supabase"""
     mode_str = " [PRE-RACE: P_model only]" if pre_race else ""
     print(f"Fetching race_runners from Supabase{mode_str}...")
     races_data = fetch_races_with_runners(supabase, race_ids)
     print(f"  Found {len(races_data)} races")
 
-    # Fetch race distances from races table
+    # Fetch race metadata (distance + venue) from races table
     race_distances = {}
+    race_venues = {}
     all_race_ids = list(races_data.keys())
     if all_race_ids:
         batch_size = 500
         for i in range(0, len(all_race_ids), batch_size):
             batch_ids = all_race_ids[i:i + batch_size]
             try:
-                resp = supabase.table('races').select('race_id,distance').in_('race_id', batch_ids).execute()
+                resp = supabase.table('races').select('race_id,distance,venue').in_('race_id', batch_ids).execute()
                 for row in (resp.data or []):
                     race_distances[row['race_id']] = row.get('distance')
+                    race_venues[row['race_id']] = row.get('venue')
             except Exception as e:
-                print(f"  WARNING: could not fetch race distances: {e}")
-        print(f"  Fetched distances for {len(race_distances)} races")
+                print(f"  WARNING: could not fetch race metadata: {e}")
+        print(f"  Fetched metadata for {len(race_distances)} races")
+
+    # Fetch horse names from horses table (needed for jockey-horse combo lookup)
+    horse_name_map = {}
+    all_horse_ids = set()
+    for runners in races_data.values():
+        for r in runners:
+            hid = r.get('horse_id')
+            if hid:
+                all_horse_ids.add(hid)
+    if all_horse_ids:
+        horse_id_list = list(all_horse_ids)
+        batch_size = 500
+        for i in range(0, len(horse_id_list), batch_size):
+            batch_ids = horse_id_list[i:i + batch_size]
+            try:
+                resp = supabase.table('horses').select('horse_id,horse_name').in_('horse_id', batch_ids).execute()
+                for row in (resp.data or []):
+                    horse_name_map[row['horse_id']] = row.get('horse_name', '')
+            except Exception as e:
+                print(f"  WARNING: could not fetch horse names: {e}")
+        print(f"  Fetched {len(horse_name_map)} horse names")
+
+    # Inject horse_name into each runner
+    for runners in races_data.values():
+        for r in runners:
+            hid = r.get('horse_id')
+            if hid and hid in horse_name_map:
+                r['horse_name'] = horse_name_map[hid]
+
+    # Build synergy matrices from historical results
+    print("\nBuilding Jockey-Horse Synergy matrices...")
+    history = fetch_historical_results(supabase, months=6)
+    jh_combo, jv_stats, jt_combo = build_synergy_matrices(history)
+    synergy = (jh_combo, jv_stats, jt_combo)
+    print(f"  Jockey-Horse combos: {len(jh_combo)}")
+    print(f"  Jockey-Venue stats:  {len(jv_stats)}")
+    print(f"  Jockey-Trainer combos: {len(jt_combo)}")
 
     all_predictions = []
     for race_id, runners in races_data.items():
         distance = race_distances.get(race_id)
-        predictions = analyze_race(runners, distance=distance, pre_race=pre_race)
+        venue = race_venues.get(race_id)
+        predictions = analyze_race(runners, distance=distance, pre_race=pre_race,
+                                   synergy=synergy, venue=venue)
         all_predictions.extend(predictions)
 
     print(f"  Computed predictions for {len(all_predictions)} runners")
