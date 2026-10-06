@@ -45,6 +45,14 @@ export interface RaceRunner {
   season_prize: number | null
   priority: string | null
   gear: string | null
+  trial_count: number | null
+  fast_work_count: number | null
+  swim_count: number | null
+  fitness_score: number | null
+  fitness_label: string | null
+  form_positions: string | null
+  form_avg_finish: number | null
+  form_best_finish: number | null
 }
 
 export interface ModelPrediction {

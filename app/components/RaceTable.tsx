@@ -52,6 +52,7 @@ export function RaceTable({ rows, topPickId, hasPositiveEV = true, onHorseClick 
             <th style={{ textAlign: 'center', width: 48 }}>檔</th>
             <th style={{ textAlign: 'center', width: 56 }}>配備</th>
             <th style={{ textAlign: 'center', width: 48 }}>休養</th>
+            <th style={{ textAlign: 'center', width: 56 }}>體能</th>
             <th style={{ textAlign: 'right', width: 64 }}>賠率</th>
             <th className="th-model" style={{ textAlign: 'right', width: 72 }}>P_model</th>
             <th className="th-market" style={{ textAlign: 'right', width: 72 }}>P_market</th>
@@ -151,6 +152,22 @@ export function RaceTable({ rows, topPickId, hasPositiveEV = true, onHorseClick 
                       fontWeight: row.rest_days >= 60 ? 600 : 400,
                     }}>
                       {row.rest_days}天
+                    </span>
+                  ) : '-'}
+                </td>
+                <td style={{ textAlign: 'center' }} className="tabular-nums">
+                  {row.fitness_label ? (
+                    <span style={{
+                      fontSize: '0.75rem',
+                      padding: '2px 6px',
+                      borderRadius: 4,
+                      fontWeight: (row.fitness_score ?? 0) >= 3 ? 600 : 400,
+                      color: (row.fitness_score ?? 0) >= 4 ? '#10b981' : (row.fitness_score ?? 0) >= 2 ? '#f59e0b' : '#9ca3af',
+                      backgroundColor: (row.fitness_score ?? 0) >= 4 ? '#10b98120' : (row.fitness_score ?? 0) >= 2 ? '#f59e0b20' : '#9ca3af20',
+                      borderColor: (row.fitness_score ?? 0) >= 4 ? '#10b98140' : (row.fitness_score ?? 0) >= 2 ? '#f59e0b40' : '#9ca3af40',
+                      border: '1px solid',
+                    }}>
+                      {row.fitness_label}
                     </span>
                   ) : '-'}
                 </td>

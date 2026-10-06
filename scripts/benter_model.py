@@ -46,6 +46,7 @@ W_SEASON_PRIZE = 0.02  # 本季獎金 (越高越好)
 W_WEIGHT_CARRIED_DIFF = 0.02  # 負磅差異 (越低越佳)
 W_CLASS_STRENGTH = 0.03  # 班次適應 (評分高於班次平均為佳)
 W_WEIGHT_DISTANCE = 0.03  # 體重路程交互 (輕磅跑長途為佳)
+W_FITNESS = 0.02          # 體能評分 (晨操/試閘備戰程度)
 
 # 人馬動態契合權重 (Synergy Multiplier)
 W_JOCKEY_HORSE_COMBO = 0.08   # 人馬合作效益分
@@ -202,6 +203,22 @@ def normalize_features(runners: List[Dict], distance: Optional[int] = None) -> L
     else:
         for r in runners:
             r['class_strength_norm'] = 0.5
+
+    # fitness_score: 體能評分 (0-5, 越高越好) - 來自晨操/試閘數據
+    fs_vals = [r.get('fitness_score') for r in runners
+               if r.get('fitness_score') is not None and r.get('fitness_score') > 0]
+    if fs_vals:
+        fs_min, fs_max = min(fs_vals), max(fs_vals)
+        fs_rng = fs_max - fs_min if fs_max != fs_min else 1.0
+        for r in runners:
+            fs = r.get('fitness_score')
+            if fs is None or fs <= 0:
+                r['fitness_score_norm'] = 0.3
+            else:
+                r['fitness_score_norm'] = max(0.0, min(1.0, (fs - fs_min) / fs_rng))
+    else:
+        for r in runners:
+            r['fitness_score_norm'] = 0.4
 
     # weight_distance: declared_weight × distance interaction → lighter over distance = better
     if distance and distance > 0:
@@ -412,6 +429,7 @@ def compute_raw_score(runner: Dict) -> float:
         W_WEIGHT_CARRIED_DIFF * runner.get('weight_carried_diff_norm', 0.5) +
         W_CLASS_STRENGTH * runner.get('class_strength_norm', 0.5) +
         W_WEIGHT_DISTANCE * runner.get('weight_distance_norm', 0.5) +
+        W_FITNESS       * runner.get('fitness_score_norm', 0.4) +
         0.02            * runner.get('gear_change_norm', 0.5)
     )
 
