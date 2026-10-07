@@ -234,7 +234,7 @@ def analyze_factors(runners: List[Dict], sorted_preds: List[Dict],
     
     # 4. AI prediction accuracy
     top3_preds = sorted_preds[:3]
-    ai_hits = sum(1 for p in top3_preds if runner_map.get(p['runner_id'], {}).get('finish_position', 99) <= 3)
+    ai_hits = sum(1 for p in top3_preds if (runner_map.get(p['runner_id']) or {}).get('finish_position') is not None and (runner_map.get(p['runner_id']) or {}).get('finish_position') <= 3)
     
     if ai_hits >= 2:
         factors['factors'].append({

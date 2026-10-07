@@ -65,27 +65,29 @@ export async function fetchLatestRaces(): Promise<Race[]> {
   }
 
   if (!targetDate) {
-    console.log(`[fetchLatestRaces] No today-races with runners, falling back to most recent`)
-    const { data: latestRaces } = await supabase
+    console.log(`[fetchLatestRaces] No today/future races with runners, looking for most recent past race`)
+    const { data: recentRaces } = await supabase
       .from('races')
-      .select('race_id, race_date, venue')
+      .select('race_id, race_date, venue, is_finished')
+      .lte('race_date', today)
       .order('race_date', { ascending: false })
-      .order('race_no', { ascending: true })
+      .limit(30)
 
-    if (latestRaces && latestRaces.length > 0) {
-      console.log(`[fetchLatestRaces] fallback: ${latestRaces.length} total races, most recent: ${latestRaces[0].race_date} ${latestRaces[0].venue}`)
-      const raceIds = latestRaces.map(r => r.race_id)
-      const { data: existingRunners } = await supabase
-        .from('race_runners')
-        .select('race_id')
-        .in('race_id', raceIds)
-
-      const validRaceIds = new Set(existingRunners?.map(r => r.race_id) ?? [])
-      console.log(`[fetchLatestRaces] fallback runners: ${validRaceIds.size} of ${raceIds.length} races have runners`)
-      for (const race of latestRaces) {
-        if (validRaceIds.has(race.race_id)) {
-          targetDate = race.race_date
-          targetVenue = race.venue
+    if (recentRaces && recentRaces.length > 0) {
+      const uniqueDates = Array.from(new Set(recentRaces.map(r => `${r.race_date}|${r.venue}`)))
+      console.log(`[fetchLatestRaces] checking ${uniqueDates.length} recent date/venue combos`)
+      for (const dv of uniqueDates) {
+        const [d, v] = dv.split('|')
+        const dayRaces = recentRaces.filter(r => r.race_date === d && r.venue === v)
+        const dayRaceIds = dayRaces.map(r => r.race_id)
+        const { data: existingRunners } = await supabase
+          .from('race_runners')
+          .select('race_id')
+          .in('race_id', dayRaceIds)
+        const validIds = new Set(existingRunners?.map(r => r.race_id) ?? [])
+        if (validIds.size > 0) {
+          targetDate = d
+          targetVenue = v
           break
         }
       }
