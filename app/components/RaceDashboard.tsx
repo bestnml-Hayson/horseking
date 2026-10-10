@@ -12,14 +12,18 @@ import { RaceTable } from './RaceTable'
 import { SkeletonTable } from './SkeletonTable'
 import { HorseDetailDrawer } from './HorseDetailDrawer'
 import { DualBettingView } from './DualBettingView'
+import { AllUpCard } from './AllUpCard'
+import type { AllUpResult } from '@/lib/allup-engine'
 
 const REFRESH_INTERVAL = 15000
 
 interface RaceDashboardProps {
   races: Race[]
+  allUpData?: AllUpResult | null
+  allRaceData?: Map<string, RaceRow[]>
 }
 
-export function RaceDashboard({ races }: RaceDashboardProps) {
+export function RaceDashboard({ races, allUpData }: RaceDashboardProps) {
   const [selectedRaceId, setSelectedRaceId] = useState<string | null>(null)
   const [rows, setRows] = useState<RaceRow[]>([])
   const [loading, setLoading] = useState(true)
@@ -249,6 +253,9 @@ export function RaceDashboard({ races }: RaceDashboardProps) {
 
       {/* Section 4b: Dual Betting View (Max Probability + Longshot Overlay) */}
       <DualBettingView rows={rows} onHorseClick={handleHorseClick} />
+
+      {/* Section 4c: All Up Optimization Engine */}
+      {allUpData && <AllUpCard result={allUpData} />}
 
       {/* Section 5: Full Analysis Table */}
       <div className="full-table-section animate-fade-in">

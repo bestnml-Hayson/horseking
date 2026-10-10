@@ -7,18 +7,21 @@ import { TrebleCard } from './components/TrebleCard'
 import { PipelineControl } from './components/PipelineControl'
 import { fetchLatestRaces, fetchAllRaceData } from '@/lib/supabase-client'
 import { generateTreble, type TrebleResult } from '@/lib/treble-engine'
-import type { Race } from '@/lib/types'
+import { generateAllUp, type AllUpResult } from '@/lib/allup-engine'
+import type { Race, RaceRow } from '@/lib/types'
 
 type Tab = 'dashboard' | 'analysis'
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard')
   const [trebleData, setTrebleData] = useState<TrebleResult | null>(null)
+  const [allUpData, setAllUpData] = useState<AllUpResult | null>(null)
+  const [allRaceData, setAllRaceData] = useState<Map<string, RaceRow[]>>(new Map())
   const [races, setRaces] = useState<Race[]>([])
 
   useEffect(() => {
     let cancelled = false
-    async function loadTreble() {
+    async function loadData() {
       try {
         const raceList = await fetchLatestRaces()
         if (cancelled) return
@@ -26,14 +29,18 @@ export default function Home() {
         if (raceList.length < 3) return
         const allData = await fetchAllRaceData(raceList)
         if (cancelled) return
-        const result = generateTreble(allData, raceList)
+        setAllRaceData(allData)
+        const treble = generateTreble(allData, raceList)
         if (cancelled) return
-        setTrebleData(result)
+        setTrebleData(treble)
+        const allUp = generateAllUp(allData, raceList)
+        if (cancelled) return
+        setAllUpData(allUp)
       } catch (e) {
-        console.error('[Home] treble fetch error:', e)
+        console.error('[Home] data fetch error:', e)
       }
     }
-    loadTreble()
+    loadData()
     return () => { cancelled = true }
   }, [])
 
@@ -74,7 +81,7 @@ export default function Home() {
         {trebleData && <TrebleCard treble={trebleData} />}
       </nav>
 
-      {activeTab === 'dashboard' && <RaceDashboard races={races} />}
+      {activeTab === 'dashboard' && <RaceDashboard races={races} allUpData={allUpData} allRaceData={allRaceData} />}
       {activeTab === 'analysis' && <AIPerformance />}
     </main>
   )

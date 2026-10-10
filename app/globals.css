@@ -3502,3 +3502,343 @@ html, body {
   width: 100%;
   text-align: center;
 }
+
+/* ===== All Up Optimization Engine ===== */
+.allup-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary);
+  border-radius: 16px;
+  padding: 20px;
+  margin-top: 24px;
+}
+
+.allup-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.allup-icon {
+  font-size: 28px;
+  filter: drop-shadow(0 0 8px rgba(168, 85, 247, 0.4));
+}
+
+.allup-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.allup-sub {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.allup-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.allup-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border-primary);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.allup-tab:hover {
+  border-color: var(--border-hover);
+  background: var(--bg-hover);
+}
+
+.allup-tab-active {
+  border-color: #a855f7;
+  background: rgba(168, 85, 247, 0.1);
+  color: #c084fc;
+}
+
+.allup-tab-name {
+  white-space: nowrap;
+}
+
+.allup-tab-risk {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 4px;
+  color: #fff;
+  white-space: nowrap;
+}
+
+.allup-strategy {
+  border: 1px solid var(--border-primary);
+  border-radius: 12px;
+  padding: 16px;
+  background: var(--bg-secondary);
+}
+
+.allup-risk-low { border-left: 3px solid #22c55e; }
+.allup-risk-medium { border-left: 3px solid #f59e0b; }
+.allup-risk-high { border-left: 3px solid #ef4444; }
+
+.allup-strat-header {
+  margin-bottom: 14px;
+}
+
+.allup-strat-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.allup-strat-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.allup-risk-badge {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 4px;
+  color: #fff;
+}
+
+.allup-strat-desc {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.allup-bet-type-tag {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 10px;
+  border-radius: 6px;
+  background: rgba(168, 85, 247, 0.12);
+  color: #c084fc;
+  border: 1px solid rgba(168, 85, 247, 0.25);
+}
+
+.allup-legs {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.allup-leg-wrapper {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+}
+
+.allup-cross {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text-muted);
+  padding: 0 10px;
+}
+
+.allup-leg {
+  flex: 1;
+  min-width: 160px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary);
+  border-radius: 10px;
+  padding: 10px;
+}
+
+.allup-leg-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.allup-leg-race {
+  font-size: 13px;
+  font-weight: 800;
+  color: #a855f7;
+}
+
+.allup-leg-type {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--bg-secondary);
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.allup-leg-prob {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent-green);
+  font-variant-numeric: tabular-nums;
+}
+
+.allup-leg-horses {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.allup-horse {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  border-radius: 6px;
+  background: var(--bg-secondary);
+  position: relative;
+}
+
+.allup-horse-fav {
+  border: 1px solid rgba(34, 197, 94, 0.25);
+}
+
+.allup-horse-cold {
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.allup-horse-no {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--accent-amber);
+}
+
+.allup-horse-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  flex: 1;
+  min-width: 60px;
+}
+
+.allup-horse-stats {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.allup-stat {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.allup-stat-label {
+  font-size: 9px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.allup-stat-val {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.allup-odds-high {
+  color: #ef4444;
+}
+
+.allup-ev-pos {
+  color: #22c55e;
+}
+
+.allup-role-tag {
+  font-size: 9px;
+  font-weight: 800;
+  padding: 1px 5px;
+  border-radius: 3px;
+  position: absolute;
+  top: -1px;
+  right: -1px;
+}
+
+.allup-role-fav {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+}
+
+.allup-role-cold {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+.allup-summary {
+  display: flex;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary);
+  border-radius: 10px;
+  flex-wrap: wrap;
+}
+
+.allup-summary-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 70px;
+}
+
+.allup-summary-label {
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.allup-summary-val {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.allup-odds-big {
+  color: #a855f7;
+}
+
+@media (max-width: 768px) {
+  .allup-legs {
+    flex-direction: column;
+  }
+  .allup-cross {
+    padding: 4px 0;
+    font-size: 14px;
+  }
+  .allup-leg-wrapper {
+    flex-direction: column;
+  }
+  .allup-summary {
+    gap: 8px;
+  }
+}
