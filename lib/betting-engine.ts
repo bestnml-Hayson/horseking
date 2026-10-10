@@ -1,8 +1,12 @@
 import type { RaceRow } from './types'
 
-const BANKROLL = 1000
-const UNIT = 10
+export const DEFAULT_BANKROLL = 10000
 const CORRECTION = 1.05
+
+const WIN_EV_THRESHOLD = 0.10
+const WIN_PFINAL_THRESHOLD = 0.05
+const LONGSHOT_ODDS_THRESHOLD = 20.0
+const LONGSHOT_PFINAL_CAP = 0.03
 
 export interface OverlayHorse {
   row: RaceRow
@@ -19,13 +23,15 @@ export interface WinBet {
   row: RaceRow
   ev: number
   kelly: number
-  units: number
+  amount: number
   betType: 'WIN' | 'PLACE'
+  kellyPct: number
 }
 
 export interface QLeg {
   row: RaceRow
   pPair: number
+  role: 'anchor' | 'leg'
 }
 
 export interface QCombination {
@@ -55,6 +61,12 @@ export interface QuartetCombination {
   estimatedOdds: number
 }
 
+export interface TieredAllocation {
+  core: { bets: WinBet[]; qCombos: QCombination[]; amount: number }
+  value: { qCombos: QCombination[]; amount: number }
+  longshot: { darkHorses: DarkHorse[]; trio: TrioCombination | null; quartet: QuartetCombination | null; amount: number }
+}
+
 export interface BettingEngineResult {
   overlays: OverlayHorse[]
   underlays: UnderlayHorse[]
@@ -65,6 +77,10 @@ export interface BettingEngineResult {
   trio: TrioCombination | null
   quartet: QuartetCombination | null
   totalRecommendedBet: number
+  bankroll: number
+  totalPct: number
+  expectedEV: number
+  allocation: TieredAllocation
 }
 
 function getPModel(row: RaceRow): number {
@@ -85,6 +101,16 @@ function getEV(row: RaceRow): number {
 
 function getKelly(row: RaceRow): number {
   return row.prediction?.kelly_fraction ?? 0
+}
+
+function isUnderlay(row: RaceRow, underlayIds: Set<string>): boolean {
+  return underlayIds.has(row.runner_id)
+}
+
+function isLongshot(row: RaceRow): boolean {
+  const odds = row.win_odds ?? 0
+  const pFinal = getPFinal(row)
+  return odds > LONGSHOT_ODDS_THRESHOLD && pFinal < LONGSHOT_PFINAL_CAP
 }
 
 export function identifyOverlays(rows: RaceRow[]): OverlayHorse[] {
@@ -119,71 +145,98 @@ export function identifyUnderlays(rows: RaceRow[]): UnderlayHorse[] {
     .sort((a, b) => b.ratio - a.ratio)
 }
 
-export function getWinRecommendations(rows: RaceRow[]): { bets: WinBet[]; hasValue: boolean } {
+export function getWinRecommendations(rows: RaceRow[], bankroll: number): { bets: WinBet[]; hasValue: boolean } {
+  const underlays = identifyUnderlays(rows)
+  const underlayIds = new Set(underlays.map(u => u.row.runner_id))
+
   const candidates = rows
     .filter(r => {
       const ev = getEV(r)
       const kelly = getKelly(r)
-      return ev > 0.05 && kelly > 0
+      const pFinal = getPFinal(r)
+      if (ev <= 0 || kelly <= 0) return false
+      if (isUnderlay(r, underlayIds)) return false
+      if (isLongshot(r)) return false
+      return true
     })
-    .map((row): WinBet => {
+    .map((row): WinBet | null => {
       const ev = getEV(row)
       const kelly = getKelly(row)
-      const units = Math.max(1, Math.round(kelly * BANKROLL / UNIT))
-      const betType: 'WIN' | 'PLACE' = ev > 0.10 ? 'WIN' : 'PLACE'
-      return { row, ev, kelly, units, betType }
+      const pFinal = getPFinal(row)
+
+      if (ev > WIN_EV_THRESHOLD && pFinal >= WIN_PFINAL_THRESHOLD) {
+        const amount = Math.round(kelly * bankroll)
+        const kellyPct = (kelly * 100)
+        return { row, ev, kelly, amount, betType: 'WIN', kellyPct }
+      }
+
+      if (pFinal >= WIN_PFINAL_THRESHOLD * 0.6) {
+        const placeKelly = kelly * 0.5
+        const amount = Math.max(10, Math.round(placeKelly * bankroll))
+        const kellyPct = (placeKelly * 100)
+        return { row, ev, kelly: placeKelly, amount, betType: 'PLACE', kellyPct }
+      }
+
+      return null
     })
+    .filter((x): x is WinBet => x !== null)
     .sort((a, b) => b.ev - a.ev)
 
   return {
-    bets: candidates.slice(0, 3),
+    bets: candidates.slice(0, 4),
     hasValue: candidates.length > 0,
   }
 }
 
-export function getQCombinations(rows: RaceRow[]): QCombination[] {
-  const overlays = identifyOverlays(rows)
+export function getQCombinations(rows: RaceRow[], bankroll: number): QCombination[] {
   const underlays = identifyUnderlays(rows)
   const underlayIds = new Set(underlays.map(u => u.row.runner_id))
+  const overlays = identifyOverlays(rows)
+  const overlayIds = new Set(overlays.map(o => o.row.runner_id))
 
   const sorted = [...rows]
-    .filter(r => getPFinal(r) > 0)
+    .filter(r => getPFinal(r) > 0 && !isUnderlay(r, underlayIds))
     .sort((a, b) => getPFinal(b) - getPFinal(a))
 
   if (sorted.length < 2) return []
 
-  const positiveEV = sorted.filter(r => getEV(r) > 0 && !underlayIds.has(r.runner_id))
-  const candidates = positiveEV.length > 0
-    ? [...positiveEV].sort((a, b) => getPModel(b) - getPModel(a))
-    : sorted.filter(r => !underlayIds.has(r.runner_id))
-
-  const anchor = candidates[0] ?? sorted[0]
-  const overlayIds = new Set(overlays.map(o => o.row.runner_id))
-  const nonAnchor = sorted.filter(r => r.runner_id !== anchor.runner_id)
-
-  const coldLegs = nonAnchor
-    .filter(r => overlayIds.has(r.runner_id))
+  const top2 = sorted.slice(0, 2)
+  const valueLegs = sorted
+    .filter(r => getEV(r) > 0 && !top2.includes(r))
     .slice(0, 3)
 
-  const fallbackLegs = nonAnchor.slice(0, 3)
-  const legs = coldLegs.length >= 2 ? coldLegs : fallbackLegs
+  const combos: QCombination[] = []
 
-  const anchorPFinal = getPFinal(anchor)
+  for (const anchor of top2) {
+    const legs: QLeg[] = []
 
-  const qLegs: QLeg[] = legs.map(leg => {
-    const legPFinal = getPFinal(leg)
-    const pPair = anchorPFinal * legPFinal * CORRECTION
-    return { row: leg, pPair }
-  })
+    for (const leg of valueLegs) {
+      const legPFinal = getPFinal(leg)
+      const pPair = getPFinal(anchor) * legPFinal * CORRECTION
+      legs.push({ row: leg, pPair, role: 'leg' })
+    }
 
-  const totalCost = qLegs.length * UNIT
+    if (legs.length === 0) {
+      const fallback = sorted.filter(r => r.runner_id !== anchor.runner_id).slice(0, 2)
+      for (const leg of fallback) {
+        const legPFinal = getPFinal(leg)
+        const pPair = getPFinal(anchor) * legPFinal * CORRECTION
+        legs.push({ row: leg, pPair, role: 'leg' })
+      }
+    }
 
-  return [{
-    anchor,
-    legs: qLegs,
-    totalCost,
-    anchorEV: getEV(anchor),
-  }]
+    const costPerLeg = Math.max(10, Math.round(0.005 * bankroll / Math.max(1, legs.length)))
+    const totalCost = legs.length * costPerLeg
+
+    combos.push({
+      anchor,
+      legs,
+      totalCost,
+      anchorEV: getEV(anchor),
+    })
+  }
+
+  return combos
 }
 
 export function identifyDarkHorses(rows: RaceRow[]): DarkHorse[] {
@@ -233,19 +286,47 @@ export function getQuartetCombination(rows: RaceRow[]): QuartetCombination | nul
   return { horses: top4, pQuartet, estimatedOdds }
 }
 
-export function runBettingEngine(rows: RaceRow[]): BettingEngineResult {
+export function runBettingEngine(rows: RaceRow[], bankroll: number = DEFAULT_BANKROLL): BettingEngineResult {
   const overlays = identifyOverlays(rows)
   const underlays = identifyUnderlays(rows)
-  const { bets: winBets, hasValue: winPoolValue } = getWinRecommendations(rows)
-  const qCombos = getQCombinations(rows)
+  const { bets: winBets, hasValue: winPoolValue } = getWinRecommendations(rows, bankroll)
+  const qCombos = getQCombinations(rows, bankroll)
   const darkHorses = identifyDarkHorses(rows)
   const trio = getTrioCombination(rows)
   const quartet = getQuartetCombination(rows)
 
-  const totalBet = winBets.reduce((s, b) => s + b.units * UNIT, 0) +
-    qCombos.reduce((s, q) => s + q.totalCost, 0) +
-    (trio ? UNIT : 0) +
-    (quartet ? UNIT * 4 : 0)
+  const coreAmount = Math.round(bankroll * 0.60)
+  const valueAmount = Math.round(bankroll * 0.30)
+  const longshotAmount = Math.round(bankroll * 0.10)
+
+  const coreBets = winBets.filter(b => b.betType === 'WIN').slice(0, 2)
+  const coreQ = qCombos.slice(0, 1)
+  const coreActual = coreBets.reduce((s, b) => s + b.amount, 0) + coreQ.reduce((s, q) => s + q.totalCost, 0)
+
+  const valueBets = winBets.filter(b => b.betType === 'PLACE')
+  const valueQ = qCombos.slice(1)
+  const valueActual = valueBets.reduce((s, b) => s + b.amount, 0) + valueQ.reduce((s, q) => s + q.totalCost, 0)
+
+  const longshotActual = (trio ? 10 : 0) + (quartet ? 40 : 0) + darkHorses.length * 10
+
+  const totalBet = coreActual + valueActual + longshotActual
+  const totalPct = bankroll > 0 ? (totalBet / bankroll) * 100 : 0
+
+  const allBetsEV = [
+    ...winBets.map(b => b.row),
+    ...qCombos.flatMap(q => [q.anchor, ...q.legs.map(l => l.row)]),
+  ]
+    .map(r => getEV(r))
+    .filter(ev => ev > 0)
+  const expectedEV = allBetsEV.length > 0
+    ? allBetsEV.reduce((s, ev) => s + ev, 0) / allBetsEV.length
+    : 0
+
+  const allocation: TieredAllocation = {
+    core: { bets: coreBets, qCombos: coreQ, amount: Math.min(coreActual, coreAmount) },
+    value: { qCombos: valueQ, amount: Math.min(valueActual, valueAmount) },
+    longshot: { darkHorses, trio, quartet, amount: Math.min(longshotActual, longshotAmount) },
+  }
 
   return {
     overlays,
@@ -257,5 +338,9 @@ export function runBettingEngine(rows: RaceRow[]): BettingEngineResult {
     trio,
     quartet,
     totalRecommendedBet: totalBet,
+    bankroll,
+    totalPct,
+    expectedEV,
+    allocation,
   }
 }
