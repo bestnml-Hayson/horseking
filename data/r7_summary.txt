@@ -1,0 +1,19 @@
+R7
+TOP5 P_model:
+  #5 步風影 J=何澤堯 odds=12.0 P_model=0.0897 P_final=0.0786 EV=-0.0563 fit=極高
+  #3 活力精神 J=梁家俊 odds=2.5 P_model=0.0883 P_final=0.2064 EV=-0.4841 fit=高
+  #14 開心五月 J=周俊樂 odds=6.7 P_model=0.0803 P_final=0.1007 EV=-0.3256 fit=高
+  #6 領駿先鋒 J=潘頓 odds=8.3 P_model=0.0775 P_final=0.0876 EV=-0.2726 fit=極高
+  #9 震撼人心 J=艾兆禮 odds=8.6 P_model=0.0752 P_final=0.0848 EV=-0.2711 fit=極高
+OVERLAYS:
+  #13 君至酷 odds=75.0 P_model=0.0584 P_market=0.0108 ratio=5.40x
+  #12 熒光 odds=59.0 P_model=0.0660 P_market=0.0138 ratio=4.80x
+  #2 渡月橋 odds=32.0 P_model=0.0710 P_market=0.0254 ratio=2.80x
+  #11 共同享樂 odds=34.0 P_model=0.0660 P_market=0.0239 ratio=2.77x
+  #7 騰達勇士 odds=34.0 P_model=0.0625 P_market=0.0239 ratio=2.62x
+VALUE BETS (EV>0.05):
+  #13 君至酷 EV=+1.5971 Kelly=0.0054 odds=75.0
+  #12 熒光 EV=+1.3520 Kelly=0.0058 odds=59.0
+  #2 渡月橋 EV=+0.5417 Kelly=0.0044 odds=32.0
+  #11 共同享樂 EV=+0.5278 Kelly=0.0040 odds=34.0
+  #7 騰達勇士 EV=+0.4689 Kelly=0.0036 odds=34.0

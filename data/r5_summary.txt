@@ -1,0 +1,16 @@
+R5
+TOP5 P_model:
+  #2 文明戰士 J=潘頓 odds=2.8 P_model=0.1030 P_final=0.1966 EV=-0.4494 fit=極高 form=1,2
+  #4 怡傲錢莊 J=周俊樂 odds=14.0 P_model=0.1019 P_final=0.0800 EV=+0.1195 fit=高
+  #6 穿甲戰鷹 J=梁家俊 odds=10.0 P_model=0.0926 P_final=0.0869 EV=-0.1308 fit=中高
+  #1 起舞奜奜 J=霍宏聲 odds=14.0 P_model=0.0902 P_final=0.0741 EV=+0.0380 fit=極高 form=2,1
+  #8 日馳千里 J=袁幸堯 odds=12.0 P_model=0.0900 P_final=0.0789 EV=-0.0535 fit=高
+OVERLAYS:
+  #12 魅力星 odds=25.0 P_model=0.0755 P_market=0.0325 ratio=2.32x
+  #4 怡傲錢莊 odds=14.0 P_model=0.1019 P_market=0.0581 ratio=1.75x
+  #1 起舞奜奜 odds=14.0 P_model=0.0902 P_market=0.0581 ratio=1.55x
+  #5 智勝一籌 odds=17.0 P_model=0.0728 P_market=0.0478 ratio=1.52x
+  #3 棒棒糖 odds=14.0 P_model=0.0801 P_market=0.0581 ratio=1.38x
+VALUE BETS (EV>0.05):
+  #12 魅力星 EV=+0.3495 Kelly=0.0036 odds=25.0
+  #4 怡傲錢莊 EV=+0.1195 Kelly=0.0023 odds=14.0

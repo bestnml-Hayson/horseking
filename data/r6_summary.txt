@@ -1,0 +1,18 @@
+R6
+TOP5 P_model:
+  #2 創寶駒 J=潘頓 odds=5.0 P_model=0.1021 P_final=0.1326 EV=-0.3371 fit=極高
+  #6 電訊日進 J=奧爾民 odds=25.0 P_model=0.0900 P_final=0.0613 EV=+0.5326 fit=極高
+  #4 錶之光速 J=艾兆禮 odds=14.0 P_model=0.0865 P_final=0.0724 EV=+0.0132 fit=極高
+  #5 睿麗人生 J=希威森 odds=25.0 P_model=0.0862 P_final=0.0594 EV=+0.4848 fit=極高
+  #1 勝於藍 J=艾道拿 odds=25.0 P_model=0.0842 P_final=0.0584 EV=+0.4595 fit=極高
+OVERLAYS:
+  #6 電訊日進 odds=25.0 P_model=0.0900 P_market=0.0326 ratio=2.76x
+  #5 睿麗人生 odds=25.0 P_model=0.0862 P_market=0.0326 ratio=2.64x
+  #1 勝於藍 odds=25.0 P_model=0.0842 P_market=0.0326 ratio=2.58x
+  #11 猶有心得 odds=26.0 P_model=0.0642 P_market=0.0314 ratio=2.05x
+  #4 錶之光速 odds=14.0 P_model=0.0865 P_market=0.0582 ratio=1.49x
+VALUE BETS (EV>0.05):
+  #6 電訊日進 EV=+0.5326 Kelly=0.0055 odds=25.0
+  #5 睿麗人生 EV=+0.4848 Kelly=0.0051 odds=25.0
+  #1 勝於藍 EV=+0.4595 Kelly=0.0048 odds=25.0
+  #11 猶有心得 EV=+0.2423 Kelly=0.0024 odds=26.0
