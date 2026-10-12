@@ -239,6 +239,17 @@ export function RaceDashboard({ races, allUpData }: RaceDashboardProps) {
         </div>
       )}
 
+      {/* Stage Indicator Banner */}
+      {rows.length > 0 && (
+        <div className={`stage-banner ${oddsAllReady ? 'stage-2' : 'stage-1'}`}>
+          {oddsAllReady ? (
+            <span><strong>Stage 2 — 賠率融合模式</strong> &nbsp;|&nbsp; 即時賠率已注入，P_final = 50% P_model + 50% P_market，EV 與 Kelly 注碼已解鎖</span>
+          ) : (
+            <span><strong>Stage 1 — 純實力預測模式</strong> &nbsp;|&nbsp; 待賽日賠率開出並注入後，即自動解鎖市場期望值 (EV) 與 Kelly 注碼。當前 P_final = P_model</span>
+          )}
+        </div>
+      )}
+
       {/* Section 1: Pacing Briefing */}
       <PacingBriefing race={selectedRace} rows={rows} />
 
@@ -264,7 +275,10 @@ export function RaceDashboard({ races, allUpData }: RaceDashboardProps) {
             &#x1F4CA; 全馬匹 Benter 模型精算數據
           </span>
           <span className="full-table-sub">
-            P_model (模型評分) × P_market (市場賠率) → P_final (50% 線性融合) · Sorted by P_final
+            {oddsAllReady
+              ? 'P_model (模型評分) × P_market (市場賠率) → P_final (50% 線性融合) · Sorted by P_final'
+              : 'P_model (純實力評分) · P_final = P_model（賠率尚未開出）· Sorted by P_model'
+            }
           </span>
         </div>
         <div className="full-table-body">

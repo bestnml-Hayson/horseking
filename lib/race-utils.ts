@@ -64,17 +64,29 @@ export function computeClientPredictions(rows: RaceRow[]): RaceRow[] {
 
   const oddsList = rows.map(r => r.win_odds)
   const hasValidOdds = oddsList.some(o => o != null && o > 1)
-  const pMarkets = hasValidOdds
-    ? softmax(oddsList.map(o => (o != null && o > 1) ? 1 / o : 0))
-    : rows.map(() => 1 / rows.length)
 
   return rows.map((row, i) => {
     const pModel = pModels[i]
-    const pMarket = pMarkets[i]
+
+    if (!hasValidOdds) {
+      const prediction: ModelPrediction = {
+        prediction_id: `client-${row.runner_id}`,
+        race_id: row.race_id,
+        runner_id: row.runner_id,
+        raw_model_prob: Math.round(pModel * 10000) / 10000,
+        market_implied_prob: null,
+        final_prob: Math.round(pModel * 10000) / 10000,
+        expected_value: null,
+        kelly_fraction: null,
+      }
+      return { ...row, prediction }
+    }
+
+    const pMarket = softmax(oddsList.map(o => (o != null && o > 1) ? 1 / o : 0))[i]
     const pFinal = MODEL_WEIGHT * pModel + MARKET_WEIGHT * pMarket
     const odds = row.win_odds
-    const ev = (odds != null && odds > 1) ? pFinal * odds - 1 : 0
-    const fullKelly = (odds != null && odds > 1 && ev > 0) ? ev / (odds - 1) : 0
+    const ev = (odds != null && odds > 1) ? pFinal * odds - 1 : null
+    const fullKelly = (odds != null && odds > 1 && ev != null && ev > 0) ? ev / (odds - 1) : 0
     const kelly = Math.max(0, fullKelly * FRACTIONAL_KELLY)
 
     const prediction: ModelPrediction = {
@@ -84,7 +96,7 @@ export function computeClientPredictions(rows: RaceRow[]): RaceRow[] {
       raw_model_prob: Math.round(pModel * 10000) / 10000,
       market_implied_prob: Math.round(pMarket * 10000) / 10000,
       final_prob: Math.max(0, Math.min(1, Math.round(pFinal * 10000) / 10000)),
-      expected_value: Math.round(ev * 10000) / 10000,
+      expected_value: ev != null ? Math.round(ev * 10000) / 10000 : null,
       kelly_fraction: Math.round(kelly * 100000) / 100000,
     }
 
@@ -100,11 +112,33 @@ export function computeClientPredictions(rows: RaceRow[]): RaceRow[] {
 export function recomputePFusion(rows: RaceRow[]): RaceRow[] {
   return rows.map(row => {
     const pModel = row.prediction?.raw_model_prob ?? 0
-    const pMarket = row.prediction?.market_implied_prob ?? 0
-    const pFinal = MODEL_WEIGHT * pModel + MARKET_WEIGHT * pMarket
+    const pMarket = row.prediction?.market_implied_prob ?? null
     const odds = row.win_odds
-    const ev = (odds != null && odds > 1) ? pFinal * odds - 1 : 0
-    const fullKelly = (odds != null && odds > 1 && ev > 0) ? ev / (odds - 1) : 0
+    const hasOdds = odds != null && odds > 1
+
+    if (pMarket == null || !hasOdds) {
+      const prediction: ModelPrediction = {
+        ...(row.prediction ?? {
+          prediction_id: `client-${row.runner_id}`,
+          race_id: row.race_id,
+          runner_id: row.runner_id,
+          raw_model_prob: pModel,
+          market_implied_prob: null,
+          final_prob: pModel,
+          expected_value: null,
+          kelly_fraction: null,
+        }),
+        market_implied_prob: null,
+        final_prob: Math.round(pModel * 10000) / 10000,
+        expected_value: null,
+        kelly_fraction: null,
+      }
+      return { ...row, prediction }
+    }
+
+    const pFinal = MODEL_WEIGHT * pModel + MARKET_WEIGHT * pMarket
+    const ev = pFinal * odds! - 1
+    const fullKelly = ev > 0 ? ev / (odds! - 1) : 0
     const kelly = Math.max(0, fullKelly * FRACTIONAL_KELLY)
 
     const prediction: ModelPrediction = {

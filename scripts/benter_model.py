@@ -491,8 +491,7 @@ def market_implied_probabilities(odds: List[float]) -> List[float]:
 
     total = sum(reciprocals)
     if total == 0:
-        n = len(odds)
-        return [1.0 / n] * n
+        return [None] * len(odds)
 
     return [r / total for r in reciprocals]
 
@@ -580,7 +579,7 @@ def analyze_race(runners: List[Dict], distance: Optional[int] = None,
                 'horse_id': r.get('horse_id'),
                 'raw_model_prob': round(p_model, 5),
                 'market_implied_prob': None,
-                'final_prob': None,
+                'final_prob': round(p_model, 5),
                 'expected_value': None,
                 'kelly_fraction': None,
                 'is_value_bet': False,
@@ -590,6 +589,28 @@ def analyze_race(runners: List[Dict], distance: Optional[int] = None,
         return results
 
     odds_list = [r.get('win_odds') for r in runners]
+    has_any_valid_odds = any(o is not None and o > 1.0 for o in odds_list)
+
+    if not has_any_valid_odds:
+        results = []
+        for i, r in enumerate(runners):
+            p_model = p_models[i]
+            results.append({
+                'runner_id': r.get('runner_id'),
+                'race_id': r.get('race_id'),
+                'horse_no': r.get('horse_no'),
+                'horse_id': r.get('horse_id'),
+                'raw_model_prob': round(p_model, 5),
+                'market_implied_prob': None,
+                'final_prob': round(p_model, 5),
+                'expected_value': None,
+                'kelly_fraction': None,
+                'is_value_bet': False,
+                'win_odds': r.get('win_odds'),
+            })
+        results.sort(key=lambda x: x['raw_model_prob'], reverse=True)
+        return results
+
     p_markets = market_implied_probabilities(odds_list)
 
     results = []

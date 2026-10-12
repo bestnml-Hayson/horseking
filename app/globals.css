@@ -235,6 +235,28 @@ html, body {
   font-size: 13px;
 }
 
+/* ===== Stage Indicator Banner ===== */
+.stage-banner {
+  padding: 12px 20px;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  margin-bottom: 4px;
+}
+.stage-banner strong {
+  font-size: 14px;
+}
+.stage-1 {
+  background: rgba(210, 153, 34, 0.08);
+  border: 1px solid rgba(210, 153, 34, 0.2);
+  color: var(--accent-amber);
+}
+.stage-2 {
+  background: rgba(63, 185, 80, 0.08);
+  border: 1px solid rgba(63, 185, 80, 0.2);
+  color: #3fb950;
+}
+
 /* ===== Pacing Briefing ===== */
 .pacing-briefing {
   background: linear-gradient(135deg, var(--bg-card), var(--bg-elevated));
