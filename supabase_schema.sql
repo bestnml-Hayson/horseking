@@ -94,12 +94,23 @@ CREATE INDEX IF NOT EXISTS idx_predictions_runner ON model_predictions (runner_i
 CREATE INDEX IF NOT EXISTS idx_predictions_ev ON model_predictions (expected_value DESC);
 
 -- =====================================================================
+-- Pipeline Status (Auto-Pilot 巡檢狀態)
+-- =====================================================================
+CREATE TABLE IF NOT EXISTS pipeline_status (
+  id TEXT PRIMARY KEY DEFAULT 'auto_pilot_latest',
+  last_run TIMESTAMPTZ NOT NULL DEFAULT now(),
+  status_json JSONB NOT NULL DEFAULT '{}'::jsonb,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- =====================================================================
 -- Row Level Security (RLS)：公開唯讀
 -- =====================================================================
 ALTER TABLE races ENABLE ROW LEVEL SECURITY;
 ALTER TABLE horses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE race_runners ENABLE ROW LEVEL SECURITY;
 ALTER TABLE model_predictions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE pipeline_status ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "races_select_anon" ON races;
 CREATE POLICY "races_select_anon" ON races FOR SELECT USING (true);
@@ -112,6 +123,9 @@ CREATE POLICY "race_runners_select_anon" ON race_runners FOR SELECT USING (true)
 
 DROP POLICY IF EXISTS "model_predictions_select_anon" ON model_predictions;
 CREATE POLICY "model_predictions_select_anon" ON model_predictions FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "pipeline_status_select_anon" ON pipeline_status;
+CREATE POLICY "pipeline_status_select_anon" ON pipeline_status FOR SELECT USING (true);
 
 -- =====================================================================
 -- 輔助 View：查詢最新一場賽事及其出賽馬匹

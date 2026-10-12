@@ -1,0 +1,84 @@
+name: Auto-Pilot Pipeline
+
+on:
+  schedule:
+    # Run at 06:00 HKT (22:00 UTC prev day) and 16:00 HKT (08:00 UTC)
+    # Morning: discover upcoming races + archive yesterday's results
+    # Afternoon: last-check before race day odds injection
+    - cron: '0 22 * * *'   # 06:00 HKT
+    - cron: '0 8 * * *'    # 16:00 HKT
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Mode: full, discover-only, archive-only'
+        required: false
+        default: 'full'
+        type: choice
+        options:
+          - full
+          - discover-only
+          - archive-only
+      dry_run:
+        description: 'Dry run (no writes)'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: auto-pilot
+  cancel-in-progress: true
+
+env:
+  SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+  SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+
+jobs:
+  auto-pilot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install --quiet --upgrade pip
+          pip install --quiet -r requirements.txt
+          playwright install --with-deps chromium
+          python -c "from playwright.sync_api import sync_playwright; from supabase import create_client; print('[OK] deps loaded')"
+
+      - name: Run Auto-Pilot Pipeline
+        run: |
+          echo "=== [AutoPilot] $(date -u '+%Y-%m-%d %H:%M:%S UTC') ==="
+
+          MODE="${{ github.event.inputs.mode || 'full' }}"
+          DRY_RUN="${{ github.event.inputs.dry_run || 'false' }}"
+
+          ARGS=""
+          [ "$MODE" = "discover-only" ] && ARGS="$ARGS --discover-only"
+          [ "$MODE" = "archive-only" ] && ARGS="$ARGS --archive-only"
+          [ "$DRY_RUN" = "true" ] && ARGS="$ARGS --dry-run"
+
+          python scripts/auto_pilot.py $ARGS
+          echo "=== [AutoPilot] Done ==="
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Auto-Pilot Pipeline Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- Trigger: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Mode: ${{ github.event.inputs.mode || 'full (scheduled)' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Time: $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
+          echo "- Status: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY

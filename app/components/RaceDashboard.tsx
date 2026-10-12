@@ -13,6 +13,7 @@ import { SkeletonTable } from './SkeletonTable'
 import { HorseDetailDrawer } from './HorseDetailDrawer'
 import { DualBettingView } from './DualBettingView'
 import { AllUpCard } from './AllUpCard'
+import { AutoPilotStatus } from './AutoPilotStatus'
 import type { AllUpResult } from '@/lib/allup-engine'
 
 const REFRESH_INTERVAL = 15000
@@ -189,6 +190,9 @@ export function RaceDashboard({ races, allUpData }: RaceDashboardProps) {
           )}
         </div>
       </div>
+
+      {/* Auto-Pilot Status Indicator */}
+      <AutoPilotStatus />
 
       {/* Race Info Bar */}
       {selectedRace && (
