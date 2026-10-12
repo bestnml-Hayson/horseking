@@ -6,20 +6,12 @@ export { getFormColor }
 const MODEL_WEIGHT = 0.5
 const MARKET_WEIGHT = 0.5
 const FRACTIONAL_KELLY = 0.25
-const W_FORM = 0.30
-const W_RATING = 0.20
-const W_JOCKEY = 0.20
-const W_TRAINER = 0.15
-const W_DRAW = 0.15
 
-function normalize(arr: (number | null | undefined)[]): number[] {
-  const vals = arr.filter((v): v is number => v != null)
-  if (vals.length === 0) return arr.map(() => 0.5)
-  const mn = Math.min(...vals)
-  const mx = Math.max(...vals)
-  const rng = mx !== mn ? mx - mn : 1
-  return arr.map(v => v != null ? (v - mn) / rng : 0.5)
-}
+// Unified 4-component weights (match computeBenterBreakdown exactly)
+const W_FORM = 0.30
+const W_DRAW = 0.15
+const W_JT = 0.35
+const W_COURSE = 0.20
 
 function softmax(scores: number[]): number[] {
   if (scores.length === 0) return []
@@ -29,38 +21,54 @@ function softmax(scores: number[]): number[] {
   return total === 0 ? scores.map(() => 1 / scores.length) : exps.map(e => e / total)
 }
 
-function parseFormForScore(form: string | null | undefined): number {
-  if (!form) return 10
-  const positions = form.split(/[-/\s,]+/).map(s => parseInt(s.trim())).filter(n => !isNaN(n) && n > 0)
-  if (positions.length === 0) return 10
-  return positions.slice(0, 6).reduce((s, p) => s + p, 0) / positions.length
+/**
+ * Compute the unified 4-component total score (0-100) for a single horse.
+ * Matches computeBenterBreakdown exactly:
+ *   Score = Form×0.30 + Draw×0.15 + JT×0.35 + Course×0.20
+ */
+function computeTotalScore(row: RaceRow, totalRunners: number): number {
+  const form = parseFormHistory(row.form_history)
+  const draw = row.draw
+  const jockeyWr = row.jockey_win_rate ?? 0.1
+  const trainerWr = row.trainer_win_rate ?? 0.1
+  const weight = row.actual_weight
+
+  // Form score (0-100): lower avg finish → higher score
+  const formAvg = form.length > 0 ? form.reduce((s, p) => s + p, 0) / form.length : 10
+  const formScore = Math.max(0, Math.min(100, (1 - (formAvg - 1) / 13) * 100))
+
+  // Draw score (0-100): inner draw → higher score
+  const drawMax = Math.max(14, totalRunners)
+  const drawScore = draw != null
+    ? Math.max(0, Math.min(100, (1 - (draw - 1) / drawMax) * 100))
+    : 50
+
+  // Jockey/Trainer score (0-100): 60% jockey + 40% trainer
+  const jockeyScore = Math.max(0, Math.min(100, jockeyWr * 500))
+  const trainerScore = Math.max(0, Math.min(100, trainerWr * 500))
+  const jtScore = jockeyScore * 0.6 + trainerScore * 0.4
+
+  // Course/Distance score (0-100): based on weight
+  let cdScore = 60
+  if (weight != null) {
+    if (weight <= 118) cdScore += 20
+    else if (weight <= 124) cdScore += 10
+    else if (weight >= 132) cdScore -= 15
+    else if (weight >= 128) cdScore -= 5
+  }
+  cdScore = Math.max(0, Math.min(100, cdScore))
+
+  return formScore * W_FORM + drawScore * W_DRAW + jtScore * W_JT + cdScore * W_COURSE
 }
 
 export function computeClientPredictions(rows: RaceRow[]): RaceRow[] {
   if (rows.length === 0) return rows
 
-  const formScores = rows.map(r => parseFormForScore(r.form_history))
-  const ratings = rows.map(r => r.official_rating)
-  const jockeyWrs = rows.map(r => r.jockey_win_rate)
-  const trainerWrs = rows.map(r => r.trainer_win_rate)
-  const draws = rows.map(r => r.draw)
+  // Compute unified total score for each horse (same as drawer breakdown)
+  const totalScores = rows.map(r => computeTotalScore(r, rows.length))
 
-  const nForm = normalize(formScores.map(f => 1 / f))
-  const nRating = normalize(ratings)
-  const nJockey = normalize(jockeyWrs)
-  const nTrainer = normalize(trainerWrs)
-
-  const nDraws = draws.map(d => {
-    if (d == null) return 0.5
-    const mid = (rows.length + 1) / 2
-    return Math.max(0, Math.min(1, 1 - Math.abs(d - mid) / mid))
-  })
-
-  const rawScores = rows.map((_, i) =>
-    W_FORM * nForm[i] + W_RATING * nRating[i] + W_JOCKEY * nJockey[i] +
-    W_TRAINER * nTrainer[i] + W_DRAW * nDraws[i]
-  )
-  const pModels = softmax(rawScores)
+  // P_MODEL = softmax of total scores
+  const pModels = softmax(totalScores)
 
   const oddsList = rows.map(r => r.win_odds)
   const hasValidOdds = oddsList.some(o => o != null && o > 1)
@@ -796,6 +804,7 @@ export function computeBenterBreakdown(row: RaceRow): BenterBreakdown {
   const weight = row.actual_weight
   const pFinal = row.prediction?.final_prob
 
+  // Use the same sub-score formulas as computeTotalScore
   const formAvg = form.length > 0 ? form.reduce((s, p) => s + p, 0) / form.length : 10
   const formScore = Math.max(0, Math.min(100, Math.round((1 - (formAvg - 1) / 13) * 100)))
 
