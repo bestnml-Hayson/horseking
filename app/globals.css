@@ -4278,3 +4278,305 @@ html, body {
     gap: 8px;
   }
 }
+
+/* ===== Optimal Bet Strategy (Multi-Pool Engine) ===== */
+.optimal-bet-strategy {
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary);
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 24px;
+  animation: fade-in 0.4s ease-out;
+}
+
+.obs-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.obs-badge {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.obs-sublabel {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.obs-loading, .obs-empty {
+  text-align: center;
+  padding: 24px;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+/* Tabs */
+.obs-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--border-secondary);
+  padding-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.obs-tab {
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--border-secondary);
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.obs-tab:hover:not(:disabled) {
+  background: var(--bg-card-hover);
+  color: var(--text-primary);
+}
+
+.obs-tab.active {
+  background: var(--accent-blue);
+  color: white;
+  border-color: var(--accent-blue);
+}
+
+.obs-tab:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Strategy Cards */
+.obs-strategy-card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-primary);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.obs-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.obs-strategy-type {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.obs-pool-badge {
+  padding: 4px 12px;
+  border-radius: 6px;
+  background: var(--accent-blue);
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.obs-pool-badge.high-reward {
+  background: var(--accent-purple);
+}
+
+.obs-pool-badge.allup {
+  background: var(--accent-green);
+}
+
+/* Metrics */
+.obs-metric-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.obs-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.obs-metric-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.obs-metric-value {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.obs-metric-value.positive {
+  color: var(--accent-green);
+}
+
+.obs-metric-value.high-odds {
+  color: var(--accent-purple);
+}
+
+/* Horses */
+.obs-horses {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.obs-horse {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-secondary);
+  border-radius: 8px;
+}
+
+.obs-horse-role {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent-amber);
+  text-transform: uppercase;
+}
+
+.obs-horse-no {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--accent-blue);
+}
+
+.obs-horse-name {
+  font-size: 13px;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.obs-recommendation {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-style: italic;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-secondary);
+}
+
+/* All-Up Legs */
+.obs-allup-legs {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.obs-allup-leg {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-secondary);
+  border-radius: 8px;
+}
+
+.obs-leg-race {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent-cyan);
+  min-width: 40px;
+}
+
+.obs-leg-type {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.obs-leg-horse {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.obs-leg-prob {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent-green);
+}
+
+/* Pool Summary */
+.obs-pool-summary {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-secondary);
+}
+
+.obs-summary-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+  text-transform: uppercase;
+}
+
+.obs-pool-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 8px;
+}
+
+.obs-pool-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-secondary);
+  border-radius: 6px;
+}
+
+.obs-pool-name {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.obs-pool-ev {
+  font-size: 12px;
+  color: var(--accent-green);
+  font-weight: 700;
+}
+
+@media (max-width: 768px) {
+  .obs-tabs {
+    flex-direction: column;
+  }
+  .obs-tab {
+    width: 100%;
+    text-align: center;
+  }
+  .obs-metric-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .obs-pool-grid {
+    grid-template-columns: 1fr;
+  }
+}

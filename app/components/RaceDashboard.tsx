@@ -13,6 +13,7 @@ import { SkeletonTable } from './SkeletonTable'
 import { HorseDetailDrawer } from './HorseDetailDrawer'
 import { DualBettingView } from './DualBettingView'
 import { AllUpCard } from './AllUpCard'
+import { OptimalBetStrategy } from './OptimalBetStrategy'
 import { AutoPilotStatus } from './AutoPilotStatus'
 import type { AllUpResult } from '@/lib/allup-engine'
 
@@ -24,7 +25,7 @@ interface RaceDashboardProps {
   allRaceData?: Map<string, RaceRow[]>
 }
 
-export function RaceDashboard({ races, allUpData }: RaceDashboardProps) {
+export function RaceDashboard({ races, allUpData, allRaceData }: RaceDashboardProps) {
   const [selectedRaceId, setSelectedRaceId] = useState<string | null>(null)
   const [rows, setRows] = useState<RaceRow[]>([])
   const [loading, setLoading] = useState(true)
@@ -268,6 +269,16 @@ export function RaceDashboard({ races, allUpData }: RaceDashboardProps) {
 
       {/* Section 4c: All Up Optimization Engine */}
       {allUpData && <AllUpCard result={allUpData} />}
+
+      {/* Section 4d: Multi-Pool Optimal Bet Strategy */}
+      {selectedRace && allRaceData && allRaceData.size > 0 && (
+        <OptimalBetStrategy
+          rows={rows}
+          raceData={allRaceData}
+          races={races}
+          currentRace={selectedRace}
+        />
+      )}
 
       {/* Section 5: Full Analysis Table */}
       <div className="full-table-section animate-fade-in">
