@@ -13,10 +13,15 @@ const W_DRAW = 0.15
 const W_JT = 0.35
 const W_COURSE = 0.20
 
-function softmax(scores: number[]): number[] {
+// Temperature scaling for softmax (prevents extreme probability distribution)
+// T=15 gives reasonable win probabilities: top horse ~18-25%, others ~3-10%
+const SOFTMAX_TEMPERATURE = 15
+
+function softmax(scores: number[], temperature: number = SOFTMAX_TEMPERATURE): number[] {
   if (scores.length === 0) return []
   const maxS = Math.max(...scores)
-  const exps = scores.map(s => Math.exp(s - maxS))
+  // Apply temperature scaling: exp((score - max) / T)
+  const exps = scores.map(s => Math.exp((s - maxS) / temperature))
   const total = exps.reduce((a, b) => a + b, 0)
   return total === 0 ? scores.map(() => 1 / scores.length) : exps.map(e => e / total)
 }
