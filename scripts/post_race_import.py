@@ -48,6 +48,12 @@ def scrape_race_results(page, date_str: str, venue: str, race_no: int) -> dict:
         page.goto(results_url, wait_until='domcontentloaded', timeout=30000)
         page.wait_for_timeout(4000)
 
+        actual_url = page.url
+        date_path = date_str.replace('-', '')
+        if date_path not in actual_url and date_slash not in actual_url:
+            print(f"    [SKIP] R{race_no}: HKJC redirected to {actual_url} (future date or invalid)")
+            return None
+
         # Extract race metadata
         race_meta = page.evaluate('''() => {
             const text = document.body.innerText;
