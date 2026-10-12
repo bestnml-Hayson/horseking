@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { fetchRaceRunners, fetchPredictions, fetchHorses, fetchRecentForm } from '@/lib/supabase-client'
 import type { Race, RaceRunner, ModelPrediction, Horse, RaceRow } from '@/lib/types'
-import { getTopPicks, estimateRaceTime, predictPace, isOddsPending, computeClientPredictions, recomputePFusion } from '@/lib/race-utils'
+import { getTopPicks, estimateRaceTime, predictPace, isOddsPending, computeClientPredictions } from '@/lib/race-utils'
 import { PacingBriefing } from './PacingBriefing'
 import { AIRaceAnalysis } from './AIRaceAnalysis'
 import { TopPicksCards } from './TopPicksCards'
@@ -70,14 +70,11 @@ export function RaceDashboard({ races, allUpData }: RaceDashboardProps) {
         return r
       })
 
-      const noPredictions = predictions.length === 0
-      const allMarketNull = !noPredictions && predictions.every(p => p.market_implied_prob == null)
-
-      if ((noPredictions || allMarketNull) && raceRows.length > 0) {
-        console.log('[RaceDashboard] Predictions missing or incomplete, computing client-side fallback')
+      // Always use client-side predictions to ensure correct scoring formula
+      // Database predictions may be stale (generated with old formula)
+      if (raceRows.length > 0) {
+        console.log('[RaceDashboard] Computing client-side predictions (unified scoring)')
         raceRows = computeClientPredictions(raceRows)
-      } else if (raceRows.length > 0) {
-        raceRows = recomputePFusion(raceRows)
       }
 
       setRows(raceRows)
