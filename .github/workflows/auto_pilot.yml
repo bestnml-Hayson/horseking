@@ -4,9 +4,11 @@ on:
   schedule:
     # Hong Kong race days optimization (save GitHub Actions minutes)
     # Mon & Fri 16:30 HKT (08:30 UTC): Scrape upcoming Wed/Sun racecards
+    # Wed & Sun 18:00 HKT (10:00 UTC): Inject live odds before race start
     # Wed & Sun 22:30 HKT (14:30 UTC): Post-race archive & results
-    - cron: '30 8 * * 1,5'    # Mon & Fri 08:30 UTC = 16:30 HKT
-    - cron: '30 14 * * 3,0'   # Wed & Sun 14:30 UTC = 22:30 HKT
+    - cron: '30 8 * * 1,5'    # Mon & Fri 08:30 UTC = 16:30 HKT (racecard scrape)
+    - cron: '0 10 * * 3,0'    # Wed & Sun 10:00 UTC = 18:00 HKT (odds injection)
+    - cron: '30 14 * * 3,0'   # Wed & Sun 14:30 UTC = 22:30 HKT (post-race archive)
   workflow_dispatch:
     inputs:
       mode:
@@ -17,6 +19,7 @@ on:
         options:
           - full
           - discover-only
+          - odds-only
           - archive-only
       dry_run:
         description: 'Dry run (no writes)'
@@ -68,6 +71,7 @@ jobs:
 
           ARGS=""
           [ "$MODE" = "discover-only" ] && ARGS="$ARGS --discover-only"
+          [ "$MODE" = "odds-only" ] && ARGS="$ARGS --odds-only"
           [ "$MODE" = "archive-only" ] && ARGS="$ARGS --archive-only"
           [ "$DRY_RUN" = "true" ] && ARGS="$ARGS --dry-run"
 

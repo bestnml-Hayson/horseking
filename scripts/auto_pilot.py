@@ -24,6 +24,7 @@ Phase 3 — Status Report:
 Usage:
   python scripts/auto_pilot.py                  # full run (discover + odds + archive)
   python scripts/auto_pilot.py --discover-only  # only auto-discover new race days
+  python scripts/auto_pilot.py --odds-only      # only inject live odds for today's races
   python scripts/auto_pilot.py --archive-only   # only archive past races
   python scripts/auto_pilot.py --dry-run        # log what would happen, no writes
 """
@@ -409,6 +410,7 @@ def write_pipeline_status(supabase, status: Dict):
 def main():
     parser = argparse.ArgumentParser(description='Auto-Pilot Pipeline')
     parser.add_argument('--discover-only', action='store_true', help='Only discover and scrape new race days')
+    parser.add_argument('--odds-only', action='store_true', help='Only inject live odds for today\'s races')
     parser.add_argument('--archive-only', action='store_true', help='Only archive past unfinished races')
     parser.add_argument('--dry-run', action='store_true', help='Log actions without writing')
     parser.add_argument('--lookahead', type=int, default=7, help='Days to look ahead for new races (default: 7)')
@@ -429,8 +431,9 @@ def main():
         'errors': [],
     }
 
-    do_discover = not args.archive_only
-    do_archive = not args.discover_only
+    do_discover = not args.archive_only and not args.odds_only
+    do_odds = not args.discover_only and not args.archive_only
+    do_archive = not args.discover_only and not args.odds_only
 
     # Phase 1: Auto-Discovery
     if do_discover:
@@ -447,7 +450,7 @@ def main():
             status['errors'].append(f'Phase 1: {str(e)}')
 
     # Phase 1.5: Odds Injection for today's races
-    if do_discover:
+    if do_odds:
         print("\n" + "=" * 50)
         print("PHASE 1.5: LIVE ODDS INJECTION")
         print("=" * 50)
