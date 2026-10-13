@@ -2,11 +2,11 @@ name: Auto-Pilot Pipeline
 
 on:
   schedule:
-    # Run at 06:00 HKT (22:00 UTC prev day) and 16:00 HKT (08:00 UTC)
-    # Morning: discover upcoming races + archive yesterday's results
-    # Afternoon: last-check before race day odds injection
-    - cron: '0 22 * * *'   # 06:00 HKT
-    - cron: '0 8 * * *'    # 16:00 HKT
+    # Hong Kong race days optimization (save GitHub Actions minutes)
+    # Mon & Fri 16:30 HKT (08:30 UTC): Scrape upcoming Wed/Sun racecards
+    # Wed & Sun 22:30 HKT (14:30 UTC): Post-race archive & results
+    - cron: '30 8 * * 1,5'    # Mon & Fri 08:30 UTC = 16:30 HKT
+    - cron: '30 14 * * 3,0'   # Wed & Sun 14:30 UTC = 22:30 HKT
   workflow_dispatch:
     inputs:
       mode:
