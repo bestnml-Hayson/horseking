@@ -8,6 +8,11 @@ Phase 1 — Auto-Discovery & Stage 1 Pre-Scrape:
   For any race day NOT yet in the database, auto-scrapes the full racecard
   and runs Benter P_model (Stage 1: pure ability, no odds).
 
+Phase 1.5 — Live Odds Injection:
+  For today's races that have runners but no win_odds yet,
+  auto-scrapes live odds from HKJC and injects into race_runners.
+  Triggers Benter model fusion (P_final = 50% P_model + 50% P_market).
+
 Phase 2 — Auto-Archive & Post-Race Review:
   Finds races where is_finished=false but race_date < today.
   Scrapes official results from HKJC, updates finish_position/win_odds,
@@ -17,7 +22,7 @@ Phase 3 — Status Report:
   Writes pipeline status to Supabase 'pipeline_status' table for frontend display.
 
 Usage:
-  python scripts/auto_pilot.py                  # full run (discover + archive)
+  python scripts/auto_pilot.py                  # full run (discover + odds + archive)
   python scripts/auto_pilot.py --discover-only  # only auto-discover new race days
   python scripts/auto_pilot.py --archive-only   # only archive past races
   python scripts/auto_pilot.py --dry-run        # log what would happen, no writes
@@ -124,6 +129,70 @@ def discover_upcoming_race_days(lookahead_days: int = 7) -> List[Dict]:
 
     print(f"[Discover] Found {len(discovered)} upcoming race days")
     return discovered
+
+
+def inject_odds_for_upcoming_races(supabase, dry_run: bool = False):
+    """
+    Phase 1.5: Auto-inject live odds for today's races that don't have odds yet.
+    Checks race_runners where win_odds is null and race_date = today.
+    """
+    today_str = now_hkt().strftime('%Y-%m-%d')
+
+    # Find races today that have runners but no odds
+    resp = retry_supabase(
+        lambda: supabase.table('races').select('race_id,race_date,venue,race_no').eq('race_date', today_str).eq('is_finished', False).execute()
+    )
+    today_races = resp.data or []
+
+    if not today_races:
+        print(f"\n[Odds Injection] No unfinished races today ({today_str})")
+        return 0
+
+    # Check which races already have odds
+    race_ids = [r['race_id'] for r in today_races]
+    odds_resp = retry_supabase(
+        lambda: supabase.table('race_runners').select('race_id,win_odds').in('race_id', race_ids).not_.is_('win_odds', 'null').execute()
+    )
+    races_with_odds = set(r['race_id'] for r in (odds_resp.data or []))
+
+    races_needing_odds = [r for r in today_races if r['race_id'] not in races_with_odds]
+
+    if not races_needing_odds:
+        print(f"\n[Odds Injection] All {len(today_races)} races today already have odds")
+        return 0
+
+    print(f"\n[Odds Injection] {len(races_needing_odds)} races need odds injection")
+
+    date_venue_pairs = set((r['race_date'], r['venue']) for r in races_needing_odds)
+    injected = 0
+
+    for date_str, venue in sorted(date_venue_pairs):
+        print(f"\n  [Odds] {date_str} {venue}: scraping live odds...")
+        if dry_run:
+            print(f"  [DRY-RUN] Would run: auto_scraper.py --date {date_str} --venue {venue} --odds-only")
+            injected += 1
+            continue
+
+        try:
+            result = subprocess.run(
+                [sys.executable, os.path.join(os.path.dirname(__file__), 'auto_scraper.py'),
+                 '--date', date_str, '--venue', venue, '--odds-only'],
+                capture_output=False,
+                timeout=180
+            )
+            if result.returncode == 0:
+                injected += 1
+                print(f"  [OK] {date_str} {venue}: odds injected")
+            else:
+                print(f"  [FAIL] {date_str} {venue}: exit code {result.returncode}")
+        except subprocess.TimeoutExpired:
+            print(f"  [TIMEOUT] {date_str} {venue}: exceeded 3 min")
+        except Exception as e:
+            print(f"  [ERROR] {date_str} {venue}: {e}")
+
+        time.sleep(2)
+
+    return injected
 
 
 def scrape_new_race_days(supabase, race_days: List[Dict], dry_run: bool = False):
@@ -355,6 +424,7 @@ def main():
         'last_run': start_time.isoformat(),
         'discovered': 0,
         'scraped': 0,
+        'odds_injected': 0,
         'archived': 0,
         'errors': [],
     }
@@ -376,6 +446,18 @@ def main():
             print(f"[ERROR] Phase 1 failed: {e}")
             status['errors'].append(f'Phase 1: {str(e)}')
 
+    # Phase 1.5: Odds Injection for today's races
+    if do_discover:
+        print("\n" + "=" * 50)
+        print("PHASE 1.5: LIVE ODDS INJECTION")
+        print("=" * 50)
+        try:
+            injected = inject_odds_for_upcoming_races(supabase, dry_run=args.dry_run)
+            status['odds_injected'] = injected
+        except Exception as e:
+            print(f"[ERROR] Phase 1.5 failed: {e}")
+            status['errors'].append(f'Phase 1.5: {str(e)}')
+
     # Phase 2: Auto-Archive
     if do_archive:
         print("\n" + "=" * 50)
@@ -396,11 +478,12 @@ def main():
 
     print("\n" + "=" * 70)
     print("SUMMARY")
-    print(f"  Discovered: {status['discovered']} upcoming race days")
-    print(f"  Scraped:    {status['scraped']} new race days")
-    print(f"  Archived:   {status['archived']} past races")
-    print(f"  Errors:     {len(status['errors'])}")
-    print(f"  Elapsed:    {status['elapsed_seconds']}s")
+    print(f"  Discovered:    {status['discovered']} upcoming race days")
+    print(f"  Scraped:       {status['scraped']} new race days")
+    print(f"  Odds injected: {status['odds_injected']} race days")
+    print(f"  Archived:      {status['archived']} past races")
+    print(f"  Errors:        {len(status['errors'])}")
+    print(f"  Elapsed:       {status['elapsed_seconds']}s")
     print("=" * 70)
 
     if not args.dry_run:
