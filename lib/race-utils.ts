@@ -7,15 +7,26 @@ const MODEL_WEIGHT = 0.5
 const MARKET_WEIGHT = 0.5
 const FRACTIONAL_KELLY = 0.25
 
-// Unified 4-component weights (match computeBenterBreakdown exactly)
-const W_FORM = 0.30
-const W_DRAW = 0.15
-const W_JT = 0.35
-const W_COURSE = 0.20
-
 // Temperature scaling for softmax (prevents extreme probability distribution)
 // T=15 gives reasonable win probabilities: top horse ~18-25%, others ~3-10%
 const SOFTMAX_TEMPERATURE = 15
+
+// Dynamic weighting by racecourse
+export interface RacecourseWeights {
+  form: number
+  draw: number
+  jockeyTrainer: number
+  course: number
+}
+
+export function getWeightsByVenue(venue: string | undefined): RacecourseWeights {
+  if (venue === 'HV') {
+    // Happy Valley: emphasize draw bias and recent form
+    return { form: 0.35, draw: 0.25, jockeyTrainer: 0.20, course: 0.20 }
+  }
+  // Sha Tin (default): emphasize jockey/trainer and course aptitude
+  return { form: 0.35, draw: 0.15, jockeyTrainer: 0.25, course: 0.25 }
+}
 
 function softmax(scores: number[], temperature: number = SOFTMAX_TEMPERATURE): number[] {
   if (scores.length === 0) return []
@@ -28,10 +39,10 @@ function softmax(scores: number[], temperature: number = SOFTMAX_TEMPERATURE): n
 
 /**
  * Compute the unified 4-component total score (0-100) for a single horse.
- * Matches computeBenterBreakdown exactly:
- *   Score = Form×0.30 + Draw×0.15 + JT×0.35 + Course×0.20
+ * Uses dynamic weights based on racecourse (HV vs ST).
  */
-function computeTotalScore(row: RaceRow, totalRunners: number): number {
+function computeTotalScore(row: RaceRow, totalRunners: number, venue?: string): number {
+  const w = getWeightsByVenue(venue)
   const form = parseFormHistory(row.form_history)
   const draw = row.draw
   const jockeyWr = row.jockey_win_rate ?? 0.1
@@ -63,14 +74,14 @@ function computeTotalScore(row: RaceRow, totalRunners: number): number {
   }
   cdScore = Math.max(0, Math.min(100, cdScore))
 
-  return formScore * W_FORM + drawScore * W_DRAW + jtScore * W_JT + cdScore * W_COURSE
+  return formScore * w.form + drawScore * w.draw + jtScore * w.jockeyTrainer + cdScore * w.course
 }
 
-export function computeClientPredictions(rows: RaceRow[]): RaceRow[] {
+export function computeClientPredictions(rows: RaceRow[], venue?: string): RaceRow[] {
   if (rows.length === 0) return rows
 
-  // Compute unified total score for each horse (same as drawer breakdown)
-  const totalScores = rows.map(r => computeTotalScore(r, rows.length))
+  // Compute unified total score for each horse using dynamic venue weights
+  const totalScores = rows.map(r => computeTotalScore(r, rows.length, venue))
 
   // P_MODEL = softmax of total scores
   const pModels = softmax(totalScores)
@@ -377,6 +388,7 @@ export function parseFormHistory(form: string | null | undefined): number[] {
 const ACTUAL_RACE_TIMES: Record<string, string[]> = {
   '2026-10-04': ['12:30', '13:00', '13:30', '14:00', '14:30', '15:00', '15:35', '16:05', '16:35', '17:10', '17:45'],
   '2026-10-07': ['18:35', '19:05', '19:35', '20:05', '20:35', '21:05', '21:35', '22:05', '22:35'],
+  '2026-10-14': ['18:35', '19:05', '19:35', '20:05', '20:35', '21:05', '21:35', '22:05', '22:35'],
 }
 
 export function estimateRaceTime(venue: string | undefined, raceNo: number, raceDate?: string | null): string {
@@ -514,21 +526,28 @@ function analyzeFormTrend(form: number[]): { trend: 'improving' | 'declining' | 
 }
 
 /**
- * Matrix AI Insight Engine — 先評實力、後比賠率、精準生成評語
+ * Quant Insight Engine v2 — 機構級三段式量化評語
  *
- * 4 cases based on P_model vs P_market relationship:
- *   A: Value/Overlay     — P_model >= 8%  AND EV > 0%
- *   B: Overpriced Top    — P_model >= 8%  AND EV < -20%
- *   C: Underlay Trap     — P_model < 7.14% AND EV < -25%
- *   D: Longshot Overlay  — P_model >= 7.5% AND P_market < 5% (odds > 20)
+ * Returns structured insight with tag + 3 parts:
+ *   tag: classification label (e.g. 強勢頭馬膽, 高EV爆發腳)
+ *   base: 實力與動態評估
+ *   tactical: 戰術、檔位與賽道剖析
+ *   recommendation: 量化戰術定位與投注建議
  */
-export function generateHorseInsight(
+export interface QuantInsight {
+  tag: string
+  tagClass: 'elite' | 'value' | 'underlay' | 'longshot' | 'solid' | 'weak'
+  base: string
+  tactical: string
+  recommendation: string
+}
+
+export function generateQuantInsight(
   row: RaceRow,
   rank: number,
   totalRunners: number,
   paceLabel?: string
-): string {
-  const parts: string[] = []
+): QuantInsight {
   const pred = row.prediction
   const pModel = pred?.raw_model_prob ?? null
   const pMarket = pred?.market_implied_prob ?? null
@@ -538,99 +557,56 @@ export function generateHorseInsight(
   const draw = row.draw
   const weight = row.actual_weight
   const jockey = row.jockey
+  const trainer = row.trainer
   const jockeyWr = row.jockey_win_rate
+  const trainerWr = row.trainer_win_rate
   const odds = row.win_odds
   const form = parseFormHistory(row.form_history)
   const formTrend = analyzeFormTrend(form)
+  const gear = row.gear
+  const restDays = row.rest_days
 
-  // --- Matrix Insight (priority order: A > B > C > D) ---
   const pModelPct = pModel != null ? pModel * 100 : 0
   const pMarketPct = pMarket != null ? pMarket * 100 : 0
+  const evPct = ev != null ? ev * 100 : 0
 
-  if (pModel != null && pMarket != null && ev != null) {
-    const caseA = pModel >= 0.08 && ev > 0
-    const caseB = pModel >= 0.08 && ev < -0.20
-    const caseC = pModel < 0.0714 && pMarket > pModel
-    const caseD = pModel >= 0.075 && pMarket < 0.05
+  // === PART 1: 實力與動態評估 (Base Class & Synergy) ===
+  const baseParts: string[] = []
 
-    if (caseA) {
-      parts.push(`AI 評估基礎實力頂尖 (P_model ${pModelPct.toFixed(1)}%)，且賠率具備值博率 (EV ${fmtEV(ev)})，為重點獨贏/頭膽目標`)
-    } else if (caseB) {
-      parts.push(`AI 評估屬第一梯隊 (P_model ${pModelPct.toFixed(1)}%)；但市場資金過度追捧 (P_market ${pMarketPct.toFixed(1)}%) 導致獨贏性價比低，建議做連贏/位置 Q 拖碼`)
-    } else if (caseC) {
-      parts.push(`近況或久休令 AI 模型評分偏低 (P_model ${pModelPct.toFixed(1)}%)；市場賠率盲目過熱 (EV ${fmtEV(ev)})，存在陷阱風險，不宜單獨追捧`)
-    } else if (caseD) {
-      parts.push(`AI 評估硬實力被市場嚴重忽視 (P_model ${pModelPct.toFixed(1)}% vs P_market ${pMarketPct.toFixed(1)}%)，具備爆冷潛質，極佳位置/位置 Q 配腳`)
-    }
-  }
-
-  // --- Fallback: rank-based context (only if no matrix case matched) ---
-  if (parts.length === 0) {
-    if (rank === 1) {
-      parts.push('Benter 模型計算奪魁機會最高')
-    } else if (rank === 2) {
-      parts.push('模型評估爭勝能力第二')
-    } else if (rank === 3) {
-      parts.push('模型評分第三選擇')
-    } else if (rank <= 6) {
-      parts.push('中規中矩')
-    } else {
-      parts.push('模型評分偏低')
-    }
-  }
-
-  // --- Draw ---
-  if (draw != null) {
-    if (draw <= 3) {
-      parts.push(`排 ${draw} 檔好檔，內欄有利搶先`)
-    } else if (draw <= 7) {
-      parts.push(`排 ${draw} 檔中規中矩`)
-    } else if (draw <= 10) {
-      parts.push(`排 ${draw} 檔偏外，需多走路程`)
-    } else {
-      parts.push(`排 ${draw} 檔大外檔，形勢不利`)
-    }
-  }
-
-  // --- Form trend ---
-  if (form.length >= 3) {
+  if (form.length > 0) {
+    const formAvg = form.reduce((s, p) => s + p, 0) / form.length
     if (formTrend.trend === 'improving') {
-      parts.push('近績走勢回升，狀態上揚')
+      baseParts.push(`近 ${form.length} 戰走勢回升（均名次 ${formAvg.toFixed(1)}），狀態進入巔峰`)
+    } else if (formTrend.trend === 'consistent' && formAvg <= 5) {
+      baseParts.push(`近績穩定靠前（均名次 ${formAvg.toFixed(1)}），水準一貫可靠`)
     } else if (formTrend.trend === 'declining') {
-      parts.push('近期走勢下滑，狀態存疑')
-    } else if (formTrend.trend === 'consistent' && formTrend.avg <= 5) {
-      parts.push('近績穩定在前列，水準可靠')
+      baseParts.push(`近 ${form.length} 戰走勢下滑（均名次 ${formAvg.toFixed(1)}），狀態存疑`)
+    } else {
+      baseParts.push(`近 ${form.length} 戰均名次 ${formAvg.toFixed(1)}，表現起伏`)
     }
-    if (form[0] <= 3) {
-      parts.push('上場表現出色')
-    }
+  } else {
+    baseParts.push('暫無近績數據')
   }
 
-  // --- Jockey ---
-  if (jockeyWr != null && jockeyWr >= 0.15) {
-    parts.push(`騎師 ${jockey ?? ''} 近績 ${(jockeyWr * 100).toFixed(0)}% 勝率，狀態正佳`)
+  const jtWr = jockeyWr != null && trainerWr != null
+    ? jockeyWr * 0.6 + trainerWr * 0.4
+    : null
+  if (jtWr != null && jtWr >= 0.15) {
+    baseParts.push(`騎練契合度 ${(jtWr * 100).toFixed(1)}%（${jockey ?? '-'}/${trainer ?? '-'}），屬頂級組合`)
+  } else if (jtWr != null && jtWr >= 0.10) {
+    baseParts.push(`騎練組合${jockey ?? '-'}／${trainer ?? '-'}，配合不俗`)
   }
 
-  // --- Weight ---
-  if (weight != null) {
-    if (weight <= 118) {
-      parts.push('負磅輕巧，有減磅優勢')
-    } else if (weight >= 132) {
-      parts.push('頂磅出擊，負擔較重')
-    }
+  if (form.length >= 2 && form[0] <= 3) {
+    baseParts.push(`上場跑第 ${form[0]} 名，狀態正佳`)
   }
 
-  // --- Pace interaction ---
-  if (paceLabel) {
-    if (paceLabel === '慢步速' && draw != null && draw <= 5) {
-      parts.push('慢步速形勢下內檔可前領')
-    } else if (paceLabel === '快步速' && formTrend.trend === 'improving') {
-      parts.push('快步速有利後上馬發力')
-    }
+  if (restDays != null && restDays >= 90) {
+    baseParts.push(`久休 ${restDays} 天復出， freshness 待驗證`)
+  } else if (restDays != null && restDays <= 14) {
+    baseParts.push(`僅休 ${restDays} 天，頻密出賽需留意體力`)
   }
 
-  // --- Gear change ---
-  const gear = row.gear
   if (gear) {
     const gearParts = gear.split('/').map(g => g.trim()).filter(Boolean)
     const newGear = gearParts.filter(g => g.endsWith('1'))
@@ -644,26 +620,113 @@ export function generateHorseInsight(
         const base = g.replace(/\d$/, '')
         return gearNames[g] || gearNames[base] || g
       }).join('、')
-      parts.push(`初戴${gearDesc}，可能有新鮮感`)
+      baseParts.push(`初戴${gearDesc}，具新鮮感加成`)
     }
   }
 
-  // --- Rest days ---
-  const restDays = row.rest_days
-  if (restDays != null && restDays > 0) {
-    if (restDays >= 90) {
-      parts.push(`久休${restDays}天復出，狀態待觀察`)
-    } else if (restDays >= 60) {
-      parts.push(`休養${restDays}天，充分休息`)
-    } else if (restDays <= 14) {
-      parts.push(`僅休息${restDays}天，頻密出賽`)
+  // === PART 2: 戰術、檔位與賽道剖析 (Tactical & Course Bias) ===
+  const tacticalParts: string[] = []
+
+  if (draw != null) {
+    if (draw <= 3) {
+      tacticalParts.push(`排 ${draw} 檔內檔，搶先佔欄位有利`)
+    } else if (draw <= 6) {
+      tacticalParts.push(`排 ${draw} 檔中內檔，位置靈活`)
+    } else if (draw <= 9) {
+      tacticalParts.push(`排 ${draw} 檔中檔，需視步速決定走位`)
+    } else if (draw <= 11) {
+      tacticalParts.push(`排 ${draw} 檔偏外，須多走路程搶位`)
+    } else {
+      tacticalParts.push(`排 ${draw} 檔大外檔，形勢受壓`)
     }
   }
 
-  if (parts.length > 3) {
-    return parts.slice(0, 3).join('；') + '。'
+  if (weight != null) {
+    if (weight <= 118) {
+      tacticalParts.push(`負 ${weight} 磅輕磅出擊，減磅優勢明顯`)
+    } else if (weight >= 132) {
+      tacticalParts.push(`頂磅 ${weight} 磅，長途負擔較重`)
+    }
   }
-  return parts.join('；') + '。'
+
+  if (paceLabel) {
+    if (paceLabel === '慢步速' && draw != null && draw <= 5) {
+      tacticalParts.push('慢步速形勢下，內檔可輕鬆前領佔先')
+    } else if (paceLabel === '快步速' && formTrend.trend === 'improving') {
+      tacticalParts.push('快步速有利後上馬發力，近績回升者受惠')
+    } else if (paceLabel === '快步速' && draw != null && draw <= 4) {
+      tacticalParts.push('快步速下內檔馬可節省路程，等候衝刺')
+    }
+  }
+
+  // === PART 3: 量化戰術定位與投注建議 + TAG ===
+  let tag = ''
+  let tagClass: QuantInsight['tagClass'] = 'solid'
+  const recParts: string[] = []
+
+  if (pModel != null && pModel >= 0.20) {
+    tag = '強勢頭馬膽'
+    tagClass = 'elite'
+    recParts.push(`P_model ${pModelPct.toFixed(1)}% 為本場核心，建議作為連贏／三重彩主力馬膽`)
+  } else if (pModel != null && pModel >= 0.12) {
+    if (ev != null && ev > 0) {
+      tag = '高EV爆發腳'
+      tagClass = 'value'
+      recParts.push(`P_model ${pModelPct.toFixed(1)}% 具顯著 Overlay（EV ${evPct > 0 ? '+' : ''}${evPct.toFixed(1)}%），極具冷門配腳價值`)
+    } else if (ev != null && ev < -0.20 && pMarket != null && pMarket > pModel) {
+      tag = '過熱防呆'
+      tagClass = 'underlay'
+      recParts.push(`P_model ${pModelPct.toFixed(1)}% 但市場追捧過熱（P_market ${pMarketPct.toFixed(1)}%），性價比低，建議觀望或僅做 Q 腳`)
+    } else {
+      tag = '穩健配腳'
+      tagClass = 'solid'
+      recParts.push(`P_model ${pModelPct.toFixed(1)}%，模型評分穩居前列，適合作位置 Q／三重彩配腳`)
+    }
+  } else if (pModel != null && pModel >= 0.075) {
+    if (ev != null && ev > 0.10) {
+      tag = '冷門價值馬'
+      tagClass = 'value'
+      recParts.push(`P_model ${pModelPct.toFixed(1)}%，EV +${evPct.toFixed(1)}% 正期望，四連環／位置 Q 冷腳之選`)
+    } else if (pMarket != null && pMarket < 0.05) {
+      tag = '潛伏爆冷馬'
+      tagClass = 'longshot'
+      recParts.push(`P_model ${pModelPct.toFixed(1)}% 被市場忽視（P_market ${pMarketPct.toFixed(1)}%），具爆冷潛質`)
+    } else {
+      tag = '中游配腳'
+      tagClass = 'solid'
+      recParts.push(`P_model ${pModelPct.toFixed(1)}%，適合作四連環冷腳配搭`)
+    }
+  } else {
+    tag = '觀望'
+    tagClass = 'weak'
+    recParts.push(`P_model ${pModelPct.toFixed(1)}%，模型評分偏低，建議觀望`)
+  }
+
+  if (kelly != null && kelly > 0 && ev != null && ev > 0) {
+    recParts.push(`Kelly 注碼 ${(kelly * 100).toFixed(2)}%，可考慮獨贏下注`)
+  }
+
+  return {
+    tag,
+    tagClass,
+    base: baseParts.join('。') + '。',
+    tactical: tacticalParts.join('。') + '。',
+    recommendation: recParts.join('。') + '。',
+  }
+}
+
+/**
+ * Legacy string-based insight for backward compatibility.
+ * Delegates to generateQuantInsight and formats as a single string.
+ */
+export function generateHorseInsight(
+  row: RaceRow,
+  rank: number,
+  totalRunners: number,
+  paceLabel?: string
+): string {
+  const insight = generateQuantInsight(row, rank, totalRunners, paceLabel)
+  return `【${insight.tag}】${insight.base}｜${insight.tactical}｜${insight.recommendation}`
 }
 
 export function generateHorseComprehensiveInsight(
@@ -799,9 +862,13 @@ export interface BenterBreakdown {
   drawSub: DrawSubIndices
   jtSub: JockeyTrainerSubIndices
   cdSub: CourseDistanceSubIndices
+  weights: RacecourseWeights
+  venue: string
+  venueLabel: string
 }
 
-export function computeBenterBreakdown(row: RaceRow): BenterBreakdown {
+export function computeBenterBreakdown(row: RaceRow, venue?: string): BenterBreakdown {
+  const w = getWeightsByVenue(venue)
   const form = parseFormHistory(row.form_history)
   const draw = row.draw
   const jockeyWr = row.jockey_win_rate ?? 0.1
@@ -832,11 +899,14 @@ export function computeBenterBreakdown(row: RaceRow): BenterBreakdown {
   courseDistanceScore = Math.max(0, Math.min(100, courseDistanceScore))
 
   const totalScore = Math.round(
-    formScore * 0.30 +
-    drawScore * 0.15 +
-    jockeyTrainerScore * 0.35 +
-    courseDistanceScore * 0.20
+    formScore * w.form +
+    drawScore * w.draw +
+    jockeyTrainerScore * w.jockeyTrainer +
+    courseDistanceScore * w.course
   )
+
+  const venueKey = venue === 'HV' ? 'HV' : 'ST'
+  const venueLabel = venue === 'HV' ? '跑馬地' : '沙田'
 
   // --- Sub-indices ---
 
@@ -910,6 +980,9 @@ export function computeBenterBreakdown(row: RaceRow): BenterBreakdown {
     drawSub,
     jtSub,
     cdSub,
+    weights: w,
+    venue: venueKey,
+    venueLabel,
   }
 }
 
