@@ -34,16 +34,10 @@ function getEV(row: RaceRow): number {
   return row.prediction?.expected_value ?? 0
 }
 
-function scoreCandidate(row: RaceRow): number {
-  const pFinal = getPFinal(row)
-  const ev = getEV(row)
-  return pFinal * (1 + Math.max(0, ev))
-}
-
 function getTopPicksForRace(rows: RaceRow[], n: number): TreblePick[] {
   return [...rows]
     .filter(r => getPFinal(r) > 0)
-    .sort((a, b) => scoreCandidate(b) - scoreCandidate(a))
+    .sort((a, b) => getPFinal(b) - getPFinal(a))
     .slice(0, n)
     .map(row => ({
       row,

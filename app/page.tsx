@@ -8,6 +8,7 @@ import { PipelineControl } from './components/PipelineControl'
 import { fetchLatestRaces, fetchAllRaceData } from '@/lib/supabase-client'
 import { generateTreble, type TrebleResult } from '@/lib/treble-engine'
 import { generateAllUp, type AllUpResult } from '@/lib/allup-engine'
+import { computeClientPredictions } from '@/lib/race-utils'
 import type { Race, RaceRow } from '@/lib/types'
 
 type Tab = 'dashboard' | 'analysis'
@@ -29,6 +30,16 @@ export default function Home() {
         if (raceList.length < 3) return
         const allData = await fetchAllRaceData(raceList)
         if (cancelled) return
+
+        // Apply client-side predictions to all races so treble/allup engines
+        // use the same dynamic-weighted scores as the race cards
+        for (const race of raceList) {
+          const rows = allData.get(race.race_id)
+          if (rows && rows.length > 0) {
+            allData.set(race.race_id, computeClientPredictions(rows, race.venue))
+          }
+        }
+
         setAllRaceData(allData)
         const treble = generateTreble(allData, raceList)
         if (cancelled) return
