@@ -398,13 +398,13 @@ def scrape_hkjc_races(date_str: str, venue: str, skip_odds: bool = False) -> Lis
                         startIdx = 0;
                     }
 
-                    const block = lines.slice(startIdx, endIdx).join(' ');
+                    const block = lines.slice(startIdx, endIdx).join('\n');
 
                     const distMatch = block.match(/(\d{3,4})米/);
                     const goingMatch = block.match(/好至黏快|好至快地|好至黏地|好地|快地|慢地|軟地|黏地/);
                     const classMatch = block.match(/第[一二三四五六七八九十]+班/);
                     const trackMatch = block.match(/(草地|全天候跑道)/);
-                    const timeMatch = block.match(/,\s*(\d{1,2}:\d{2})\s*$/m) || block.match(/(\d{1,2}:\d{2})\s*$/m);
+                    const timeMatch = block.match(/,\s*(\d{1,2}:\d{2})\s*\n/) || block.match(/,\s*(\d{1,2}:\d{2})\s*$/) || block.match(/(\d{1,2}:\d{2})/);
 
                     return {
                         distance: distMatch ? parseInt(distMatch[1]) : null,
