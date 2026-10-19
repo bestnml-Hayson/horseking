@@ -46,6 +46,11 @@ export const FACTOR_COLORS = {
   draw: '#f59e0b',
   jockeyTrainer: '#10b981',
   courseDistance: '#3b82f6',
+  weight: '#a78bfa',
+  restDays: '#f472b6',
+  gear: '#fb923c',
+  pace: '#2dd4bf',
+  classMov: '#e879f9',
 } as const
 
 export const STAT_COLORS = {

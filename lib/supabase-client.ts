@@ -19,6 +19,7 @@ export async function fetchLatestRaces(): Promise<Race[]> {
   const today = getHKTDate()
   console.log(`[fetchLatestRaces] today = ${today}`)
 
+  // Priority 1: Find today/future races with runners (fully populated)
   const { data: allCandidateRaces, error: candidateError } = await supabase
     .from('races')
     .select('race_id, race_date, venue')
@@ -36,6 +37,7 @@ export async function fetchLatestRaces(): Promise<Race[]> {
     console.log(`[fetchLatestRaces] first 3 candidates:`, allCandidateRaces.slice(0, 3).map(r => `${r.race_id} (${r.race_date} ${r.venue})`))
   }
 
+  // Check which future races have runners
   let targetDate: string | null = null
   let targetVenue: string | null = null
 
@@ -52,9 +54,8 @@ export async function fetchLatestRaces(): Promise<Race[]> {
 
     const validRaceIds = new Set(existingRunners?.map(r => r.race_id) ?? [])
     console.log(`[fetchLatestRaces] runners found for ${validRaceIds.size} of ${raceIds.length} candidate races`)
-    if (validRaceIds.size > 0) {
-      console.log(`[fetchLatestRaces] valid race_ids:`, Array.from(validRaceIds).slice(0, 3))
-    }
+
+    // Find first future race date with runners
     for (const race of allCandidateRaces) {
       if (validRaceIds.has(race.race_id)) {
         targetDate = race.race_date
@@ -62,10 +63,19 @@ export async function fetchLatestRaces(): Promise<Race[]> {
         break
       }
     }
+
+    // Priority 2: If no runners yet, still return future races (runners may be populating)
+    if (!targetDate) {
+      console.log(`[fetchLatestRaces] No runners for future races yet, using first available future race day`)
+      const firstFutureRace = allCandidateRaces[0]
+      targetDate = firstFutureRace.race_date
+      targetVenue = firstFutureRace.venue
+    }
   }
 
+  // Priority 3: Only fall back to past races if NO future races exist at all
   if (!targetDate) {
-    console.log(`[fetchLatestRaces] No today/future races with runners, looking for most recent past race`)
+    console.log(`[fetchLatestRaces] No future races found, looking for most recent past race`)
     const { data: recentRaces } = await supabase
       .from('races')
       .select('race_id, race_date, venue, is_finished')
@@ -283,6 +293,65 @@ export async function fetchRecentForm(horseIds: string[]): Promise<Map<string, s
   }
 
   return formMap
+}
+
+export interface HorseRaceRecord {
+  venue: string
+  distance: number
+  finish_position: number
+  race_date: string
+  class_level: string
+}
+
+export async function fetchHorseRaceHistory(horseIds: string[]): Promise<Map<string, HorseRaceRecord[]>> {
+  const historyMap = new Map<string, HorseRaceRecord[]>()
+  if (horseIds.length === 0) return historyMap
+
+  const supabase = getSupabase()
+  const batchSize = 50
+  for (let i = 0; i < horseIds.length; i += batchSize) {
+    const batch = horseIds.slice(i, i + batchSize)
+
+    const { data, error } = await supabase
+      .from('race_runners')
+      .select('horse_id, finish_position, official_rating, races!inner(race_date, venue, distance, class_level)')
+      .in('horse_id', batch)
+      .not('finish_position', 'is', 'null')
+      .order('races.race_date', { ascending: false, foreignTable: 'races' })
+      .limit(2000)
+
+    if (error) {
+      console.error('[fetchHorseRaceHistory] error:', error)
+      continue
+    }
+
+    const rows = (data ?? []) as Array<{
+      horse_id: string
+      finish_position: number | null
+      official_rating: number | null
+      races: Array<{ race_date: string; venue: string; distance: number | null; class_level: string | null }>
+    }>
+
+    for (const row of rows) {
+      if (row.finish_position == null || row.finish_position <= 0) continue
+      const race = row.races?.[0]
+      if (!race?.venue || !race?.distance) continue
+
+      const entry: HorseRaceRecord = {
+        venue: race.venue,
+        distance: race.distance,
+        finish_position: row.finish_position,
+        race_date: race.race_date,
+        class_level: race.class_level ?? '',
+      }
+
+      const existing = historyMap.get(row.horse_id) ?? []
+      existing.push(entry)
+      historyMap.set(row.horse_id, existing)
+    }
+  }
+
+  return historyMap
 }
 
 export async function fetchAllRaceData(races: Race[]): Promise<Map<string, RaceRow[]>> {

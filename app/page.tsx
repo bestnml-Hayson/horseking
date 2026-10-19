@@ -5,11 +5,12 @@ import { RaceDashboard } from './components/RaceDashboard'
 import { AIPerformance } from './components/AIPerformance'
 import { TrebleCard } from './components/TrebleCard'
 import { PipelineControl } from './components/PipelineControl'
-import { fetchLatestRaces, fetchAllRaceData } from '@/lib/supabase-client'
+import { fetchLatestRaces, fetchAllRaceData, fetchHorseRaceHistory } from '@/lib/supabase-client'
 import { generateTreble, type TrebleResult } from '@/lib/treble-engine'
 import { generateAllUp, type AllUpResult } from '@/lib/allup-engine'
 import { computeClientPredictions } from '@/lib/race-utils'
 import type { Race, RaceRow } from '@/lib/types'
+import type { HorseRaceRecord } from '@/lib/supabase-client'
 
 type Tab = 'dashboard' | 'analysis'
 
@@ -31,12 +32,24 @@ export default function Home() {
         const allData = await fetchAllRaceData(raceList)
         if (cancelled) return
 
+        // Fetch horse race history for course/distance/class analysis
+        const allHorseIds = Array.from(
+          new Set(
+            Array.from(allData.values()).flat().map(r => r.horse_id),
+          ),
+        )
+        const horseHistory = await fetchHorseRaceHistory(allHorseIds)
+        if (cancelled) return
+
         // Apply client-side predictions to all races so treble/allup engines
         // use the same dynamic-weighted scores as the race cards
         for (const race of raceList) {
           const rows = allData.get(race.race_id)
           if (rows && rows.length > 0) {
-            allData.set(race.race_id, computeClientPredictions(rows, race.venue))
+            allData.set(
+              race.race_id,
+              computeClientPredictions(rows, race.venue, race, horseHistory),
+            )
           }
         }
 

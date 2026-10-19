@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { fetchRaceRunners, fetchPredictions, fetchHorses, fetchRecentForm } from '@/lib/supabase-client'
+import { fetchRaceRunners, fetchPredictions, fetchHorses, fetchRecentForm, fetchHorseRaceHistory } from '@/lib/supabase-client'
 import type { Race, RaceRunner, ModelPrediction, Horse, RaceRow } from '@/lib/types'
 import { getTopPicks, estimateRaceTime, predictPace, isOddsPending, computeClientPredictions } from '@/lib/race-utils'
 import { PacingBriefing } from './PacingBriefing'
@@ -74,8 +74,11 @@ export function RaceDashboard({ races, allUpData, allRaceData }: RaceDashboardPr
       // Always use client-side predictions to ensure correct scoring formula
       // Database predictions may be stale (generated with old formula)
       if (raceRows.length > 0) {
-        console.log('[RaceDashboard] Computing client-side predictions (unified scoring)')
-        raceRows = computeClientPredictions(raceRows)
+        const raceForVenue = races.find(r => r.race_id === raceId)
+        const venue = raceForVenue?.venue
+        const horseHistory = await fetchHorseRaceHistory(horseIds)
+        console.log(`[RaceDashboard] Computing client-side predictions (dynamic weights: ${venue === 'HV' ? 'Happy Valley' : 'Sha Tin'})`)
+        raceRows = computeClientPredictions(raceRows, venue, raceForVenue, horseHistory)
       }
 
       setRows(raceRows)
@@ -302,6 +305,7 @@ export function RaceDashboard({ races, allUpData, allRaceData }: RaceDashboardPr
         horseId={drawerHorseId}
         horseName={drawerHorseName}
         raceRow={drawerRaceRow}
+        venue={selectedRace?.venue}
         onClose={handleCloseDrawer}
       />
     </div>

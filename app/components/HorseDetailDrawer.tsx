@@ -9,6 +9,7 @@ interface HorseDetailDrawerProps {
   horseId: string | null
   horseName: string
   raceRow?: RaceRow | null
+  venue?: string
   onClose: () => void
 }
 
@@ -21,7 +22,7 @@ function fmtTime(seconds: number | null): string {
   return min > 0 ? `${min}:${sec.padStart(5, '0')}` : `${sec}s`
 }
 
-export function HorseDetailDrawer({ horseId, horseName, raceRow, onClose }: HorseDetailDrawerProps) {
+export function HorseDetailDrawer({ horseId, horseName, raceRow, venue, onClose }: HorseDetailDrawerProps) {
   const [detail, setDetail] = useState<HorseDetail | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -120,10 +121,11 @@ export function HorseDetailDrawer({ horseId, horseName, raceRow, onClose }: Hors
 
               {/* Benter Factor Breakdown */}
               {raceRow && (() => {
-                const bd = computeBenterBreakdown(raceRow)
+                const bd = computeBenterBreakdown(raceRow, venue)
+                const wPct = (v: number) => `${Math.round(v * 100)}%`
                 const factors = [
                   {
-                    label: '近況走勢分', sublabel: 'Form Score', score: bd.formScore, weight: '30%', color: FACTOR_COLORS.form,
+                    label: '近況走勢分', sublabel: 'Form Score', score: bd.formScore, weight: wPct(bd.weights.form), color: FACTOR_COLORS.form,
                     subs: [
                       { label: '近 6 場平均名次', value: bd.formSub.avgFinish != null ? bd.formSub.avgFinish.toFixed(1) : '-' },
                       { label: '最佳名次', value: bd.formSub.bestFinish != null ? `第 ${bd.formSub.bestFinish} 名` : '-' },
@@ -133,7 +135,7 @@ export function HorseDetailDrawer({ horseId, horseName, raceRow, onClose }: Hors
                     ],
                   },
                   {
-                    label: '檔位偏差分', sublabel: 'Draw Bias', score: bd.drawScore, weight: '15%', color: FACTOR_COLORS.draw,
+                    label: '檔位偏差分', sublabel: 'Draw Bias', score: bd.drawScore, weight: wPct(bd.weights.draw), color: FACTOR_COLORS.draw,
                     subs: [
                       { label: '檔位利弊係數', value: bd.drawSub.drawBiasCoeff.toFixed(2) },
                       { label: '場地偏差指數', value: bd.drawSub.trackBiasIndex.toFixed(2) },
@@ -141,7 +143,7 @@ export function HorseDetailDrawer({ horseId, horseName, raceRow, onClose }: Hors
                     ],
                   },
                   {
-                    label: '騎練組合分', sublabel: 'Jockey/Trainer', score: bd.jockeyTrainerScore, weight: '35%', color: FACTOR_COLORS.jockeyTrainer,
+                    label: '騎練組合分', sublabel: 'Jockey/Trainer', score: bd.jockeyTrainerScore, weight: wPct(bd.weights.jockeyTrainer), color: FACTOR_COLORS.jockeyTrainer,
                     subs: [
                       { label: `騎師 ${bd.jtSub.jockeyLabel}`, value: `${bd.jtSub.jockeyWinRate.toFixed(1)}%` },
                       { label: `練馬師 ${bd.jtSub.trainerLabel}`, value: `${bd.jtSub.trainerWinRate.toFixed(1)}%` },
@@ -149,12 +151,42 @@ export function HorseDetailDrawer({ horseId, horseName, raceRow, onClose }: Hors
                     ],
                   },
                   {
-                    label: '途程場地分', sublabel: 'Course/Distance', score: bd.courseDistanceScore, weight: '20%', color: FACTOR_COLORS.courseDistance,
+                    label: '途程場地分', sublabel: 'Course/Distance', score: bd.courseDistanceScore, weight: wPct(bd.weights.courseDistance), color: FACTOR_COLORS.courseDistance,
                     subs: [
                       { label: '負磅影響', value: bd.cdSub.weightEffect > 0 ? `+${bd.cdSub.weightEffect}` : `${bd.cdSub.weightEffect}` },
                       { label: '班次估算', value: bd.cdSub.classEstimate },
                       { label: '場地適應度', value: bd.cdSub.goingAdaptability },
                       { label: '場地狀況', value: bd.cdSub.goingLabel },
+                    ],
+                  },
+                  {
+                    label: '負磅評分', sublabel: 'Weight', score: bd.weightScore, weight: wPct(bd.weights.weight), color: FACTOR_COLORS.weight,
+                    subs: [
+                      { label: '實際負磅', value: raceRow.actual_weight != null ? `${raceRow.actual_weight} 磅` : '-' },
+                    ],
+                  },
+                  {
+                    label: '休養新鮮感', sublabel: 'Rest Days', score: bd.restDaysScore, weight: wPct(bd.weights.restDays), color: FACTOR_COLORS.restDays,
+                    subs: [
+                      { label: '休養天數', value: raceRow.rest_days != null ? `${raceRow.rest_days} 天` : '-' },
+                    ],
+                  },
+                  {
+                    label: '配備變動', sublabel: 'Gear', score: bd.gearScore, weight: wPct(bd.weights.gear), color: FACTOR_COLORS.gear,
+                    subs: [
+                      { label: '配備', value: raceRow.gear ?? '無' },
+                    ],
+                  },
+                  {
+                    label: '步速形勢', sublabel: 'Pace', score: bd.paceScore, weight: wPct(bd.weights.pace), color: FACTOR_COLORS.pace,
+                    subs: [
+                      { label: '預計步速', value: '中等步速' },
+                    ],
+                  },
+                  {
+                    label: '升降班', sublabel: 'Class Movement', score: bd.classMovScore, weight: wPct(bd.weights.classMov), color: FACTOR_COLORS.classMov,
+                    subs: [
+                      { label: '評分级別', value: raceRow.official_rating != null ? `${raceRow.official_rating}` : '-' },
                     ],
                   },
                 ]
@@ -163,6 +195,7 @@ export function HorseDetailDrawer({ horseId, horseName, raceRow, onClose }: Hors
                     <div className="drawer-benter-header">
                       <span className="drawer-benter-icon">&#x1F9EE;</span>
                       <span className="drawer-benter-title">Benter 演算法評分拆解</span>
+                      <span className="drawer-benter-venue-tag">{bd.venueLabel}專用權重</span>
                     </div>
                     <div className="benter-factors-grid">
                       {factors.map(f => (

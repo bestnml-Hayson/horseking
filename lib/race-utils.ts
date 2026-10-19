@@ -1,4 +1,5 @@
 import type { RaceRow, Race, ModelPrediction } from './types'
+import type { HorseRaceRecord } from './supabase-client'
 import { getFormColor } from './color-utils'
 
 export { getFormColor }
@@ -11,21 +12,30 @@ const FRACTIONAL_KELLY = 0.25
 // T=15 gives reasonable win probabilities: top horse ~18-25%, others ~3-10%
 const SOFTMAX_TEMPERATURE = 15
 
-// Dynamic weighting by racecourse
+// Dynamic weighting by racecourse — 9 factors total
 export interface RacecourseWeights {
   form: number
   draw: number
   jockeyTrainer: number
-  course: number
+  weight: number
+  courseDistance: number
+  restDays: number
+  gear: number
+  pace: number
+  classMov: number
 }
 
 export function getWeightsByVenue(venue: string | undefined): RacecourseWeights {
   if (venue === 'HV') {
-    // Happy Valley: emphasize draw bias and recent form
-    return { form: 0.35, draw: 0.25, jockeyTrainer: 0.20, course: 0.20 }
+    return {
+      form: 0.18, draw: 0.14, jockeyTrainer: 0.12, weight: 0.08,
+      courseDistance: 0.16, restDays: 0.10, gear: 0.06, pace: 0.08, classMov: 0.08,
+    }
   }
-  // Sha Tin (default): emphasize jockey/trainer and course aptitude
-  return { form: 0.35, draw: 0.15, jockeyTrainer: 0.25, course: 0.25 }
+  return {
+    form: 0.16, draw: 0.08, jockeyTrainer: 0.14, weight: 0.08,
+    courseDistance: 0.18, restDays: 0.10, gear: 0.06, pace: 0.10, classMov: 0.10,
+  }
 }
 
 function softmax(scores: number[], temperature: number = SOFTMAX_TEMPERATURE): number[] {
@@ -38,10 +48,154 @@ function softmax(scores: number[], temperature: number = SOFTMAX_TEMPERATURE): n
 }
 
 /**
- * Compute the unified 4-component total score (0-100) for a single horse.
+ * Compute course/distance specialization score (0-100).
+ * Checks horse's past performance at same venue+distance.
+ */
+function computeCourseDistanceScore(
+  row: RaceRow,
+  race: Race | undefined,
+  horseHistory: Map<string, HorseRaceRecord[]> | undefined,
+): number {
+  if (!race?.venue || !race?.distance || !horseHistory) return 50
+
+  const history = horseHistory.get(row.horse_id)
+  if (!history || history.length === 0) return 50
+
+  const sameVenueDist = history.filter(
+    h => h.venue === race.venue && h.distance === race.distance,
+  )
+
+  if (sameVenueDist.length === 0) {
+    const sameVenue = history.filter(h => h.venue === race.venue)
+    if (sameVenue.length === 0) return 45
+    const avgPos = sameVenue.slice(0, 5).reduce((s, h) => s + h.finish_position, 0) / Math.min(sameVenue.length, 5)
+    return Math.max(0, Math.min(100, (1 - (avgPos - 1) / 13) * 100))
+  }
+
+  const recent = sameVenueDist.slice(0, 5)
+  const wins = recent.filter(h => h.finish_position === 1).length
+  const top3 = recent.filter(h => h.finish_position <= 3).length
+  const avgPos = recent.reduce((s, h) => s + h.finish_position, 0) / recent.length
+
+  let score = 50
+  score += wins * 15
+  score += (top3 - wins) * 6
+  score += Math.max(0, (5 - avgPos) * 5)
+  return Math.max(0, Math.min(100, score))
+}
+
+/**
+ * Compute rest days / freshness score (0-100).
+ * Optimal rest: 21-42 days. Too short (<14) or too long (>90) is penalized.
+ */
+function computeRestDaysScore(row: RaceRow): number {
+  const rest = row.rest_days
+  if (rest == null) return 50
+
+  if (rest >= 21 && rest <= 42) return 85 + Math.min(15, (rest - 21) * 0.5)
+  if (rest >= 14 && rest < 21) return 65 + (rest - 14) * 3
+  if (rest > 42 && rest <= 60) return 75 - (rest - 42) * 0.5
+  if (rest > 60 && rest <= 90) return 65 - (rest - 60) * 0.3
+  if (rest < 14) return 30 + rest * 2
+  return 40
+}
+
+/**
+ * Compute gear change bonus (0-100).
+ * First-time gear (ending in "1") gets bonus, especially blinders (B1).
+ */
+function computeGearScore(row: RaceRow): number {
+  const gear = row.gear
+  if (!gear) return 50
+
+  const parts = gear.split('/').map(g => g.trim()).filter(Boolean)
+  const newGear = parts.filter(g => g.endsWith('1'))
+  if (newGear.length === 0) return 50
+
+  let score = 50
+  for (const g of newGear) {
+    const base = g.slice(0, -1)
+    if (base === 'B') score += 14
+    else if (base === 'PC' || base === 'H') score += 10
+    else if (base === 'TT' || base === 'XB') score += 6
+    else score += 8
+  }
+  return Math.max(0, Math.min(100, score))
+}
+
+/**
+ * Compute pace scenario fit score (0-100).
+ * Fast pace favors closers (high draw, poor early form), slow pace favors leaders (low draw).
+ */
+function computePaceScore(
+  row: RaceRow,
+  paceLabel: string,
+  totalRunners: number,
+): number {
+  const draw = row.draw
+  const form = parseFormHistory(row.form_history)
+  const formAvg = form.length > 0 ? form.reduce((s, p) => s + p, 0) / form.length : 8
+
+  let score = 50
+
+  if (paceLabel === '快步速') {
+    if (draw != null && draw >= 10) score += 18
+    else if (draw != null && draw >= 7) score += 10
+    if (formAvg > 6) score += 12
+    if (draw != null && draw <= 4) score -= 10
+  } else if (paceLabel === '慢步速') {
+    if (draw != null && draw <= 4) score += 18
+    else if (draw != null && draw <= 6) score += 10
+    if (formAvg <= 4) score += 12
+    if (draw != null && draw >= 10) score -= 10
+  }
+
+  return Math.max(0, Math.min(100, score))
+}
+
+/**
+ * Compute class movement score (0-100).
+ * Dropping in class = bonus, rising in class = penalty.
+ */
+function computeClassMovementScore(
+  row: RaceRow,
+  race: Race | undefined,
+  horseHistory: Map<string, HorseRaceRecord[]> | undefined,
+): number {
+  if (!race?.class_level || !horseHistory) return 50
+
+  const history = horseHistory.get(row.horse_id)
+  if (!history || history.length === 0) return 50
+
+  const recentClass = history[0]?.class_level
+  if (!recentClass) return 50
+
+  const classOrder = (c: string): number => {
+    const m = c.match(/(\d+)/)
+    return m ? parseInt(m[1], 10) : 5
+  }
+
+  const currentClass = classOrder(race.class_level)
+  const prevClass = classOrder(recentClass)
+  const diff = prevClass - currentClass
+
+  if (diff > 0) return Math.min(100, 65 + diff * 10)
+  if (diff < 0) return Math.max(0, 50 + diff * 8)
+  return 55
+}
+
+/**
+ * Compute the unified 9-component total score (0-100) for a single horse.
  * Uses dynamic weights based on racecourse (HV vs ST).
  */
-function computeTotalScore(row: RaceRow, totalRunners: number, venue?: string): number {
+function computeTotalScore(
+  row: RaceRow,
+  totalRunners: number,
+  venue?: string,
+  race?: Race,
+  horseHistory?: Map<string, HorseRaceRecord[]>,
+  paceLabel?: string,
+): number {
   const w = getWeightsByVenue(venue)
   const form = parseFormHistory(row.form_history)
   const draw = row.draw
@@ -49,39 +203,59 @@ function computeTotalScore(row: RaceRow, totalRunners: number, venue?: string): 
   const trainerWr = row.trainer_win_rate ?? 0.1
   const weight = row.actual_weight
 
-  // Form score (0-100): lower avg finish → higher score
   const formAvg = form.length > 0 ? form.reduce((s, p) => s + p, 0) / form.length : 10
   const formScore = Math.max(0, Math.min(100, (1 - (formAvg - 1) / 13) * 100))
 
-  // Draw score (0-100): inner draw → higher score
   const drawMax = Math.max(14, totalRunners)
   const drawScore = draw != null
     ? Math.max(0, Math.min(100, (1 - (draw - 1) / drawMax) * 100))
     : 50
 
-  // Jockey/Trainer score (0-100): 60% jockey + 40% trainer
   const jockeyScore = Math.max(0, Math.min(100, jockeyWr * 500))
   const trainerScore = Math.max(0, Math.min(100, trainerWr * 500))
   const jtScore = jockeyScore * 0.6 + trainerScore * 0.4
 
-  // Course/Distance score (0-100): based on weight
-  let cdScore = 60
+  let weightScore = 60
   if (weight != null) {
-    if (weight <= 118) cdScore += 20
-    else if (weight <= 124) cdScore += 10
-    else if (weight >= 132) cdScore -= 15
-    else if (weight >= 128) cdScore -= 5
+    if (weight <= 118) weightScore += 20
+    else if (weight <= 124) weightScore += 10
+    else if (weight >= 132) weightScore -= 15
+    else if (weight >= 128) weightScore -= 5
   }
-  cdScore = Math.max(0, Math.min(100, cdScore))
+  weightScore = Math.max(0, Math.min(100, weightScore))
 
-  return formScore * w.form + drawScore * w.draw + jtScore * w.jockeyTrainer + cdScore * w.course
+  const cdScore = computeCourseDistanceScore(row, race, horseHistory)
+  const restScore = computeRestDaysScore(row)
+  const gearScore = computeGearScore(row)
+  const paceScore = computePaceScore(row, paceLabel ?? '中等步速', totalRunners)
+  const classScore = computeClassMovementScore(row, race, horseHistory)
+
+  return (
+    formScore * w.form +
+    drawScore * w.draw +
+    jtScore * w.jockeyTrainer +
+    weightScore * w.weight +
+    cdScore * w.courseDistance +
+    restScore * w.restDays +
+    gearScore * w.gear +
+    paceScore * w.pace +
+    classScore * w.classMov
+  )
 }
 
-export function computeClientPredictions(rows: RaceRow[], venue?: string): RaceRow[] {
+export function computeClientPredictions(
+  rows: RaceRow[],
+  venue?: string,
+  race?: Race,
+  horseHistory?: Map<string, HorseRaceRecord[]>,
+): RaceRow[] {
   if (rows.length === 0) return rows
 
-  // Compute unified total score for each horse using dynamic venue weights
-  const totalScores = rows.map(r => computeTotalScore(r, rows.length, venue))
+  const pace = predictPace(rows)
+
+  const totalScores = rows.map(r =>
+    computeTotalScore(r, rows.length, venue, race, horseHistory, pace.label),
+  )
 
   // P_MODEL = softmax of total scores
   const pModels = softmax(totalScores)
@@ -854,7 +1028,12 @@ export interface BenterBreakdown {
   formScore: number
   drawScore: number
   jockeyTrainerScore: number
+  weightScore: number
   courseDistanceScore: number
+  restDaysScore: number
+  gearScore: number
+  paceScore: number
+  classMovScore: number
   totalScore: number
   pFinal: number | null
   summary: string
@@ -876,7 +1055,6 @@ export function computeBenterBreakdown(row: RaceRow, venue?: string): BenterBrea
   const weight = row.actual_weight
   const pFinal = row.prediction?.final_prob
 
-  // Use the same sub-score formulas as computeTotalScore
   const formAvg = form.length > 0 ? form.reduce((s, p) => s + p, 0) / form.length : 10
   const formScore = Math.max(0, Math.min(100, Math.round((1 - (formAvg - 1) / 13) * 100)))
 
@@ -889,20 +1067,31 @@ export function computeBenterBreakdown(row: RaceRow, venue?: string): BenterBrea
   const trainerScore = Math.max(0, Math.min(100, Math.round(trainerWr * 500)))
   const jockeyTrainerScore = Math.round(jockeyScore * 0.6 + trainerScore * 0.4)
 
-  let courseDistanceScore = 60
+  let weightScore = 60
   if (weight != null) {
-    if (weight <= 118) courseDistanceScore += 20
-    else if (weight <= 124) courseDistanceScore += 10
-    else if (weight >= 132) courseDistanceScore -= 15
-    else if (weight >= 128) courseDistanceScore -= 5
+    if (weight <= 118) weightScore += 20
+    else if (weight <= 124) weightScore += 10
+    else if (weight >= 132) weightScore -= 15
+    else if (weight >= 128) weightScore -= 5
   }
-  courseDistanceScore = Math.max(0, Math.min(100, courseDistanceScore))
+  weightScore = Math.max(0, Math.min(100, weightScore))
+
+  const courseDistanceScore = 50
+  const restDaysScore = computeRestDaysScore(row)
+  const gearScore = computeGearScore(row)
+  const paceScore = 50
+  const classMovScore = 50
 
   const totalScore = Math.round(
     formScore * w.form +
     drawScore * w.draw +
     jockeyTrainerScore * w.jockeyTrainer +
-    courseDistanceScore * w.course
+    weightScore * w.weight +
+    courseDistanceScore * w.courseDistance +
+    restDaysScore * w.restDays +
+    gearScore * w.gear +
+    paceScore * w.pace +
+    classMovScore * w.classMov
   )
 
   const venueKey = venue === 'HV' ? 'HV' : 'ST'
@@ -972,7 +1161,12 @@ export function computeBenterBreakdown(row: RaceRow, venue?: string): BenterBrea
     formScore,
     drawScore,
     jockeyTrainerScore,
+    weightScore,
     courseDistanceScore,
+    restDaysScore,
+    gearScore,
+    paceScore,
+    classMovScore,
     totalScore,
     pFinal: pFinal ?? null,
     summary,
