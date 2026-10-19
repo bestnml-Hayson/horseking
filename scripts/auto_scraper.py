@@ -451,9 +451,10 @@ def scrape_hkjc_races(date_str: str, venue: str, skip_odds: bool = False) -> Lis
 
                 for attempt in range(3):
                     try:
-                        page.goto(odds_url_base.format(race_no=race_no), wait_until='domcontentloaded', timeout=20000)
+                        page.goto(odds_url_base.format(race_no=race_no), wait_until='networkidle', timeout=30000)
+                        page.wait_for_timeout(3000)
                         try:
-                            page.wait_for_selector('.rc-odds-row', timeout=8000)
+                            page.wait_for_selector('.rc-odds-row', timeout=10000)
                         except Exception:
                             page.wait_for_timeout(5000)
 
@@ -865,7 +866,8 @@ def scrape_odds_only(date_str: str, venue: str) -> Dict[int, Dict[int, float]]:
         for race_no in range(1, 13):
             url = base_url.format(race_no=race_no)
             try:
-                page.goto(url, wait_until='domcontentloaded', timeout=20000)
+                page.goto(url, wait_until='networkidle', timeout=30000)
+                page.wait_for_timeout(3000)
                 try:
                     page.wait_for_selector('.rc-odds-row', timeout=10000)
                 except Exception:
