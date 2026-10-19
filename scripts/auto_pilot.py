@@ -28,7 +28,7 @@ Usage:
   python scripts/auto_pilot.py --archive-only   # only archive past races
   python scripts/auto_pilot.py --dry-run        # log what would happen, no writes
 """
-import io, sys, os, time, subprocess, argparse
+import io, sys, os, time, subprocess, argparse, random
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', line_buffering=True)
 sys.path.insert(0, os.path.dirname(__file__))
 
@@ -91,8 +91,15 @@ def discover_upcoming_race_days(lookahead_days: int = 7) -> List[Dict]:
     print(f"\n[Discover] Checking {len(date_list)} dates × 2 venues ({total_checks} checks) via HKJC...")
 
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True, args=['--no-sandbox', '--disable-gpu'])
+        browser = p.chromium.launch(headless=True, args=['--no-sandbox', '--disable-gpu', '--disable-blink-features=AutomationControlled'])
         page = browser.new_page()
+        page.set_extra_http_headers({
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+            'Referer': 'https://racing.hkjc.com/',
+        })
+        page.add_init_script('''() => {
+            Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
+        }''')
 
         for dl in date_list:
             date_str = dl['date']
@@ -105,8 +112,8 @@ def discover_upcoming_race_days(lookahead_days: int = 7) -> List[Dict]:
 
                 url = f"https://racing.hkjc.com/zh-hk/local/information/racecard?racedate={date_slash}&Racecourse={venue}&RaceNo=1"
                 try:
-                    page.goto(url, wait_until='domcontentloaded', timeout=20000)
-                    page.wait_for_timeout(3000)
+                    page.goto(url, wait_until='networkidle', timeout=20000)
+                    page.wait_for_timeout(random.randint(2000, 4000))
 
                     actual_url = page.url
                     if date_str.replace('-', '/') not in actual_url and date_str not in actual_url:
@@ -130,9 +137,9 @@ def discover_upcoming_race_days(lookahead_days: int = 7) -> List[Dict]:
                         print(f"  {date_str} {venue}: no data yet ({horse_count} horses)")
 
                 except Exception as e:
-                    print(f"  {date_str} {venue}: error — {e}")
+                    print(f"  {date_str} {venue}: error — {type(e).__name__}: {e}")
 
-                time.sleep(1)
+                time.sleep(random.uniform(1.5, 3.0))
 
         browser.close()
 

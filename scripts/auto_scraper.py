@@ -25,6 +25,7 @@ import sys
 import json
 import re
 import argparse
+import random
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 from zoneinfo import ZoneInfo
@@ -183,17 +184,30 @@ def scrape_hkjc_races(date_str: str, venue: str, skip_odds: bool = False) -> Lis
     print(f"\n[Scraper] Starting HKJC scraper for {date_str} {venue_cn}...")
 
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True, args=['--no-sandbox', '--disable-gpu'])
+        browser = p.chromium.launch(headless=True, args=[
+            '--no-sandbox', '--disable-gpu',
+            '--disable-blink-features=AutomationControlled',
+        ])
         page = browser.new_page()
+        page.set_extra_http_headers({
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+            'Accept-Language': 'zh-HK,zh-TW;q=0.9,zh;q=0.8,en-US;q=0.7,en;q=0.6',
+            'Referer': 'https://racing.hkjc.com/',
+        })
+        page.add_init_script('''() => {
+            Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
+        }''')
 
         for race_no in range(1, 13):
             print(f"  Scraping R{race_no}...")
 
             try:
-                # New HKJC URL format (2026+) - lowercase racedate, slash format
                 racecard_url = f"https://racing.hkjc.com/zh-hk/local/information/racecard?racedate={date_slash}&Racecourse={venue}&RaceNo={race_no}"
-                page.goto(racecard_url, wait_until='domcontentloaded', timeout=30000)
-                page.wait_for_timeout(4000)
+                resp = page.goto(racecard_url, wait_until='networkidle', timeout=30000)
+                if resp and resp.status != 200:
+                    print(f"    [WARN] R{race_no}: HTTP {resp.status} from HKJC")
+                page.wait_for_timeout(random.randint(3000, 5000))
 
                 horses = page.evaluate('''() => {
                     const horses = [];
@@ -435,9 +449,14 @@ def scrape_hkjc_races(date_str: str, venue: str, skip_odds: bool = False) -> Lis
                 print(f"    [OK] {len(horses)} horses | dist={race_meta.get('distance')} going={race_meta.get('going')} class={race_meta.get('class_level')}")
 
             except Exception as e:
-                print(f"    [FAIL] R{race_no}: {e}")
+                err_type = type(e).__name__
+                print(f"    [FAIL] R{race_no}: [{err_type}] {e}")
                 if race_no > 1:
                     break
+
+            # Random delay between racecard requests to avoid rate limiting
+            if race_no < 12:
+                page.wait_for_timeout(random.randint(2000, 4000))
 
         # Second pass: fetch odds from bet.hkjc.com (skip in pre-race mode)
         if skip_odds:
@@ -451,8 +470,10 @@ def scrape_hkjc_races(date_str: str, venue: str, skip_odds: bool = False) -> Lis
 
                 for attempt in range(3):
                     try:
-                        page.goto(odds_url_base.format(race_no=race_no), wait_until='networkidle', timeout=30000)
-                        page.wait_for_timeout(3000)
+                        resp = page.goto(odds_url_base.format(race_no=race_no), wait_until='networkidle', timeout=30000)
+                        if resp and resp.status != 200:
+                            print(f"    [WARN] R{race_no} odds: HTTP {resp.status}")
+                        page.wait_for_timeout(random.randint(2000, 4000))
                         try:
                             page.wait_for_selector('.rc-odds-row', timeout=10000)
                         except Exception:
@@ -485,17 +506,18 @@ def scrape_hkjc_races(date_str: str, venue: str, skip_odds: bool = False) -> Lis
                             break
                         else:
                             print(f"    [RETRY {attempt+1}/3] R{race_no}: 0 horses with odds, retrying...")
-                            page.wait_for_timeout(3000)
+                            page.wait_for_timeout(random.randint(3000, 5000))
 
                     except Exception as e:
+                        err_type = type(e).__name__
                         err_str = str(e)
-                        print(f"    [RETRY {attempt+1}/3] R{race_no} odds: {e}")
+                        print(f"    [RETRY {attempt+1}/3] R{race_no} odds: [{err_type}] {err_str[:200]}")
                         if 'crashed' in err_str.lower() or 'crash' in err_str.lower():
                             print(f"    [FALLBACK] R{race_no}: page crashed, leaving odds as 0 (will show N/A)")
                             odds_scraped = True
                             break
                         try:
-                            page.wait_for_timeout(2000)
+                            page.wait_for_timeout(random.randint(2000, 4000))
                         except Exception:
                             pass
 
@@ -797,10 +819,17 @@ def detect_venue_from_hkjc(date_str: str) -> Optional[str]:
             # New HKJC URL format (2026+) - lowercase racedate
             url = f"https://racing.hkjc.com/zh-hk/local/information/racecard?racedate={date_slash}&Racecourse={venue}&RaceNo=1"
             with sync_playwright() as p:
-                browser = p.chromium.launch(headless=True, args=['--no-sandbox', '--disable-gpu'])
+                browser = p.chromium.launch(headless=True, args=['--no-sandbox', '--disable-gpu', '--disable-blink-features=AutomationControlled'])
                 page = browser.new_page()
-                page.goto(url, wait_until='domcontentloaded', timeout=20000)
-                page.wait_for_timeout(3000)
+                page.set_extra_http_headers({
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+                    'Referer': 'https://racing.hkjc.com/',
+                })
+                page.add_init_script('''() => {
+                    Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
+                }''')
+                page.goto(url, wait_until='networkidle', timeout=20000)
+                page.wait_for_timeout(random.randint(2000, 4000))
                 horse_count = page.evaluate('''() => {
                     const tables = document.querySelectorAll('table');
                     for (const t of tables) {
@@ -860,14 +889,23 @@ def scrape_odds_only(date_str: str, venue: str) -> Dict[int, Dict[int, float]]:
     all_odds = {}
 
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True, args=['--no-sandbox', '--disable-gpu'])
+        browser = p.chromium.launch(headless=True, args=['--no-sandbox', '--disable-gpu', '--disable-blink-features=AutomationControlled'])
         page = browser.new_page()
+        page.set_extra_http_headers({
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+            'Referer': 'https://bet.hkjc.com/',
+        })
+        page.add_init_script('''() => {
+            Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
+        }''')
 
         for race_no in range(1, 13):
             url = base_url.format(race_no=race_no)
             try:
-                page.goto(url, wait_until='networkidle', timeout=30000)
-                page.wait_for_timeout(3000)
+                resp = page.goto(url, wait_until='networkidle', timeout=30000)
+                if resp and resp.status != 200:
+                    print(f"  [WARN] R{race_no} odds: HTTP {resp.status}")
+                page.wait_for_timeout(random.randint(2000, 4000))
                 try:
                     page.wait_for_selector('.rc-odds-row', timeout=10000)
                 except Exception:
