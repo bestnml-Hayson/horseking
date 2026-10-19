@@ -404,12 +404,14 @@ def scrape_hkjc_races(date_str: str, venue: str, skip_odds: bool = False) -> Lis
                     const goingMatch = block.match(/好至黏快|好至快地|好至黏地|好地|快地|慢地|軟地|黏地/);
                     const classMatch = block.match(/第[一二三四五六七八九十]+班/);
                     const trackMatch = block.match(/(草地|全天候跑道)/);
+                    const timeMatch = block.match(/,\s*(\d{1,2}:\d{2})\s*$/m) || block.match(/(\d{1,2}:\d{2})\s*$/m);
 
                     return {
                         distance: distMatch ? parseInt(distMatch[1]) : null,
                         going: goingMatch ? goingMatch[0] : null,
                         class_level: classMatch ? classMatch[0] : null,
                         track_course: trackMatch ? trackMatch[1].trim() : null,
+                        race_time: timeMatch ? timeMatch[1].trim() : null,
                     };
                 }''')
 
@@ -426,6 +428,7 @@ def scrape_hkjc_races(date_str: str, venue: str, skip_odds: bool = False) -> Lis
                     'class_level': race_meta.get('class_level'),
                     'going': race_meta.get('going'),
                     'track_course': race_meta.get('track_course'),
+                    'race_time': race_meta.get('race_time'),
                     'horses': horses,
                 }
                 all_races.append(race_data)
@@ -654,6 +657,7 @@ def write_to_supabase(supabase: Client, races: List[Dict], dry_run: bool = False
             'class_level': truncate(race.get('class_level'), 32) if race.get('class_level') else None,
             'going': truncate(validate_going(race.get('going')), 32) if validate_going(race.get('going')) else None,
             'track_course': truncate(race.get('track_course'), 16) if race.get('track_course') else None,
+            'race_time': race.get('race_time'),
         }
         retry_supabase(lambda: supabase.table('races').upsert(race_row, on_conflict='race_id').execute())
 
@@ -769,7 +773,8 @@ def write_to_supabase(supabase: Client, races: List[Dict], dry_run: bool = False
 # =====================================================================
 # Auto-detect date and venue
 # =====================================================================
-def auto_detect_venue(today: datetime) -> str:
+def auto_detect_venue(today: datetime) -> Optional[str]:
+    """Detect venue by weekday; returns None for Mon/Fri (caller should try both)."""
     weekday = today.weekday()
     if weekday in (2, 5):
         return 'ST'
@@ -779,7 +784,7 @@ def auto_detect_venue(today: datetime) -> str:
 
 
 def detect_venue_from_hkjc(date_str: str) -> Optional[str]:
-    """Check HKJC website to determine actual venue for a given date."""
+    """Check HKJC website to determine actual venue for a given date. Tries both ST and HV."""
     try:
         from playwright.sync_api import sync_playwright
     except ImportError:
@@ -947,7 +952,8 @@ def main():
         venue = detect_venue_from_hkjc(date_str)
         if not venue:
             venue = auto_detect_venue(today)
-            print(f"[AutoDetect] HKJC detection failed, falling back to weekday mapping: {venue}")
+            if venue:
+                print(f"[AutoDetect] HKJC detection failed, falling back to weekday mapping: {venue}")
     elif args.venue:
         venue = args.venue
     else:
@@ -955,8 +961,13 @@ def main():
         venue = detected or auto_detect_venue(today)
         if detected:
             pass
-        else:
+        elif venue:
             print(f"[AutoDetect] Using weekday-based venue: {venue}")
+
+    if not venue:
+        # Mon/Fri: weekday mapping doesn't cover these; try both venues
+        print(f"[AutoDetect] Weekday mapping inconclusive for {date_str}, trying both venues via HKJC...")
+        venue = detect_venue_from_hkjc(date_str)
 
     if not venue:
         print(f"[INFO] No race day detected for {date_str}. Nothing to do.")

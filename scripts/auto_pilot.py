@@ -39,6 +39,7 @@ from common import get_supabase, retry_supabase
 
 HKT = ZoneInfo('Asia/Hong_Kong')
 
+# Venue priority by weekday (used as hint, not filter — both venues are always checked)
 VENUE_WEEKDAYS = {
     'ST': [2, 5],       # Wed, Sat
     'HV': [1, 3, 6],    # Tue, Thu, Sun
@@ -55,6 +56,7 @@ def now_hkt() -> datetime:
 def discover_upcoming_race_days(lookahead_days: int = 7) -> List[Dict]:
     """
     Check HKJC racecard pages for the next N days to find race days.
+    For each date, tries BOTH ST and HV — no weekday filtering.
     Returns list of {'date': 'YYYY-MM-DD', 'venue': 'ST'|'HV'}
     """
     try:
@@ -64,71 +66,77 @@ def discover_upcoming_race_days(lookahead_days: int = 7) -> List[Dict]:
         return []
 
     today = now_hkt()
-    candidates = []
+    date_list = []
 
     for d in range(0, lookahead_days + 1):
         dt = today + timedelta(days=d)
         date_str = dt.strftime('%Y-%m-%d')
         wd = dt.weekday()
 
-        venue = None
+        # Pick primary venue by weekday as a hint, but we'll check both
+        primary = 'ST'
         for v, weekdays in VENUE_WEEKDAYS.items():
             if wd in weekdays:
-                venue = v
+                primary = v
                 break
-        if not venue:
-            continue
+        venues_to_try = [primary, 'HV' if primary == 'ST' else 'ST']
 
-        candidates.append({'date': date_str, 'venue': venue})
+        date_list.append({'date': date_str, 'venues': venues_to_try})
 
-    if not candidates:
+    if not date_list:
         return []
 
     discovered = []
-    print(f"\n[Discover] Checking {len(candidates)} candidate dates via HKJC...")
+    total_checks = sum(len(dl['venues']) for dl in date_list)
+    print(f"\n[Discover] Checking {len(date_list)} dates × 2 venues ({total_checks} checks) via HKJC...")
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True, args=['--no-sandbox', '--disable-gpu'])
         page = browser.new_page()
 
-        for cand in candidates:
-            date_str = cand['date']
-            venue = cand['venue']
+        for dl in date_list:
+            date_str = dl['date']
             date_slash = date_str.replace('-', '/')
+            found = False
 
-            url = f"https://racing.hkjc.com/zh-hk/local/information/racecard?racedate={date_slash}&Racecourse={venue}&RaceNo=1"
-            try:
-                page.goto(url, wait_until='domcontentloaded', timeout=20000)
-                page.wait_for_timeout(3000)
+            for venue in dl['venues']:
+                if found:
+                    break
 
-                actual_url = page.url
-                if date_str.replace('-', '/') not in actual_url and date_str not in actual_url:
-                    print(f"  {date_str} {venue}: HKJC redirected → no racecard available")
-                    continue
+                url = f"https://racing.hkjc.com/zh-hk/local/information/racecard?racedate={date_slash}&Racecourse={venue}&RaceNo=1"
+                try:
+                    page.goto(url, wait_until='domcontentloaded', timeout=20000)
+                    page.wait_for_timeout(3000)
 
-                horse_count = page.evaluate('''() => {
-                    const tables = document.querySelectorAll('table');
-                    for (const t of tables) {
-                        const rows = t.querySelectorAll('tr');
-                        if (rows.length >= 5) return rows.length - 1;
-                    }
-                    return 0;
-                }''')
+                    actual_url = page.url
+                    if date_str.replace('-', '/') not in actual_url and date_str not in actual_url:
+                        print(f"  {date_str} {venue}: HKJC redirected → no racecard")
+                        continue
 
-                if horse_count >= 4:
-                    discovered.append(cand)
-                    print(f"  {date_str} {venue}: CONFIRMED ({horse_count} horses in R1)")
-                else:
-                    print(f"  {date_str} {venue}: no data yet ({horse_count} horses)")
+                    horse_count = page.evaluate('''() => {
+                        const tables = document.querySelectorAll('table');
+                        for (const t of tables) {
+                            const rows = t.querySelectorAll('tr');
+                            if (rows.length >= 5) return rows.length - 1;
+                        }
+                        return 0;
+                    }''')
 
-            except Exception as e:
-                print(f"  {date_str} {venue}: error — {e}")
+                    if horse_count >= 4:
+                        discovered.append({'date': date_str, 'venue': venue})
+                        print(f"  {date_str} {venue}: CONFIRMED ({horse_count} horses in R1)")
+                        found = True
+                    else:
+                        print(f"  {date_str} {venue}: no data yet ({horse_count} horses)")
 
-            time.sleep(1)
+                except Exception as e:
+                    print(f"  {date_str} {venue}: error — {e}")
+
+                time.sleep(1)
 
         browser.close()
 
-    print(f"[Discover] Found {len(discovered)} upcoming race days")
+    print(f"[Discover] Found {len(discovered)} race days")
     return discovered
 
 
