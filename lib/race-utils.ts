@@ -280,7 +280,10 @@ export function computeClientPredictions(
       return { ...row, prediction }
     }
 
-    const pMarket = softmax(oddsList.map(o => (o != null && o > 1) ? 1 / o : 0))[i]
+    // P_MARKET = (1/odds) / sum(1/odds) — simple normalization, NOT softmax
+    const pRawList = oddsList.map(o => (o != null && o > 1) ? 1 / o : 0)
+    const sumPRaw = pRawList.reduce((a, b) => a + b, 0)
+    const pMarket = sumPRaw > 0 ? pRawList[i] / sumPRaw : 1 / oddsList.length
     const pFinal = MODEL_WEIGHT * pModel + MARKET_WEIGHT * pMarket
     const odds = row.win_odds
     const ev = (odds != null && odds > 1) ? pFinal * odds - 1 : null
