@@ -39,11 +39,17 @@ jobs:
           pip install --quiet -r requirements.txt
           python -c "from supabase import create_client; print('[OK] supabase loaded')"
 
-      - name: Run post-race analysis
+      - name: Import race results & analyze
         run: |
-          echo "=== [PostRaceAnalysis] $(date -u '+%Y-%m-%d %H:%M:%S UTC') ==="
+          echo "=== [PostRaceImport] $(date -u '+%Y-%m-%d %H:%M:%S UTC') ==="
           python scripts/post_race_analyzer.py --all
-          echo "=== [PostRaceAnalysis] Done ==="
+          echo "=== [PostRaceImport] Done ==="
+
+      - name: Run AI review with key factors
+        run: |
+          echo "=== [AIReview] $(date -u '+%Y-%m-%d %H:%M:%S UTC') ==="
+          python scripts/ai_review.py --all
+          echo "=== [AIReview] Done ==="
 
       - name: Summary
         if: always()

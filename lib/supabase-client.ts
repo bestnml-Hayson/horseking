@@ -22,7 +22,7 @@ export async function fetchLatestRaces(): Promise<Race[]> {
   // Priority 1: Find today/future races with runners (fully populated)
   const { data: allCandidateRaces, error: candidateError } = await supabase
     .from('races')
-    .select('race_id, race_date, venue')
+    .select('race_id, race_date, venue, race_time')
     .gte('race_date', today)
     .order('race_date', { ascending: true })
     .order('race_no', { ascending: true })
@@ -78,7 +78,7 @@ export async function fetchLatestRaces(): Promise<Race[]> {
     console.log(`[fetchLatestRaces] No future races found, looking for most recent past race`)
     const { data: recentRaces } = await supabase
       .from('races')
-      .select('race_id, race_date, venue, is_finished')
+      .select('race_id, race_date, venue, race_time, is_finished')
       .lte('race_date', today)
       .order('race_date', { ascending: false })
       .limit(30)

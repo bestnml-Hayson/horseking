@@ -2,7 +2,7 @@
 
 import type { RaceRow } from '@/lib/types'
 import {
-  generateHorseInsight,
+  generateQuantInsight,
   fmtOdds,
   fmtEV,
   fmtKelly,
@@ -11,6 +11,15 @@ import {
   parseFormHistory,
 } from '@/lib/race-utils'
 import { PICK_ACCENT_COLORS, MUTED_TEXT_COLOR } from '@/lib/color-utils'
+
+const TAG_COLORS: Record<string, { bg: string; color: string; border: string }> = {
+  elite: { bg: '#fbbf2420', color: '#fbbf24', border: '#fbbf2440' },
+  value: { bg: '#10b98120', color: '#10b981', border: '#10b98140' },
+  underlay: { bg: '#ef444420', color: '#ef4444', border: '#ef444440' },
+  longshot: { bg: '#a855f720', color: '#a855f7', border: '#a855f740' },
+  solid: { bg: '#3b82f620', color: '#60a5fa', border: '#3b82f640' },
+  weak: { bg: '#6b728020', color: '#9ca3af', border: '#6b728040' },
+}
 
 interface TopPicksCardsProps {
   picks: RaceRow[]
@@ -148,7 +157,18 @@ export function TopPicksCards({ picks, totalRunners, paceLabel, onHorseClick }: 
               </div>
 
               <div className="pick-ai-insight">
-                {generateHorseInsight(row, idx, totalRunners ?? picks.length, paceLabel)}
+                {(() => {
+                  const qi = generateQuantInsight(row, idx + 1, totalRunners ?? picks.length, paceLabel)
+                  const tc = TAG_COLORS[qi.tagClass] ?? TAG_COLORS.solid
+                  return (
+                    <>
+                      <span className="qi-tag" style={{ backgroundColor: tc.bg, color: tc.color, borderColor: tc.border }}>{qi.tag}</span>
+                      <span className="qi-text">{qi.base}</span>
+                      <span className="qi-text qi-tactical">{qi.tactical}</span>
+                      <span className="qi-text qi-rec">{qi.recommendation}</span>
+                    </>
+                  )
+                })()}
               </div>
             </div>
           )

@@ -167,7 +167,7 @@ def inject_odds_for_upcoming_races(supabase, dry_run: bool = False):
     # Check which races already have odds
     race_ids = [r['race_id'] for r in today_races]
     odds_resp = retry_supabase(
-        lambda: supabase.table('race_runners').select('race_id,win_odds').in('race_id', race_ids).not_.is_('win_odds', 'null').execute()
+        lambda: supabase.table('race_runners').select('race_id,win_odds').in_('race_id', race_ids).not_.is_('win_odds', 'null').execute()
     )
     races_with_odds = set(r['race_id'] for r in (odds_resp.data or []))
 
@@ -412,125 +412,21 @@ def apply_results(supabase, race_id: str, results: List[Dict]) -> int:
 
 
 def generate_ai_review(supabase, race_ids: List[str]) -> int:
-    """Generate AI performance review records for finished races."""
-    import json
+    """Delegate to ai_review.py for comprehensive structured analysis."""
+    if not race_ids:
+        return 0
 
-    reviewed = 0
-    for race_id in race_ids:
-        race_resp = retry_supabase(
-            lambda: supabase.table('races').select('race_date,venue,race_no').eq('race_id', race_id).single().execute()
+    try:
+        result = subprocess.run(
+            [sys.executable, os.path.join(os.path.dirname(__file__), 'ai_review.py'),
+             '--all'],
+            capture_output=False,
+            timeout=120
         )
-        race_meta = race_resp.data
-        if not race_meta:
-            continue
-
-        runners_resp = retry_supabase(
-            lambda: supabase.table('race_runners').select('*').eq('race_id', race_id).execute()
-        )
-        preds_resp = retry_supabase(
-            lambda: supabase.table('model_predictions').select('*').eq('race_id', race_id).execute()
-        )
-
-        runners = runners_resp.data or []
-        preds = preds.data or []
-
-        finished = [r for r in runners if r.get('finish_position') is not None]
-        if not finished or not preds:
-            continue
-
-        finished.sort(key=lambda r: r['finish_position'])
-        runner_map = {r['runner_id']: r for r in runners}
-        pred_map = {p['runner_id']: p for p in preds}
-
-        sorted_preds = sorted(
-            preds,
-            key=lambda p: (p.get('final_prob') or p.get('raw_model_prob') or 0),
-            reverse=True,
-        )
-
-        top1 = sorted_preds[0]
-        top1_runner = runner_map.get(top1['runner_id'])
-        top1_finish = top1_runner.get('finish_position') if top1_runner else None
-        top1_hit = top1_finish == 1
-
-        top3 = sorted_preds[:3]
-        top3_hit = 0
-        top3_info = []
-        for p in top3:
-            r = runner_map.get(p['runner_id'])
-            fp = r.get('finish_position') if r else None
-            hit = fp is not None and fp <= 3
-            if hit:
-                top3_hit += 1
-            top3_info.append({
-                'runner_id': p['runner_id'],
-                'horse_no': r.get('horse_no') if r else None,
-                'finish_pos': fp,
-                'predicted_prob': p.get('final_prob') or p.get('raw_model_prob'),
-                'hit': hit,
-            })
-
-        total_bets = 0
-        total_returns = 0
-        for p in sorted_preds:
-            ev = p.get('expected_value') or 0
-            if ev > 0.15:
-                r = runner_map.get(p['runner_id'])
-                if r and r.get('win_odds') and r.get('finish_position'):
-                    total_bets += 100
-                    if r['finish_position'] == 1:
-                        total_returns += 100 * r['win_odds']
-        roi = ((total_returns - total_bets) / total_bets * 100) if total_bets > 0 else 0
-
-        winner = finished[0]
-        winner_odds = winner.get('win_odds')
-        winner_pred = pred_map.get(winner['runner_id'])
-        winner_p = (winner_pred.get('raw_model_prob') or winner_pred.get('final_prob')) if winner_pred else None
-
-        is_upset = winner_odds and winner_odds >= 12.0
-        ai_under = is_upset and winner_p and winner_p < 0.10
-        rno = race_meta['race_no']
-
-        if ai_under:
-            commentary = f'R{rno} 爆冷：#{winner_odds:.0f}x 大冷門跑出，AI 模型僅給 {winner_p*100:.0f}% 勝率，需檢討隱藏因素'
-        elif is_upset:
-            commentary = f'R{rno} 冷門：#{winner_odds:.0f}x 馬胜出，AI 有留意但賠率反映市場低估'
-        elif top1_hit and roi > 0:
-            commentary = f'R{rno} AI 首選命中，EV 策略回報 +{roi:.0f}%，模型判斷準確'
-        elif top1_hit and roi <= 0:
-            commentary = f'R{rno} AI 首選跑出，但 EV 策略虧損 {roi:.0f}%，需收緊入選門檻'
-        elif top3_hit >= 2:
-            commentary = f'R{rno} AI 前三膽命中 {top3_hit}/3，整體方向正確'
-        elif top3_hit == 1:
-            commentary = f'R{rno} AI 前三膽僅中 1/3，命中率偏低'
-        elif total_bets > 0 and roi < -50:
-            commentary = f'R{rno} AI 全數落空且重虧 {roi:.0f}%，本場存在模型未涵蓋因素'
-        else:
-            commentary = f'R{rno} AI 預測落空，前三膽全數未進前三，累積數據用於權重修正'
-
-        row = {
-            'race_id': race_id,
-            'race_date': race_meta['race_date'],
-            'venue': race_meta['venue'],
-            'race_no': rno,
-            'top1_pick_runner_id': top1['runner_id'],
-            'top1_pick_finish_pos': top1_finish,
-            'top1_hit': top1_hit,
-            'top3_picks': json.dumps(top3_info, ensure_ascii=False),
-            'top3_hit_count': top3_hit,
-            'total_bets': total_bets,
-            'total_returns': round(total_returns, 2),
-            'roi_percent': round(roi, 2),
-            'key_factors': json.dumps({'commentary': commentary}, ensure_ascii=False),
-        }
-
-        retry_supabase(
-            lambda: supabase.table('ai_performance').upsert(row, on_conflict='race_id').execute()
-        )
-        reviewed += 1
-        print(f"    [AI Review] R{rno}: top1_hit={top1_hit}, top3={top3_hit}/3, roi={roi:.1f}%")
-
-    return reviewed
+        return len(race_ids) if result.returncode == 0 else 0
+    except Exception as e:
+        print(f"  [AI Review] subprocess failed: {e}")
+        return 0
 
 
 # =====================================================================
