@@ -112,8 +112,8 @@ def discover_upcoming_race_days(lookahead_days: int = 7) -> List[Dict]:
 
                 url = f"https://racing.hkjc.com/zh-hk/local/information/racecard?racedate={date_slash}&Racecourse={venue}&RaceNo=1"
                 try:
-                    page.goto(url, wait_until='networkidle', timeout=20000)
-                    page.wait_for_timeout(random.randint(2000, 4000))
+                    page.goto(url, wait_until='domcontentloaded', timeout=20000)
+                    page.wait_for_timeout(random.randint(3000, 5000))
 
                     actual_url = page.url
                     if date_str.replace('-', '/') not in actual_url and date_str not in actual_url:

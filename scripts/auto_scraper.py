@@ -204,10 +204,10 @@ def scrape_hkjc_races(date_str: str, venue: str, skip_odds: bool = False) -> Lis
 
             try:
                 racecard_url = f"https://racing.hkjc.com/zh-hk/local/information/racecard?racedate={date_slash}&Racecourse={venue}&RaceNo={race_no}"
-                resp = page.goto(racecard_url, wait_until='networkidle', timeout=30000)
+                resp = page.goto(racecard_url, wait_until='domcontentloaded', timeout=30000)
                 if resp and resp.status != 200:
                     print(f"    [WARN] R{race_no}: HTTP {resp.status} from HKJC")
-                page.wait_for_timeout(random.randint(3000, 5000))
+                page.wait_for_timeout(random.randint(4000, 6000))
 
                 horses = page.evaluate('''() => {
                     const horses = [];
@@ -470,10 +470,10 @@ def scrape_hkjc_races(date_str: str, venue: str, skip_odds: bool = False) -> Lis
 
                 for attempt in range(3):
                     try:
-                        resp = page.goto(odds_url_base.format(race_no=race_no), wait_until='networkidle', timeout=30000)
+                        resp = page.goto(odds_url_base.format(race_no=race_no), wait_until='domcontentloaded', timeout=30000)
                         if resp and resp.status != 200:
                             print(f"    [WARN] R{race_no} odds: HTTP {resp.status}")
-                        page.wait_for_timeout(random.randint(2000, 4000))
+                        page.wait_for_timeout(random.randint(4000, 6000))
                         try:
                             page.wait_for_selector('.rc-odds-row', timeout=10000)
                         except Exception:
@@ -828,8 +828,8 @@ def detect_venue_from_hkjc(date_str: str) -> Optional[str]:
                 page.add_init_script('''() => {
                     Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
                 }''')
-                page.goto(url, wait_until='networkidle', timeout=20000)
-                page.wait_for_timeout(random.randint(2000, 4000))
+                page.goto(url, wait_until='domcontentloaded', timeout=20000)
+                page.wait_for_timeout(random.randint(3000, 5000))
                 horse_count = page.evaluate('''() => {
                     const tables = document.querySelectorAll('table');
                     for (const t of tables) {
@@ -902,10 +902,10 @@ def scrape_odds_only(date_str: str, venue: str) -> Dict[int, Dict[int, float]]:
         for race_no in range(1, 13):
             url = base_url.format(race_no=race_no)
             try:
-                resp = page.goto(url, wait_until='networkidle', timeout=30000)
+                resp = page.goto(url, wait_until='domcontentloaded', timeout=30000)
                 if resp and resp.status != 200:
                     print(f"  [WARN] R{race_no} odds: HTTP {resp.status}")
-                page.wait_for_timeout(random.randint(2000, 4000))
+                page.wait_for_timeout(random.randint(4000, 6000))
                 try:
                     page.wait_for_selector('.rc-odds-row', timeout=10000)
                 except Exception:
