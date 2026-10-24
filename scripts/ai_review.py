@@ -329,6 +329,7 @@ def main():
     parser.add_argument('--venue', choices=['ST', 'HV'], help='Venue code')
     parser.add_argument('--race', help='Comma-separated race numbers (e.g., 1,2,3)')
     parser.add_argument('--all', action='store_true', help='Review all finished races')
+    parser.add_argument('--race-ids', help='Comma-separated race IDs to review')
     args = parser.parse_args()
 
     today = datetime.now(HKT)
@@ -336,7 +337,10 @@ def main():
 
     supabase = get_supabase()
 
-    if args.all:
+    if args.race_ids:
+        race_ids = [x.strip() for x in args.race_ids.split(',') if x.strip()]
+        print(f"[AI Review] Reviewing {len(race_ids)} specific races...")
+    elif args.all:
         print("[AI Review] Analyzing all completed races...")
         runners_resp = supabase.table('race_runners').select('race_id,finish_position').not_.is_('finish_position', 'null').execute()
         race_ids = list(set(r['race_id'] for r in (runners_resp.data or [])))

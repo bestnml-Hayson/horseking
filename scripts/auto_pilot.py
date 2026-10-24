@@ -419,7 +419,7 @@ def generate_ai_review(supabase, race_ids: List[str]) -> int:
     try:
         result = subprocess.run(
             [sys.executable, os.path.join(os.path.dirname(__file__), 'ai_review.py'),
-             '--all'],
+             '--race-ids', ','.join(race_ids)],
             capture_output=False,
             timeout=120
         )
