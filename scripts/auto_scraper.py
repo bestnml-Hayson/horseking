@@ -633,6 +633,7 @@ def write_to_supabase(supabase: Client, races: List[Dict], dry_run: bool = False
     validate_race_data(races)
 
     print(f"\n[Write] Writing {len(races)} races to Supabase...")
+    print(f"  [INFO] Supabase URL: {os.environ.get('SUPABASE_URL') or os.environ.get('NEXT_PUBLIC_SUPABASE_URL', 'NOT SET')[:30]}...")
 
     # Dynamic jockey/trainer win rates from Supabase history
     jockey_wr, trainer_wr = compute_jockey_trainer_win_rates(supabase)

@@ -235,11 +235,14 @@ def scrape_new_race_days(supabase, race_days: List[Dict], dry_run: bool = False)
             continue
 
         try:
+            # Explicitly pass environment to ensure subprocess sees Supabase creds
+            env = os.environ.copy()
             result = subprocess.run(
                 [sys.executable, os.path.join(os.path.dirname(__file__), 'auto_scraper.py'),
                  '--date', date_str, '--venue', venue, '--pre-race'],
                 capture_output=False,
-                timeout=300
+                timeout=300,
+                env=env
             )
             if result.returncode == 0:
                 scraped += 1
@@ -417,11 +420,13 @@ def generate_ai_review(supabase, race_ids: List[str]) -> int:
         return 0
 
     try:
+        env = os.environ.copy()
         result = subprocess.run(
             [sys.executable, os.path.join(os.path.dirname(__file__), 'ai_review.py'),
              '--race-ids', ','.join(race_ids)],
             capture_output=False,
-            timeout=120
+            timeout=120,
+            env=env
         )
         return len(race_ids) if result.returncode == 0 else 0
     except Exception as e:
