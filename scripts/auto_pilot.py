@@ -28,7 +28,7 @@ Usage:
   python scripts/auto_pilot.py --archive-only   # only archive past races
   python scripts/auto_pilot.py --dry-run        # log what would happen, no writes
 """
-import io, sys, os, time, subprocess, argparse, random
+import io, sys, os, time, argparse, random
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', line_buffering=True)
 sys.path.insert(0, os.path.dirname(__file__))
 
@@ -156,7 +156,10 @@ def inject_odds_for_upcoming_races(supabase, dry_run: bool = False):
 
     # Find races today that have runners but no odds
     resp = retry_supabase(
-        lambda: supabase.table('races').select('race_id,race_date,venue,race_no').eq('race_date', today_str).eq('is_finished', False).execute()
+        lambda: supabase.table('races').select('race_id,race_date,venue,race_no')
+        .eq('race_date', today_str)
+        .or_('is_finished.eq.false,is_finished.is.null')
+        .execute()
     )
     today_races = resp.data or []
 
@@ -179,30 +182,29 @@ def inject_odds_for_upcoming_races(supabase, dry_run: bool = False):
 
     print(f"\n[Odds Injection] {len(races_needing_odds)} races need odds injection")
 
+    from auto_scraper import scrape_odds_only, update_odds_in_supabase
+
     date_venue_pairs = set((r['race_date'], r['venue']) for r in races_needing_odds)
     injected = 0
 
     for date_str, venue in sorted(date_venue_pairs):
         print(f"\n  [Odds] {date_str} {venue}: scraping live odds...")
         if dry_run:
-            print(f"  [DRY-RUN] Would run: auto_scraper.py --date {date_str} --venue {venue} --odds-only")
+            print(f"  [DRY-RUN] Would scrape odds for {date_str} {venue}")
             injected += 1
             continue
 
         try:
-            result = subprocess.run(
-                [sys.executable, os.path.join(os.path.dirname(__file__), 'auto_scraper.py'),
-                 '--date', date_str, '--venue', venue, '--odds-only'],
-                capture_output=False,
-                timeout=180
-            )
-            if result.returncode == 0:
-                injected += 1
-                print(f"  [OK] {date_str} {venue}: odds injected")
+            odds_map = scrape_odds_only(date_str, venue)
+            if odds_map:
+                updated = update_odds_in_supabase(supabase, date_str, venue, odds_map)
+                if updated > 0:
+                    injected += 1
+                    print(f"  [OK] {date_str} {venue}: {updated} odds injected")
+                else:
+                    print(f"  [WARN] {date_str} {venue}: no odds written")
             else:
-                print(f"  [FAIL] {date_str} {venue}: exit code {result.returncode}")
-        except subprocess.TimeoutExpired:
-            print(f"  [TIMEOUT] {date_str} {venue}: exceeded 3 min")
+                print(f"  [WARN] {date_str} {venue}: no odds scraped")
         except Exception as e:
             print(f"  [ERROR] {date_str} {venue}: {e}")
 
@@ -212,9 +214,14 @@ def inject_odds_for_upcoming_races(supabase, dry_run: bool = False):
 
 
 def scrape_new_race_days(supabase, race_days: List[Dict], dry_run: bool = False):
-    """For each discovered race day, check if already in DB. If not, run auto_scraper."""
+    """For each discovered race day, check if already in DB. If not, scrape directly."""
     if not race_days:
         return 0
+
+    from auto_scraper import (
+        scrape_hkjc_races, write_to_supabase, clear_old_data,
+        validate_scraped_data,
+    )
 
     scraped = 0
     for rd in race_days:
@@ -230,27 +237,32 @@ def scrape_new_race_days(supabase, race_days: List[Dict], dry_run: bool = False)
 
         print(f"\n  [Auto-Scrape] {date_str} {venue}: NEW race day, scraping racecard...")
         if dry_run:
-            print(f"  [DRY-RUN] Would run: auto_scraper.py --date {date_str} --venue {venue} --pre-race")
+            print(f"  [DRY-RUN] Would scrape {date_str} {venue}")
             scraped += 1
             continue
 
         try:
-            # Explicitly pass environment to ensure subprocess sees Supabase creds
-            env = os.environ.copy()
-            result = subprocess.run(
-                [sys.executable, os.path.join(os.path.dirname(__file__), 'auto_scraper.py'),
-                 '--date', date_str, '--venue', venue, '--pre-race'],
-                capture_output=False,
-                timeout=300,
-                env=env
-            )
-            if result.returncode == 0:
-                scraped += 1
-                print(f"  [OK] {date_str} {venue}: scraped successfully")
-            else:
-                print(f"  [FAIL] {date_str} {venue}: exit code {result.returncode}")
-        except subprocess.TimeoutExpired:
-            print(f"  [TIMEOUT] {date_str} {venue}: exceeded 5 min")
+            clear_old_data(supabase, date_str, venue)
+            races = scrape_hkjc_races(date_str, venue, skip_odds=True)
+            if not races:
+                print(f"  [WARN] {date_str} {venue}: no races scraped")
+                continue
+
+            validate_scraped_data(races)
+            write_to_supabase(supabase, races, dry_run=False)
+
+            race_ids = [r['race_id'] for r in races]
+            for rid in race_ids:
+                retry_supabase(lambda rid=rid: supabase.table('races').update({'is_finished': False}).eq('race_id', rid).execute())
+
+            try:
+                from benter_model import run_analysis
+                run_analysis(supabase, race_ids=race_ids, dry_run=False, pre_race=True)
+                print(f"  [OK] {date_str} {venue}: {len(races)} races scraped + Benter P_model done")
+            except Exception as e:
+                print(f"  [OK] {date_str} {venue}: {len(races)} races scraped (Benter skipped: {e})")
+
+            scraped += 1
         except Exception as e:
             print(f"  [ERROR] {date_str} {venue}: {e}")
 
@@ -263,14 +275,25 @@ def scrape_new_race_days(supabase, race_days: List[Dict], dry_run: bool = False)
 # Phase 2: Auto-Archive — scrape results for past unfinished races
 # =====================================================================
 def find_unfinished_past_races(supabase) -> List[Dict]:
-    """Find races where is_finished=false and race_date < today."""
+    """Find races where is_finished=false/null and race_date < today."""
     today_str = now_hkt().strftime('%Y-%m-%d')
+    # Match both False and None (null) — many races have is_finished=null
     resp = retry_supabase(
-        lambda: supabase.table('races').select('race_id,race_date,venue,race_no').eq('is_finished', False).lt('race_date', today_str).execute()
+        lambda: supabase.table('races').select('race_id,race_date,venue,race_no')
+        .lt('race_date', today_str)
+        .or_('is_finished.eq.false,is_finished.is.null')
+        .execute()
     )
     races = resp.data or []
-    print(f"\n[Archive] Found {len(races)} unfinished past races")
-    return races
+    # Deduplicate by race_id (or_ query may return duplicates)
+    seen = set()
+    unique = []
+    for r in races:
+        if r['race_id'] not in seen:
+            seen.add(r['race_id'])
+            unique.append(r)
+    print(f"\n[Archive] Found {len(unique)} unfinished past races")
+    return unique
 
 
 def archive_past_races(supabase, races: List[Dict], dry_run: bool = False):
@@ -420,17 +443,19 @@ def generate_ai_review(supabase, race_ids: List[str]) -> int:
         return 0
 
     try:
-        env = os.environ.copy()
-        result = subprocess.run(
-            [sys.executable, os.path.join(os.path.dirname(__file__), 'ai_review.py'),
-             '--race-ids', ','.join(race_ids)],
-            capture_output=False,
-            timeout=120,
-            env=env
-        )
-        return len(race_ids) if result.returncode == 0 else 0
+        from ai_review import review_single_race
+        reviewed = 0
+        for race_id in race_ids:
+            try:
+                summary = review_single_race(supabase, race_id)
+                if summary:
+                    reviewed += 1
+                    print(f"    {race_id}: {summary.get('commentary', 'done')}")
+            except Exception as e:
+                print(f"    {race_id}: review failed — {e}")
+        return reviewed
     except Exception as e:
-        print(f"  [AI Review] subprocess failed: {e}")
+        print(f"  [AI Review] failed: {e}")
         return 0
 
 
