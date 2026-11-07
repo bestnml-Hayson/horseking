@@ -299,7 +299,7 @@ def find_unfinished_past_races(supabase) -> List[Dict]:
 def archive_past_races(supabase, races: List[Dict], dry_run: bool = False):
     """Scrape results for each unfinished past race and update DB."""
     if not races:
-        return 0
+        return 0, 0
 
     date_venue_pairs = set((r['race_date'], r['venue']) for r in races)
     print(f"[Archive] Processing {len(date_venue_pairs)} date/venue pairs...")
