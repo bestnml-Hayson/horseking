@@ -1,25 +1,10 @@
 import { NextResponse } from 'next/server'
-import { getServerSupabase } from '@/lib/supabase-server'
+import { getServerSupabase, directFetch } from '@/lib/supabase-server'
+import { computeClientPredictions } from '@/lib/race-utils'
+import type { RaceRow, RaceRunner, Race } from '@/lib/types'
+import type { HorseRaceRecord } from '@/lib/supabase-client'
 
 export const dynamic = 'force-dynamic'
-
-interface Runner {
-  runner_id: string
-  horse_id: string
-  horse_no: number
-  win_odds: number | null
-  finish_position: number | null
-  draw: number | null
-  actual_weight: number | null
-}
-
-interface Prediction {
-  runner_id: string
-  raw_model_prob: number | null
-  market_implied_prob: number | null
-  final_prob: number | null
-  expected_value: number | null
-}
 
 interface ReviewResult {
   race_id: string
@@ -67,16 +52,50 @@ function generateCommentary(
   return `R${raceNo} AI 預測落空，前三膽全數未進前三，累積數據用於權重修正`
 }
 
+async function fetchHorseHistoryForReview(horseIds: string[]): Promise<Map<string, HorseRaceRecord[]>> {
+  const historyMap = new Map<string, HorseRaceRecord[]>()
+  if (horseIds.length === 0) return historyMap
+
+  const idList = horseIds.map(id => `"${id}"`).join(',')
+  const rows = await directFetch(
+    `race_runners?select=horse_id,finish_position,races!inner(race_date,venue,distance,class_level)&horse_id=in.(${idList})&finish_position=not.is.null&limit=2000`
+  ) as Array<{
+    horse_id: string
+    finish_position: number | null
+    races: { race_date: string; venue: string; distance: number | null; class_level: string | null } | null
+  }>
+
+  for (const row of rows) {
+    if (row.finish_position == null || row.finish_position <= 0) continue
+    const race = row.races
+    if (!race?.venue || !race?.distance) continue
+    const entry: HorseRaceRecord = {
+      venue: race.venue,
+      distance: race.distance,
+      finish_position: row.finish_position,
+      race_date: race.race_date,
+      class_level: race.class_level ?? '',
+    }
+    const existing = historyMap.get(row.horse_id) ?? []
+    existing.push(entry)
+    historyMap.set(row.horse_id, existing)
+  }
+
+  historyMap.forEach((records) => {
+    records.sort((a, b) => b.race_date.localeCompare(a.race_date))
+  })
+
+  return historyMap
+}
+
 async function reviewRace(supabase: ReturnType<typeof getServerSupabase>, raceId: string): Promise<ReviewResult | null> {
-  const [raceResp, runnersResp, predsResp] = await Promise.all([
-    supabase.from('races').select('race_date,venue,race_no').eq('race_id', raceId).single(),
+  const [raceResp, runnersResp] = await Promise.all([
+    supabase.from('races').select('race_date,venue,race_no,distance,class_level').eq('race_id', raceId).single(),
     supabase.from('race_runners').select('*').eq('race_id', raceId),
-    supabase.from('model_predictions').select('*').eq('race_id', raceId),
   ])
 
-  const raceMeta = raceResp.data as { race_date: string; venue: string; race_no: number } | null
-  const runners = (runnersResp.data ?? []) as Runner[]
-  const preds = (predsResp.data ?? []) as Prediction[]
+  const raceMeta = raceResp.data as { race_date: string; venue: string; race_no: number; distance: number | null; class_level: string | null } | null
+  const runners = (runnersResp.data ?? []) as RaceRunner[]
 
   if (!raceMeta || runners.length === 0) return null
 
@@ -85,21 +104,44 @@ async function reviewRace(supabase: ReturnType<typeof getServerSupabase>, raceId
 
   finished.sort((a, b) => (a.finish_position ?? 99) - (b.finish_position ?? 99))
 
-  if (preds.length === 0) return null
+  // Compute predictions using same client formula as frontend
+  const horseIds = runners.map(r => r.horse_id).filter(Boolean)
+  const horseHistory = await fetchHorseHistoryForReview(horseIds)
 
-  const runnerMap = new Map(runners.map(r => [r.runner_id, r]))
-  const predMap = new Map(preds.map(p => [p.runner_id, p]))
+  const raceRowItems: RaceRow[] = runners.map(r => ({
+    ...r,
+    horse_name: r.horse_id || `馬${r.horse_no}`,
+    prediction: null,
+  }))
 
-  const sortedPreds = [...preds].sort(
-    (a, b) => (b.final_prob ?? b.raw_model_prob ?? 0) - (a.final_prob ?? a.raw_model_prob ?? 0)
+  const raceInfo: Race = {
+    race_id: raceId,
+    race_date: raceMeta.race_date,
+    venue: raceMeta.venue,
+    race_no: raceMeta.race_no,
+    distance: raceMeta.distance,
+    class_level: raceMeta.class_level,
+    going: null,
+  }
+
+  const predicted = computeClientPredictions(
+    raceRowItems, raceMeta.venue, raceInfo, horseHistory,
   )
 
-  const top1 = sortedPreds[0]
+  const sorted = [...predicted].sort(
+    (a, b) => (b.prediction?.final_prob ?? 0) - (a.prediction?.final_prob ?? 0)
+  )
+
+  if (sorted.length === 0) return null
+
+  const runnerMap = new Map(runners.map(r => [r.runner_id, r]))
+
+  const top1 = sorted[0]
   const top1Runner = runnerMap.get(top1.runner_id)
   const top1Finish = top1Runner?.finish_position ?? null
   const top1Hit = top1Finish === 1
 
-  const top3 = sortedPreds.slice(0, 3)
+  const top3 = sorted.slice(0, 3)
   let top3HitCount = 0
   for (const p of top3) {
     const r = runnerMap.get(p.runner_id)
@@ -110,8 +152,8 @@ async function reviewRace(supabase: ReturnType<typeof getServerSupabase>, raceId
 
   let totalBets = 0
   let totalReturns = 0
-  for (const p of sortedPreds) {
-    const ev = p.expected_value ?? 0
+  for (const p of sorted) {
+    const ev = p.prediction?.expected_value ?? 0
     if (ev > 0.15) {
       const r = runnerMap.get(p.runner_id)
       if (r?.win_odds && r.finish_position) {
@@ -126,8 +168,8 @@ async function reviewRace(supabase: ReturnType<typeof getServerSupabase>, raceId
 
   const winner = finished[0]
   const winnerOdds = winner.win_odds
-  const winnerPred = predMap.get(winner.runner_id)
-  const winnerPModel = winnerPred?.raw_model_prob ?? winnerPred?.final_prob ?? null
+  const winnerRow = sorted.find(s => s.runner_id === winner.runner_id)
+  const winnerPModel = winnerRow?.prediction?.raw_model_prob ?? null
 
   const commentary = generateCommentary(
     raceMeta.race_no, top1Hit, top3HitCount, roiPercent,
@@ -141,7 +183,7 @@ async function reviewRace(supabase: ReturnType<typeof getServerSupabase>, raceId
       runner_id: p.runner_id,
       horse_no: r?.horse_no ?? null,
       finish_pos: finishPos,
-      predicted_prob: p.final_prob ?? p.raw_model_prob,
+      predicted_prob: p.prediction?.final_prob ?? null,
       hit: finishPos != null && finishPos <= 3,
     }
   })

@@ -16,8 +16,10 @@ CLI:
 import os
 import sys
 import json
+import math
+import re
 import argparse
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
@@ -25,6 +27,302 @@ HKT = ZoneInfo('Asia/Hong_Kong')
 
 sys.path.insert(0, os.path.dirname(__file__))
 from common import get_supabase, retry_supabase, has_column
+
+
+# =====================================================================
+# Client-side prediction formula (matches lib/race-utils.ts exactly)
+# =====================================================================
+MODEL_WEIGHT = 0.5
+MARKET_WEIGHT = 0.5
+SOFTMAX_TEMPERATURE = 15
+
+WEIGHTS_ST = {
+    'form': 0.16, 'draw': 0.08, 'jockeyTrainer': 0.14, 'weight': 0.08,
+    'courseDistance': 0.18, 'restDays': 0.10, 'gear': 0.06, 'pace': 0.10, 'classMov': 0.10,
+}
+WEIGHTS_HV = {
+    'form': 0.18, 'draw': 0.14, 'jockeyTrainer': 0.12, 'weight': 0.08,
+    'courseDistance': 0.16, 'restDays': 0.10, 'gear': 0.06, 'pace': 0.08, 'classMov': 0.08,
+}
+
+
+def _parse_form_history(form: Optional[str]) -> List[int]:
+    if not form:
+        return []
+    cleaned = re.sub(r'[{}"\':]', ' ', form)
+    numbers = re.findall(r'\d+', cleaned)
+    return [int(n) for n in numbers if 0 < int(n) <= 20][:6]
+
+
+def _softmax(scores: List[float], temperature: float = SOFTMAX_TEMPERATURE) -> List[float]:
+    if not scores:
+        return []
+    max_s = max(scores)
+    exps = [math.exp((s - max_s) / temperature) for s in scores]
+    total = sum(exps)
+    if total == 0:
+        return [1.0 / len(scores)] * len(scores)
+    return [e / total for e in exps]
+
+
+def _predict_pace(runners: List[Dict]) -> str:
+    if not runners:
+        return '中等步速'
+    avg_weight = sum(r.get('actual_weight') or 126 for r in runners) / len(runners)
+    if avg_weight < 122:
+        return '快步速'
+    elif avg_weight > 128:
+        return '慢步速'
+    return '中等步速'
+
+
+def _compute_course_distance_score(row: Dict, race_venue: Optional[str],
+                                   race_distance: Optional[int],
+                                   horse_history: Dict[str, List[Dict]]) -> float:
+    if not race_venue or not race_distance or not horse_history:
+        return 50
+    history = horse_history.get(row.get('horse_id', ''), [])
+    if not history:
+        return 50
+    same_venue_dist = [h for h in history if h.get('venue') == race_venue and h.get('distance') == race_distance]
+    if not same_venue_dist:
+        same_venue = [h for h in history if h.get('venue') == race_venue]
+        if not same_venue:
+            return 45
+        recent = same_venue[:5]
+        avg_pos = sum(h['finish_position'] for h in recent) / len(recent)
+        return max(0, min(100, (1 - (avg_pos - 1) / 13) * 100))
+    recent = same_venue_dist[:5]
+    wins = sum(1 for h in recent if h['finish_position'] == 1)
+    top3 = sum(1 for h in recent if h['finish_position'] <= 3)
+    avg_pos = sum(h['finish_position'] for h in recent) / len(recent)
+    score = 50 + wins * 15 + (top3 - wins) * 6 + max(0, (5 - avg_pos) * 5)
+    return max(0, min(100, score))
+
+
+def _compute_rest_days_score(row: Dict) -> float:
+    rest = row.get('rest_days')
+    if rest is None:
+        return 50
+    if 21 <= rest <= 42:
+        return 85 + min(15, (rest - 21) * 0.5)
+    if 14 <= rest < 21:
+        return 65 + (rest - 14) * 3
+    if 42 < rest <= 60:
+        return 75 - (rest - 42) * 0.5
+    if 60 < rest <= 90:
+        return 65 - (rest - 60) * 0.3
+    if rest < 14:
+        return 30 + rest * 2
+    return 40
+
+
+def _compute_gear_score(row: Dict) -> float:
+    gear = row.get('gear')
+    if not gear:
+        return 50
+    parts = [g.strip() for g in gear.split('/') if g.strip()]
+    new_gear = [g for g in parts if g.endswith('1')]
+    if not new_gear:
+        return 50
+    score = 50
+    for g in new_gear:
+        base = g[:-1]
+        if base == 'B':
+            score += 14
+        elif base in ('PC', 'H'):
+            score += 10
+        elif base in ('TT', 'XB'):
+            score += 6
+        else:
+            score += 8
+    return max(0, min(100, score))
+
+
+def _compute_pace_score(row: Dict, pace_label: str, total_runners: int) -> float:
+    draw = row.get('draw')
+    form = _parse_form_history(row.get('form_history'))
+    form_avg = sum(form) / len(form) if form else 8
+    score = 50
+    if pace_label == '快步速':
+        if draw is not None and draw >= 10:
+            score += 18
+        elif draw is not None and draw >= 7:
+            score += 10
+        if form_avg > 6:
+            score += 12
+        if draw is not None and draw <= 4:
+            score -= 10
+    elif pace_label == '慢步速':
+        if draw is not None and draw <= 4:
+            score += 18
+        elif draw is not None and draw <= 6:
+            score += 10
+        if form_avg <= 4:
+            score += 12
+        if draw is not None and draw >= 10:
+            score -= 10
+    return max(0, min(100, score))
+
+
+def _compute_class_movement_score(row: Dict, race_class: Optional[str],
+                                  horse_history: Dict[str, List[Dict]]) -> float:
+    if not race_class or not horse_history:
+        return 50
+    history = horse_history.get(row.get('horse_id', ''), [])
+    if not history:
+        return 50
+    recent_class = history[0].get('class_level', '')
+    if not recent_class:
+        return 50
+
+    def class_order(c: str) -> int:
+        m = re.search(r'(\d+)', c)
+        return int(m.group(1)) if m else 5
+
+    current = class_order(race_class)
+    prev = class_order(recent_class)
+    diff = prev - current
+    if diff > 0:
+        return min(100, 65 + diff * 10)
+    if diff < 0:
+        return max(0, 50 + diff * 8)
+    return 55
+
+
+def _compute_total_score(row: Dict, total_runners: int, venue: Optional[str],
+                         race_venue: Optional[str], race_distance: Optional[int],
+                         race_class: Optional[str],
+                         horse_history: Dict[str, List[Dict]],
+                         pace_label: str) -> float:
+    w = WEIGHTS_HV if venue == 'HV' else WEIGHTS_ST
+
+    form = _parse_form_history(row.get('form_history'))
+    form_avg = sum(form) / len(form) if form else 10
+    form_score = max(0, min(100, (1 - (form_avg - 1) / 13) * 100))
+
+    draw = row.get('draw')
+    draw_max = max(14, total_runners)
+    draw_score = max(0, min(100, (1 - (draw - 1) / draw_max) * 100)) if draw is not None else 50
+
+    jockey_wr = row.get('jockey_win_rate') or 0.1
+    trainer_wr = row.get('trainer_win_rate') or 0.1
+    jockey_score = max(0, min(100, jockey_wr * 500))
+    trainer_score = max(0, min(100, trainer_wr * 500))
+    jt_score = jockey_score * 0.6 + trainer_score * 0.4
+
+    weight = row.get('actual_weight')
+    weight_score = 60
+    if weight is not None:
+        if weight <= 118:
+            weight_score += 20
+        elif weight <= 124:
+            weight_score += 10
+        elif weight >= 132:
+            weight_score -= 15
+        elif weight >= 128:
+            weight_score -= 5
+    weight_score = max(0, min(100, weight_score))
+
+    cd_score = _compute_course_distance_score(row, race_venue, race_distance, horse_history)
+    rest_score = _compute_rest_days_score(row)
+    gear_score = _compute_gear_score(row)
+    pace_score = _compute_pace_score(row, pace_label, total_runners)
+    class_score = _compute_class_movement_score(row, race_class, horse_history)
+
+    return (form_score * w['form'] + draw_score * w['draw'] + jt_score * w['jockeyTrainer'] +
+            weight_score * w['weight'] + cd_score * w['courseDistance'] + rest_score * w['restDays'] +
+            gear_score * w['gear'] + pace_score * w['pace'] + class_score * w['classMov'])
+
+
+def compute_client_predictions_py(runners: List[Dict], venue: Optional[str],
+                                  race_venue: Optional[str], race_distance: Optional[int],
+                                  race_class: Optional[str],
+                                  horse_history: Dict[str, List[Dict]]) -> List[Tuple[str, float, float]]:
+    """
+    Compute predictions using the same 9-factor formula as the frontend.
+    Returns list of (runner_id, p_model, p_final) tuples sorted by p_final desc.
+    """
+    if not runners:
+        return []
+
+    pace_label = _predict_pace(runners)
+    total = len(runners)
+
+    scores = [
+        _compute_total_score(r, total, venue, race_venue, race_distance, race_class, horse_history, pace_label)
+        for r in runners
+    ]
+    p_models = _softmax(scores)
+
+    odds_list = [r.get('win_odds') for r in runners]
+    has_valid_odds = any(o is not None and o > 1 for o in odds_list)
+
+    if has_valid_odds:
+        p_raw = [1.0 / o if o is not None and o > 1 else 0 for o in odds_list]
+        sum_p_raw = sum(p_raw)
+    else:
+        p_raw = None
+        sum_p_raw = 0
+
+    results = []
+    for i, runner in enumerate(runners):
+        p_model = p_models[i]
+        if has_valid_odds and sum_p_raw > 0:
+            p_market = p_raw[i] / sum_p_raw
+        else:
+            p_market = None
+
+        if p_market is not None:
+            p_final = MODEL_WEIGHT * p_model + MARKET_WEIGHT * p_market
+        else:
+            p_final = p_model
+
+        results.append((runner['runner_id'], p_model, p_final))
+
+    results.sort(key=lambda x: x[2], reverse=True)
+    return results
+
+
+def _fetch_horse_history(supabase, horse_ids: List[str]) -> Dict[str, List[Dict]]:
+    """Fetch horse race history for course/distance and class movement scoring."""
+    history_map: Dict[str, List[Dict]] = {}
+    if not horse_ids:
+        return history_map
+
+    batch_size = 50
+    for i in range(0, len(horse_ids), batch_size):
+        batch = horse_ids[i:i + batch_size]
+        id_filter = ','.join(f'"{h}"' for h in batch)
+        try:
+            resp = supabase.table('race_runners').select(
+                'horse_id,finish_position,races!inner(race_date,venue,distance,class_level)'
+            ).in_('horse_id', batch).not_is_('finish_position', 'null').limit(2000).execute()
+            for row in (resp.data or []):
+                fp = row.get('finish_position')
+                if fp is None or fp <= 0:
+                    continue
+                race = row.get('races')
+                if isinstance(race, list):
+                    race = race[0] if race else None
+                if not race or not race.get('venue') or not race.get('distance'):
+                    continue
+                entry = {
+                    'venue': race['venue'],
+                    'distance': race['distance'],
+                    'finish_position': fp,
+                    'race_date': race.get('race_date', ''),
+                    'class_level': race.get('class_level', ''),
+                }
+                hid = row['horse_id']
+                history_map.setdefault(hid, []).append(entry)
+        except Exception:
+            pass
+
+    for records in history_map.values():
+        records.sort(key=lambda r: r['race_date'], reverse=True)
+
+    return history_map
 
 
 def generate_review_commentary(
@@ -113,7 +411,7 @@ def review_single_race(supabase, race_id: str) -> Optional[Dict]:
     Run AI review for a single race.
     Returns summary dict or None if race not ready.
     """
-    race_info = supabase.table('races').select('race_date,venue,race_no').eq('race_id', race_id).single().execute()
+    race_info = supabase.table('races').select('race_date,venue,race_no,distance,class_level').eq('race_id', race_id).single().execute()
     race_meta = race_info.data or {}
     race_no = race_meta.get('race_no', 0)
 
@@ -131,61 +429,69 @@ def review_single_race(supabase, race_id: str) -> Optional[Dict]:
 
     finished.sort(key=lambda r: r['finish_position'])
 
-    preds_resp = supabase.table('model_predictions').select('*').eq('race_id', race_id).execute()
-    preds = preds_resp.data or []
+    # Compute predictions using same client formula as frontend
+    race_venue = race_meta.get('venue')
+    race_distance = race_meta.get('distance')
+    race_class = race_meta.get('class_level')
 
-    if not preds:
-        print(f"  [WARN] {race_id}: no predictions")
+    horse_ids = [r.get('horse_id') for r in runners if r.get('horse_id')]
+    horse_history = _fetch_horse_history(supabase, horse_ids)
+    client_preds = compute_client_predictions_py(
+        runners, race_venue, race_venue, race_distance, race_class, horse_history
+    )
+
+    if not client_preds:
+        print(f"  [WARN] {race_id}: no predictions computed")
         return None
 
     runner_map = {r['runner_id']: r for r in runners}
-    pred_map = {p['runner_id']: p for p in preds}
+    pred_map = {rid: (p_model, p_final) for rid, p_model, p_final in client_preds}
 
-    sorted_preds = sorted(preds, key=lambda p: p.get('final_prob') or p.get('raw_model_prob') or 0, reverse=True)
-
-    top1_pred = sorted_preds[0]
-    top1_runner = runner_map.get(top1_pred['runner_id'])
+    # client_preds is already sorted by p_final desc
+    top1_rid = client_preds[0][0]
+    top1_runner = runner_map.get(top1_rid)
     top1_finish = top1_runner['finish_position'] if top1_runner else None
     top1_hit = top1_finish == 1 if top1_finish else False
 
-    top3_preds = sorted_preds[:3]
+    top3_preds = client_preds[:3]
     top3_info = []
     top3_hit_count = 0
-    for p in top3_preds:
-        r = runner_map.get(p['runner_id'])
+    for rid, p_model, p_final in top3_preds:
+        r = runner_map.get(rid)
         if r:
             finish_pos = r.get('finish_position')
             hit = finish_pos is not None and finish_pos <= 3
             if hit:
                 top3_hit_count += 1
             top3_info.append({
-                'runner_id': p['runner_id'],
+                'runner_id': rid,
                 'horse_no': r.get('horse_no'),
                 'finish_pos': finish_pos,
-                'predicted_prob': p.get('final_prob') or p.get('raw_model_prob'),
+                'predicted_prob': p_final,
                 'hit': hit,
             })
 
     total_bets = 0
     total_returns = 0
-    for p in sorted_preds:
-        ev = p.get('expected_value') or 0
-        if ev > 0.15:
-            r = runner_map.get(p['runner_id'])
-            if r and r.get('win_odds') and r.get('finish_position'):
+    for rid, p_model, p_final in client_preds:
+        r = runner_map.get(rid)
+        if not r:
+            continue
+        odds = r.get('win_odds')
+        if odds and odds > 1:
+            ev = p_final * odds - 1
+            if ev > 0.15 and r.get('finish_position'):
                 bet_amount = 100
                 total_bets += bet_amount
                 if r['finish_position'] == 1:
-                    total_returns += bet_amount * r['win_odds']
+                    total_returns += bet_amount * odds
 
     roi_percent = ((total_returns - total_bets) / total_bets * 100) if total_bets > 0 else 0
 
     winner = finished[0]
     winner_odds = winner.get('win_odds')
-    winner_pred = pred_map.get(winner['runner_id'])
-    winner_p_model = None
-    if winner_pred:
-        winner_p_model = winner_pred.get('raw_model_prob') or winner_pred.get('final_prob')
+    winner_pred_tuple = pred_map.get(winner['runner_id'])
+    winner_p_model = winner_pred_tuple[0] if winner_pred_tuple else None
 
     key_factors_list = _build_key_factors(winner, winner_odds, winner_p_model, top3_hit_count, finished)
 
@@ -205,7 +511,7 @@ def review_single_race(supabase, race_id: str) -> Optional[Dict]:
         'race_date': race_meta.get('race_date'),
         'venue': race_meta.get('venue'),
         'race_no': race_no,
-        'top1_pick_runner_id': top1_pred['runner_id'],
+        'top1_pick_runner_id': top1_rid,
         'top1_pick_finish_pos': top1_finish,
         'top1_hit': top1_hit,
         'top3_picks': json.dumps(top3_info),
