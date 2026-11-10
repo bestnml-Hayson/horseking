@@ -21,6 +21,7 @@ ODDS_REFRESH_WINDOW_MIN = 45
 ODDS_LEAD_MIN = 180
 POST_RACE_SETTLE_MIN = 25
 DISCOVERY_HORIZON_DAYS = 2
+DISCOVERY_TICK_HOUR_HKT = 11
 
 URL = os.environ.get('SUPABASE_URL') or os.environ.get('NEXT_PUBLIC_SUPABASE_URL')
 KEY = os.environ.get('SUPABASE_SERVICE_KEY') or os.environ.get('NEXT_PUBLIC_SUPABASE_ANON_KEY')
@@ -69,6 +70,15 @@ def main():
         f'races?select=race_date&and=(race_date.gte.{today},race_date.lte.{horizon})&limit=1'
     )
     do_discover = not upcoming_meeting
+
+    # The Mon/Fri seed can drift, so the first tick of the day also checks one
+    # slot further out. Capped to a single hour: an HKJC calendar with a genuine
+    # 3-day gap then costs one discovery run, not one per tick.
+    if not do_discover and now.hour == DISCOVERY_TICK_HOUR_HKT and now.minute < 30:
+        ahead = fetch(
+            f'races?select=race_date&and=(race_date.gt.{today},race_date.lte.{horizon})&limit=1'
+        )
+        do_discover = not ahead
 
     if not unfinished:
         print(f'[GATE] nothing unfinished up to today — {"discovery needed" if do_discover else "idle"}')
