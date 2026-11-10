@@ -2,13 +2,10 @@ name: Auto-Pilot Pipeline
 
 on:
   schedule:
-    # Hong Kong race days optimization (save GitHub Actions minutes)
-    # Mon & Fri 16:30 HKT (08:30 UTC): Scrape upcoming Wed/Sun racecards
-    # Wed & Sun 18:00 HKT (10:00 UTC): Inject live odds before race start
-    # Wed & Sun 22:30 HKT (14:30 UTC): Post-race archive & results
+    # Only the racecard seed stays here. Odds and same-night results are now
+    # handled by Race-Day Tick (race_tick.yml), which retries every 30 min —
+    # a fixed 18:00 / 22:30 slot loses the meeting when Actions is late.
     - cron: '30 8 * * 1,5'    # Mon & Fri 08:30 UTC = 16:30 HKT (racecard scrape)
-    - cron: '0 10 * * 3,0'    # Wed & Sun 10:00 UTC = 18:00 HKT (odds injection)
-    - cron: '30 14 * * 3,0'   # Wed & Sun 14:30 UTC = 22:30 HKT (post-race archive)
   workflow_dispatch:
     inputs:
       mode:
@@ -66,7 +63,7 @@ jobs:
         run: |
           echo "=== [AutoPilot] $(date -u '+%Y-%m-%d %H:%M:%S UTC') ==="
 
-          MODE="${{ github.event.inputs.mode || 'full' }}"
+          MODE="${{ github.event.inputs.mode || 'discover-only' }}"
           DRY_RUN="${{ github.event.inputs.dry_run || 'false' }}"
 
           ARGS=""

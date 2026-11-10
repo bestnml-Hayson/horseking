@@ -1,0 +1,80 @@
+name: Race-Day Tick
+
+on:
+  schedule:
+    # Half-hourly gate between 11:00 and 23:30 HKT (03:00-15:30 UTC).
+    # The gate step is stdlib-only: on a quiet tick nothing else installs,
+    # so the real cost is one Playwright bootstrap per race meeting.
+    - cron: '*/30 3-15 * * *'
+  workflow_dispatch:
+    inputs:
+      force:
+        description: 'Ignore the gate and run every phase'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+# Never cancel a tick mid-scrape — a half-finished odds write is worse than a
+# late one.
+concurrency:
+  group: race-tick
+  cancel-in-progress: false
+
+env:
+  SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+  SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+
+jobs:
+  tick:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Check what the database needs
+        id: gate
+        run: python3 scripts/tick_gate.py
+
+      - name: Setup Python 3.11
+        if: steps.gate.outputs.need_work == 'true' || github.event.inputs.force == 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install scraper dependencies
+        if: steps.gate.outputs.need_work == 'true' || github.event.inputs.force == 'true'
+        run: |
+          pip install --quiet --upgrade pip
+          pip install --quiet -r requirements.txt
+          playwright install --with-deps chromium
+          python -c "from playwright.sync_api import sync_playwright; from supabase import create_client; print('[OK] deps loaded')"
+
+      # Discovery first: odds and results have nowhere to land without rows.
+      - name: 'Phase 1: discover missing race days'
+        if: steps.gate.outputs.do_discover == 'true' || github.event.inputs.force == 'true'
+        run: python scripts/auto_pilot.py --discover-only
+
+      - name: 'Phase 1.5: inject live odds'
+        if: steps.gate.outputs.do_odds == 'true' || github.event.inputs.force == 'true'
+        run: python scripts/auto_pilot.py --odds-only
+
+      - name: 'Phase 2: archive results + AI review'
+        if: steps.gate.outputs.do_archive == 'true' || github.event.inputs.force == 'true'
+        run: python scripts/auto_pilot.py --archive-only
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Race-Day Tick" >> $GITHUB_STEP_SUMMARY
+          echo "- Trigger: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Gate: discover=${{ steps.gate.outputs.do_discover }} odds=${{ steps.gate.outputs.do_odds }} archive=${{ steps.gate.outputs.do_archive }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Time: $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
+          echo "- Status: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY

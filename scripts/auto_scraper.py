@@ -877,8 +877,12 @@ def estimate_race_times(date_str: str, venue: str, num_races: int = 11) -> List[
 # =====================================================================
 # Odds-only update (for high-frequency mode — no clear, no full rewrite)
 # =====================================================================
-def scrape_odds_only(date_str: str, venue: str) -> Dict[int, Dict[int, float]]:
-    """Scrape current win_odds for all races. Returns {race_no: {horse_no: win_odds}}."""
+def scrape_odds_only(date_str: str, venue: str, race_nos: Optional[List[int]] = None) -> Dict[int, Dict[int, float]]:
+    """Scrape current win_odds for all races. Returns {race_no: {horse_no: win_odds}}.
+
+    race_nos limits the sweep to specific races — a meeting has up to 12 pages at
+    ~5s each, so the tick only asks for the races that still need a price.
+    """
     try:
         from playwright.sync_api import sync_playwright
     except ImportError:
@@ -888,6 +892,7 @@ def scrape_odds_only(date_str: str, venue: str) -> Dict[int, Dict[int, float]]:
     date_path = date_str.replace('-', '')
     base_url = f"https://bet.hkjc.com/ch/racing/wp/{date_str}/{venue}/{{race_no}}"
     all_odds = {}
+    targets = sorted(race_nos) if race_nos else list(range(1, 13))
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True, args=['--no-sandbox', '--disable-gpu', '--disable-blink-features=AutomationControlled'])
@@ -900,7 +905,7 @@ def scrape_odds_only(date_str: str, venue: str) -> Dict[int, Dict[int, float]]:
             Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
         }''')
 
-        for race_no in range(1, 13):
+        for race_no in targets:
             url = base_url.format(race_no=race_no)
             try:
                 resp = page.goto(url, wait_until='domcontentloaded', timeout=30000)
@@ -931,13 +936,12 @@ def scrape_odds_only(date_str: str, venue: str) -> Dict[int, Dict[int, float]]:
                 if odds_data:
                     all_odds[race_no] = odds_data
                     print(f"  [Odds] R{race_no}: {len(odds_data)} horses")
-                else:
-                    if race_no > 1:
-                        break
+                elif race_nos is None and race_no > 1:
+                    break
 
             except Exception as e:
                 print(f"  [Odds] R{race_no} failed: {e}")
-                if race_no > 1:
+                if race_nos is None and race_no > 1:
                     break
 
         browser.close()

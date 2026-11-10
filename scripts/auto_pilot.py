@@ -9,14 +9,18 @@ Phase 1 — Auto-Discovery & Stage 1 Pre-Scrape:
   and runs Benter P_model (Stage 1: pure ability, no odds).
 
 Phase 1.5 — Live Odds Injection:
-  For today's races that have runners but no win_odds yet,
-  auto-scrapes live odds from HKJC and injects into race_runners.
-  Triggers Benter model fusion (P_final = 50% P_model + 50% P_market).
+  For today's races that are within ODDS_LEAD_MIN of the barrier and still
+  carry the placeholder win_odds=0, auto-scrapes live pool odds from HKJC.
+  Races inside ODDS_REFRESH_WINDOW_MIN get re-scraped so the price near the
+  start is the one stored. Feeds Benter fusion (P_final = 50% P_model + 50% P_market).
 
 Phase 2 — Auto-Archive & Post-Race Review:
-  Finds races where is_finished=false but race_date < today.
-  Scrapes official results from HKJC, updates finish_position/win_odds,
-  marks is_finished=true, and triggers AI performance recalculation.
+  Finds unfinished races before today, plus today's races once POST_RACE_SETTLE_MIN
+  has passed since their off time. Scrapes official results, updates
+  finish_position/win_odds, marks is_finished=true, and generates the AI review.
+
+Phases 1.5 and 2 are driven every half hour by .github/workflows/race_tick.yml,
+which first asks scripts/tick_gate.py whether the database needs anything.
 
 Phase 3 — Status Report:
   Writes pipeline status to Supabase 'pipeline_status' table for frontend display.
@@ -48,6 +52,28 @@ VENUE_WEEKDAYS = {
 
 def now_hkt() -> datetime:
     return datetime.now(HKT)
+
+
+# A race's live price is only useful before the barrier; HKJC publishes
+# dividends a few minutes after the off. Odds are first pulled this far out,
+# then refreshed again inside the window right before the barrier.
+ODDS_LEAD_MIN = 180
+ODDS_REFRESH_WINDOW_MIN = 45
+POST_RACE_SETTLE_MIN = 25
+
+
+def parse_race_start(race: Dict) -> Optional[datetime]:
+    """Combine race_date with a 'HH:MM' race_time into an HKT datetime."""
+    date_str = race.get('race_date')
+    race_time = race.get('race_time')
+    if not date_str or not race_time:
+        return None
+    try:
+        hour, minute = (int(x) for x in str(race_time).split(':')[:2])
+        day = datetime.strptime(str(date_str)[:10], '%Y-%m-%d')
+    except (ValueError, TypeError):
+        return None
+    return day.replace(hour=hour, minute=minute, tzinfo=HKT)
 
 
 # =====================================================================
@@ -149,14 +175,18 @@ def discover_upcoming_race_days(lookahead_days: int = 7) -> List[Dict]:
 
 def inject_odds_for_upcoming_races(supabase, dry_run: bool = False):
     """
-    Phase 1.5: Auto-inject live odds for today's races that don't have odds yet.
-    Checks race_runners where win_odds is null and race_date = today.
-    """
-    today_str = now_hkt().strftime('%Y-%m-%d')
+    Phase 1.5: Put live pool odds on every race that still needs them.
 
-    # Find races today that have runners but no odds
+    A race needs odds when no runner carries a usable price (the pre-race
+    scrape writes win_odds=0 as a placeholder) or when it is about to start —
+    prices get truer closer to the barrier. Races already off are left to the
+    archive phase, which stores the official dividends.
+    """
+    now = now_hkt()
+    today_str = now.strftime('%Y-%m-%d')
+
     resp = retry_supabase(
-        lambda: supabase.table('races').select('race_id,race_date,venue,race_no')
+        lambda: supabase.table('races').select('race_id,race_date,venue,race_no,race_time')
         .eq('race_date', today_str)
         .or_('is_finished.eq.false,is_finished.is.null')
         .execute()
@@ -167,35 +197,58 @@ def inject_odds_for_upcoming_races(supabase, dry_run: bool = False):
         print(f"\n[Odds Injection] No unfinished races today ({today_str})")
         return 0
 
-    # Check which races already have odds
-    race_ids = [r['race_id'] for r in today_races]
     odds_resp = retry_supabase(
-        lambda: supabase.table('race_runners').select('race_id,win_odds').in_('race_id', race_ids).not_.is_('win_odds', 'null').execute()
+        lambda: supabase.table('race_runners').select('race_id,win_odds')
+        .in_('race_id', [r['race_id'] for r in today_races])
+        .gt('win_odds', 1.0).execute()
     )
-    races_with_odds = set(r['race_id'] for r in (odds_resp.data or []))
+    priced = set(r['race_id'] for r in (odds_resp.data or []))
 
-    races_needing_odds = [r for r in today_races if r['race_id'] not in races_with_odds]
+    needed = []
+    skipped_late = 0
+    for race in today_races:
+        start = parse_race_start(race)
+        if start is None:
+            if race['race_id'] not in priced:
+                needed.append(race)
+            continue
+        if start <= now:
+            continue
+        if (start - now).total_seconds() > ODDS_LEAD_MIN * 60:
+            skipped_late += 1
+            continue
+        if race['race_id'] not in priced:
+            needed.append(race)
+        elif (start - now).total_seconds() <= ODDS_REFRESH_WINDOW_MIN * 60:
+            needed.append(race)
 
-    if not races_needing_odds:
-        print(f"\n[Odds Injection] All {len(today_races)} races today already have odds")
+    if not needed:
+        print(f"\n[Odds Injection] Nothing due: {len(today_races)} races today, "
+              f"{skipped_late} still more than {ODDS_LEAD_MIN}min away")
         return 0
 
-    print(f"\n[Odds Injection] {len(races_needing_odds)} races need odds injection")
+    print(f"\n[Odds Injection] {len(needed)} races need odds:")
+    for race in sorted(needed, key=lambda r: r['race_no']):
+        kind = 'new' if race['race_id'] not in priced else 'refresh'
+        print(f"  R{race['race_no']} {race.get('race_time')} [{kind}]")
 
     from auto_scraper import scrape_odds_only, update_odds_in_supabase
 
-    date_venue_pairs = set((r['race_date'], r['venue']) for r in races_needing_odds)
-    injected = 0
+    by_meeting: Dict[tuple, List[int]] = {}
+    for race in needed:
+        by_meeting.setdefault((race['race_date'], race['venue']), []).append(race['race_no'])
 
-    for date_str, venue in sorted(date_venue_pairs):
-        print(f"\n  [Odds] {date_str} {venue}: scraping live odds...")
+    injected = 0
+    for (date_str, venue), race_nos in sorted(by_meeting.items()):
+        race_nos = sorted(set(race_nos))
+        print(f"\n  [Odds] {date_str} {venue}: scraping R{race_nos} from bet.hkjc.com...")
         if dry_run:
-            print(f"  [DRY-RUN] Would scrape odds for {date_str} {venue}")
+            print(f"  [DRY-RUN] Would scrape odds for {date_str} {venue} R{race_nos}")
             injected += 1
             continue
 
         try:
-            odds_map = scrape_odds_only(date_str, venue)
+            odds_map = scrape_odds_only(date_str, venue, race_nos=race_nos)
             if odds_map:
                 updated = update_odds_in_supabase(supabase, date_str, venue, odds_map)
                 if updated > 0:
@@ -275,24 +328,40 @@ def scrape_new_race_days(supabase, race_days: List[Dict], dry_run: bool = False)
 # Phase 2: Auto-Archive — scrape results for past unfinished races
 # =====================================================================
 def find_unfinished_past_races(supabase) -> List[Dict]:
-    """Find races where is_finished=false/null and race_date < today."""
-    today_str = now_hkt().strftime('%Y-%m-%d')
-    # Match both False and None (null) — many races have is_finished=null
+    """
+    Find races whose results are still missing.
+
+    Everything before today is fair game; today's meeting only counts once the
+    off time plus a settlement grace has passed, so an evening meeting can be
+    archived the same night instead of the following day.
+    """
+    now = now_hkt()
+    today_str = now.strftime('%Y-%m-%d')
     resp = retry_supabase(
-        lambda: supabase.table('races').select('race_id,race_date,venue,race_no')
-        .lt('race_date', today_str)
+        lambda: supabase.table('races').select('race_id,race_date,venue,race_no,race_time')
+        .lte('race_date', today_str)
         .or_('is_finished.eq.false,is_finished.is.null')
         .execute()
     )
     races = resp.data or []
+
+    due = []
+    for r in races:
+        if str(r['race_date'])[:10] < today_str:
+            due.append(r)
+            continue
+        start = parse_race_start(r)
+        if start is not None and (now - start).total_seconds() >= POST_RACE_SETTLE_MIN * 60:
+            due.append(r)
+
     # Deduplicate by race_id (or_ query may return duplicates)
     seen = set()
     unique = []
-    for r in races:
+    for r in due:
         if r['race_id'] not in seen:
             seen.add(r['race_id'])
             unique.append(r)
-    print(f"\n[Archive] Found {len(unique)} unfinished past races")
+    print(f"\n[Archive] Found {len(unique)} races awaiting results (of {len(races)} unfinished up to today)")
     return unique
 
 
