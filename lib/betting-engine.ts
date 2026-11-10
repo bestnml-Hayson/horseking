@@ -1,4 +1,5 @@
 import type { RaceRow } from './types'
+import { isOddsPending } from './race-utils'
 
 export const DEFAULT_BANKROLL = 10000
 const CORRECTION = 1.05
@@ -52,13 +53,13 @@ export interface DarkHorse {
 export interface TrioCombination {
   horses: RaceRow[]
   pTrio: number
-  estimatedOdds: number
+  estimatedOdds: number | null
 }
 
 export interface QuartetCombination {
   horses: RaceRow[]
   pQuartet: number
-  estimatedOdds: number
+  estimatedOdds: number | null
 }
 
 export interface TieredAllocation {
@@ -256,6 +257,14 @@ export function identifyDarkHorses(rows: RaceRow[]): DarkHorse[] {
     .slice(0, 3)
 }
 
+function avg(values: number[]): number {
+  return values.reduce((s, v) => s + v, 0) / values.length
+}
+
+function oddsAllReady(rows: RaceRow[]): boolean {
+  return rows.every(r => !isOddsPending(r.win_odds))
+}
+
 export function getTrioCombination(rows: RaceRow[]): TrioCombination | null {
   const sorted = [...rows]
     .filter(r => getPFinal(r) > 0)
@@ -265,8 +274,9 @@ export function getTrioCombination(rows: RaceRow[]): TrioCombination | null {
 
   const top3 = sorted.slice(0, 3)
   const pTrio = top3.reduce((p, r) => p * getPFinal(r), 1) * 1.1
-  const avgOdds = top3.reduce((s, r) => s + (r.win_odds ?? 10), 0) / 3
-  const estimatedOdds = avgOdds * avgOdds * 0.3
+  const estimatedOdds = oddsAllReady(top3)
+    ? avg(top3.map(r => r.win_odds as number)) ** 2 * 0.3
+    : null
 
   return { horses: top3, pTrio, estimatedOdds }
 }
@@ -280,8 +290,9 @@ export function getQuartetCombination(rows: RaceRow[]): QuartetCombination | nul
 
   const top4 = sorted.slice(0, 4)
   const pQuartet = top4.reduce((p, r) => p * getPFinal(r), 1) * 1.15
-  const avgOdds = top4.reduce((s, r) => s + (r.win_odds ?? 10), 0) / 4
-  const estimatedOdds = avgOdds * avgOdds * avgOdds * 0.15
+  const estimatedOdds = oddsAllReady(top4)
+    ? avg(top4.map(r => r.win_odds as number)) ** 3 * 0.15
+    : null
 
   return { horses: top4, pQuartet, estimatedOdds }
 }

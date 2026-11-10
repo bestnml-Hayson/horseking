@@ -3,7 +3,7 @@
 import type { RaceRow } from '@/lib/types'
 import { runBettingEngine, DEFAULT_BANKROLL } from '@/lib/betting-engine'
 import type { BettingEngineResult, WinBet, QCombination, DarkHorse, OverlayHorse, UnderlayHorse } from '@/lib/betting-engine'
-import { fmtOdds, fmtEV } from '@/lib/race-utils'
+import { fmtOdds, fmtEV, isOddsPending } from '@/lib/race-utils'
 
 interface BettingStrategyProps {
   rows: RaceRow[]
@@ -176,7 +176,7 @@ function LongshotTier({ darkHorses, trio, quartet, amount }: { darkHorses: DarkH
             </div>
             <div className="tier-trio-stats">
               <span>P {(trio.pTrio * 100).toFixed(2)}%</span>
-              <span>賠率 ~{trio.estimatedOdds.toFixed(0)}x</span>
+              <span>{trio.estimatedOdds == null ? '賠率 待定' : `賠率 ~${trio.estimatedOdds.toFixed(0)}x`}</span>
               <span className="tier-amount-val">HKD $10</span>
             </div>
           </div>
@@ -193,7 +193,7 @@ function LongshotTier({ darkHorses, trio, quartet, amount }: { darkHorses: DarkH
             </div>
             <div className="tier-quartet-stats">
               <span>P {(quartet.pQuartet * 100).toFixed(3)}%</span>
-              <span>賠率 ~{quartet.estimatedOdds.toFixed(0)}x</span>
+              <span>{quartet.estimatedOdds == null ? '賠率 待定' : `賠率 ~${quartet.estimatedOdds.toFixed(0)}x`}</span>
               <span className="tier-amount-val">HKD $40</span>
             </div>
           </div>
@@ -242,6 +242,7 @@ function OverlayUnderlayBar({ overlays, underlays }: { overlays: OverlayHorse[];
 
 export function BettingStrategy({ rows, bankroll = DEFAULT_BANKROLL }: BettingStrategyProps) {
   const engine = runBettingEngine(rows, bankroll)
+  const oddsPending = rows.length > 0 && rows.every(r => isOddsPending(r.win_odds))
 
   const hasAnyData = engine.winPoolValue || engine.qCombos.length > 0 || engine.overlays.length > 0 || engine.darkHorses.length > 0
 
@@ -276,9 +277,13 @@ export function BettingStrategy({ rows, bankroll = DEFAULT_BANKROLL }: BettingSt
         </div>
         <div className="banner-item banner-ev">
           <span className="banner-label">本場預期 EV</span>
-          <span className={`banner-value ${engine.expectedEV > 0 ? 'ev-pos' : 'ev-neg'}`}>
-            {engine.expectedEV > 0 ? '+' : ''}{(engine.expectedEV * 100).toFixed(1)}%
-          </span>
+          {oddsPending ? (
+            <span className="banner-value">待定</span>
+          ) : (
+            <span className={`banner-value ${engine.expectedEV > 0 ? 'ev-pos' : 'ev-neg'}`}>
+              {engine.expectedEV > 0 ? '+' : ''}{(engine.expectedEV * 100).toFixed(1)}%
+            </span>
+          )}
         </div>
         <div className="banner-item banner-bankroll">
           <span className="banner-label">基準資金池</span>

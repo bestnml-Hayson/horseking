@@ -63,7 +63,7 @@ function StrategyPanel({ strategy }: { strategy: AllUpStrategy }) {
                       </span>
                       <span className="allup-stat">
                         <span className="allup-stat-label">賠</span>
-                        <span className={`allup-stat-val ${h.odds >= 12 ? 'allup-odds-high' : ''}`}>{h.odds.toFixed(1)}</span>
+                        <span className={`allup-stat-val ${h.odds != null && h.odds >= 12 ? 'allup-odds-high' : ''}`}>{h.odds == null ? '待定' : h.odds.toFixed(1)}</span>
                       </span>
                       {h.ev > 0 && (
                         <span className="allup-stat">
@@ -89,7 +89,7 @@ function StrategyPanel({ strategy }: { strategy: AllUpStrategy }) {
         </div>
         <div className="allup-summary-item">
           <span className="allup-summary-label">預估賠率</span>
-          <span className="allup-summary-val allup-odds-big">{strategy.estimatedOdds.toFixed(1)}</span>
+          <span className="allup-summary-val allup-odds-big">{strategy.estimatedOdds == null ? '待定' : strategy.estimatedOdds.toFixed(1)}</span>
         </div>
         <div className="allup-summary-item">
           <span className="allup-summary-label">Kelly (1/4)</span>

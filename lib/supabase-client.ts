@@ -247,6 +247,12 @@ export async function fetchHorseDetail(horseId: string): Promise<HorseDetail | n
   }
 }
 
+/** A `!inner` embed on a to-one FK returns an object, not an array. */
+function unwrapEmbed<T>(value: T | T[] | null | undefined): T | null {
+  if (value == null) return null
+  return Array.isArray(value) ? value[0] ?? null : value
+}
+
 /**
  * Fetch recent finish positions from race_runners for a batch of horse IDs.
  * Returns Map<horseId, formString> where formString is dash-separated positions (e.g. "6-7-3-9-9-5").
@@ -263,12 +269,13 @@ export async function fetchRecentForm(horseIds: string[]): Promise<Map<string, s
   const batchSize = 50
   for (let i = 0; i < horseIds.length; i += batchSize) {
     const batch = horseIds.slice(i, i + batchSize)
+    // Ordering on the embedded `races` table is rejected by this PostgREST
+    // (PGRST100), so the starts are dated and sorted here instead.
     const { data, error } = await supabase
       .from('race_runners')
       .select('horse_id, finish_position, race_id, races!inner(race_date)')
       .in('horse_id', batch)
       .lt('races.race_date', today)
-      .order('races.race_date', { ascending: false })
       .limit(3000)
 
     if (error) {
@@ -276,18 +283,23 @@ export async function fetchRecentForm(horseIds: string[]): Promise<Map<string, s
       continue
     }
 
-    const grouped = new Map<string, number[]>()
+    const grouped = new Map<string, Array<{ race_date: string; finish_position: number }>>()
     for (const r of (data ?? [])) {
-      const row = r as { horse_id: string; finish_position: number | null; race_id: string; races: { race_date: string }[] }
+      const row = r as { horse_id: string; finish_position: number | null; race_id: string; races: { race_date: string } | Array<{ race_date: string }> | null }
+      const raceDate = unwrapEmbed(row.races)?.race_date
+      if (raceDate == null) continue
       if (row.finish_position != null && row.finish_position > 0 && row.finish_position <= 20) {
-        const positions = grouped.get(row.horse_id) ?? []
-        positions.push(row.finish_position)
-        grouped.set(row.horse_id, positions)
+        const starts = grouped.get(row.horse_id) ?? []
+        starts.push({ race_date: raceDate, finish_position: row.finish_position })
+        grouped.set(row.horse_id, starts)
       }
     }
 
-    for (const [horseId, positions] of Array.from(grouped.entries())) {
-      const top6 = positions.slice(0, 6)
+    for (const [horseId, starts] of Array.from(grouped.entries())) {
+      const top6 = starts
+        .sort((a, b) => b.race_date.localeCompare(a.race_date))
+        .slice(0, 6)
+        .map(s => s.finish_position)
       formMap.set(horseId, top6.join('-'))
     }
   }
@@ -317,7 +329,6 @@ export async function fetchHorseRaceHistory(horseIds: string[]): Promise<Map<str
       .select('horse_id, finish_position, official_rating, races!inner(race_date, venue, distance, class_level)')
       .in('horse_id', batch)
       .not('finish_position', 'is', 'null')
-      .order('races.race_date', { ascending: false, foreignTable: 'races' })
       .limit(2000)
 
     if (error) {
@@ -329,12 +340,14 @@ export async function fetchHorseRaceHistory(horseIds: string[]): Promise<Map<str
       horse_id: string
       finish_position: number | null
       official_rating: number | null
-      races: Array<{ race_date: string; venue: string; distance: number | null; class_level: string | null }>
+      races: { race_date: string; venue: string; distance: number | null; class_level: string | null }
+        | Array<{ race_date: string; venue: string; distance: number | null; class_level: string | null }>
+        | null
     }>
 
     for (const row of rows) {
       if (row.finish_position == null || row.finish_position <= 0) continue
-      const race = row.races?.[0]
+      const race = unwrapEmbed(row.races)
       if (!race?.venue || !race?.distance) continue
 
       const entry: HorseRaceRecord = {
@@ -350,6 +363,10 @@ export async function fetchHorseRaceHistory(horseIds: string[]): Promise<Map<str
       historyMap.set(row.horse_id, existing)
     }
   }
+
+  historyMap.forEach(records => {
+    records.sort((a, b) => b.race_date.localeCompare(a.race_date))
+  })
 
   return historyMap
 }

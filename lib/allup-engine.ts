@@ -1,9 +1,10 @@
 import type { RaceRow, Race } from './types'
+import { isOddsPending } from './race-utils'
 
 export interface AllUpLeg {
   raceNo: number
   raceId: string
-  horses: { horseNo: number; horseName: string; pFinal: number; ev: number; odds: number; isFavorite: boolean }[]
+  horses: { horseNo: number; horseName: string; pFinal: number; ev: number; odds: number | null; isFavorite: boolean }[]
   legType: 'win' | 'qp' | 'q'
   legProb: number
 }
@@ -16,7 +17,7 @@ export interface AllUpStrategy {
   betType: string
   legs: AllUpLeg[]
   compositeProb: number
-  estimatedOdds: number
+  estimatedOdds: number | null
   kellyFraction: number
   suggestedStake: number
   riskLevel: 'low' | 'medium' | 'high'
@@ -56,7 +57,7 @@ function toRow(r: RaceRow) {
     horseName: horseName(r),
     pFinal: pf(r),
     ev: ev(r),
-    odds: r.win_odds ?? 0,
+    odds: isOddsPending(r.win_odds) ? null : r.win_odds,
     isFavorite: false,
   }
 }
@@ -82,9 +83,9 @@ function raceStabilityScore(rows: RaceRow[]): number {
   if (top3.length < 2) return 0
   const p1 = pf(top3[0])
   const p2 = pf(top3[1])
-  const favOdds = top3[0].win_odds ?? 99
-  const stability = p1 * 0.5 + p2 * 0.3 + (favOdds <= 5 ? 0.2 : favOdds <= 10 ? 0.1 : 0)
-  return stability
+  const favOdds = isOddsPending(top3[0].win_odds) ? null : top3[0].win_odds
+  const oddsBonus = favOdds == null ? 0 : favOdds <= 5 ? 0.2 : favOdds <= 10 ? 0.1 : 0
+  return p1 * 0.5 + p2 * 0.3 + oddsBonus
 }
 
 function strategy1_StableQP(allRaceData: Map<string, RaceRow[]>, races: Race[]): AllUpStrategy | null {
@@ -123,7 +124,7 @@ function strategy1_StableQP(allRaceData: Map<string, RaceRow[]>, races: Race[]):
   const estimatedOdds = compositeProb > 0 ? 1 / compositeProb : 0
   const avgKelly = legs.reduce((acc, l) => {
     const bestHorse = l.horses[0]
-    return acc + (bestHorse?.ev ?? 0 > 0 ? 0.003 : 0.001)
+    return acc + ((bestHorse?.ev ?? 0) > 0 ? 0.003 : 0.001)
   }, 0) / legs.length
 
   return {
@@ -188,10 +189,10 @@ function strategy2_HighEV(allRaceData: Map<string, RaceRow[]>, races: Race[]): A
   })
 
   const compositeProb = legs.reduce((acc, l) => acc * l.legProb, 1)
-  const estimatedOdds = legs.reduce((acc, l) => {
-    const bestOdds = l.horses.find(h => h.isFavorite)?.odds ?? l.horses[0]?.odds ?? 1
-    return acc * bestOdds
-  }, 1)
+  const legOdds = legs.map(l => l.horses.find(h => h.isFavorite)?.odds ?? l.horses[0]?.odds ?? null)
+  const estimatedOdds = legOdds.every((o): o is number => o != null)
+    ? legOdds.reduce((acc, o) => acc * o, 1)
+    : null
   const avgKelly = legs.reduce((acc, l) => acc + (l.horses.find(h => h.isFavorite)?.ev ?? 0), 0) / legs.length
 
   return {
@@ -257,11 +258,14 @@ function strategy3_Longshot(allRaceData: Map<string, RaceRow[]>, races: Race[]):
   })
 
   const compositeProb = legs.reduce((acc, l) => acc * l.legProb, 1)
-  const oddsProduct = legs.reduce((acc, l) => {
-    const favOdds = l.horses.find(h => h.isFavorite)?.odds ?? 1
-    const lsOdds = l.horses.find(h => !h.isFavorite)?.odds ?? 1
-    return acc * (favOdds + lsOdds) / 2
-  }, 1)
+  const legAvgOdds = legs.map(l => {
+    const favOdds = l.horses.find(h => h.isFavorite)?.odds ?? null
+    const lsOdds = l.horses.find(h => !h.isFavorite)?.odds ?? null
+    return favOdds != null && lsOdds != null ? (favOdds + lsOdds) / 2 : null
+  })
+  const oddsProduct = legAvgOdds.every((o): o is number => o != null)
+    ? legAvgOdds.reduce((acc, o) => acc * o, 1)
+    : null
 
   return {
     id: 'longshot-allup',
@@ -296,6 +300,12 @@ export function generateAllUp(
   if (s3) strategies.push(s3)
 
   if (strategies.length === 0) return null
+
+  // Stage 1 has no market odds yet — the only figure left that implies a payout
+  // is the model-derived estimate, so it must not be shown as a real price.
+  const allRows = Array.from(allRaceData.values()).flat()
+  const oddsPending = allRows.length > 0 && allRows.every(r => isOddsPending(r.win_odds))
+  if (oddsPending) return { strategies: strategies.map(s => ({ ...s, estimatedOdds: null })) }
 
   return { strategies }
 }

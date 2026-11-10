@@ -91,7 +91,7 @@ export function RaceDashboard({ races, allUpData, allRaceData }: RaceDashboardPr
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [races])
 
   useEffect(() => {
     if (races.length > 0 && !selectedRaceId) {
