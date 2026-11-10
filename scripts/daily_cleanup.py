@@ -30,10 +30,37 @@ sys.path.insert(0, os.path.dirname(__file__))
 from common import get_supabase
 
 
+PAGE_SIZE = 1000
+
+
+def fetch_all_rows(table, select: str, order_by: str, **filters) -> List[Dict]:
+    """Page through PostgREST so a scan isn't silently truncated at its 1000-row default.
+
+    Filters are `column` (equals) or `column__gt` / `column__lt`. order_by must be a
+    unique column — paging on a non-unique key skips rows.
+    """
+    rows: List[Dict] = []
+    offset = 0
+    while True:
+        query = table.select(select).order(order_by).range(offset, offset + PAGE_SIZE - 1)
+        for key, value in filters.items():
+            column, _, op = key.partition('__')
+            query = getattr(query, op or 'eq')(column, value)
+        batch = query.execute().data or []
+        rows.extend(batch)
+        if len(batch) < PAGE_SIZE:
+            return rows
+        offset += PAGE_SIZE
+
+
 def cleanup_future_races(supabase: Client, dry_run: bool = False) -> int:
-    """Remove race data for future dates."""
+    """Remove phantom future races — a future date scraped with no runners behind it.
+
+    Never touch populated future meetings: auto-pilot deliberately pre-scrapes the
+    next race day 1-2 days ahead, and wiping it left the dashboard stale.
+    """
     today = datetime.now(HKT).strftime('%Y-%m-%d')
-    print(f"\n[1/4] Cleaning future races (date > {today})...")
+    print(f"\n[1/4] Checking future races (date > {today}) for phantom data...")
 
     future_races = supabase.table('races') \
         .select('race_id') \
@@ -44,49 +71,46 @@ def cleanup_future_races(supabase: Client, dry_run: bool = False) -> int:
         print("  [OK] No future races found")
         return 0
 
-    race_ids = [r['race_id'] for r in future_races.data]
-    print(f"  Found {len(race_ids)} future races")
+    future_ids = [r['race_id'] for r in future_races.data]
 
-    total_check = supabase.table('races').select('race_id', count='exact').execute()
-    if total_check.count and len(race_ids) >= total_check.count:
-        print(f"  [SAFE EXIT] Refusing to delete ALL races ({len(race_ids)}/{total_check.count}). Aborting this step.")
+    populated = set()
+    for i in range(0, len(future_ids), 50):
+        chunk = future_ids[i:i + 50]
+        rows = supabase.table('race_runners').select('race_id').in_('race_id', chunk).execute().data or []
+        populated.update(r['race_id'] for r in rows)
+
+    phantom = [rid for rid in future_ids if rid not in populated]
+    print(f"  {len(future_ids)} future races: {len(future_ids) - len(phantom)} with runners (kept), {len(phantom)} phantom")
+
+    if not phantom:
         return 0
 
     if dry_run:
-        print(f"  [DRY RUN] Would delete {len(race_ids)} races")
-        return len(race_ids)
-
-    for race_id in race_ids:
-        try:
-            supabase.table('race_runners').delete().eq('race_id', race_id).execute()
-            supabase.table('model_predictions').delete().eq('race_id', race_id).execute()
-        except Exception as e:
-            print(f"  [WARN] Failed to clean runners for {race_id}: {e}")
+        print(f"  [DRY RUN] Would delete {len(phantom)} phantom races")
+        return len(phantom)
 
     try:
-        supabase.table('races').delete().in_('race_id', race_ids).execute()
+        supabase.table('races').delete().in_('race_id', phantom).execute()
     except Exception as e:
-        print(f"  [WARN] Failed to delete future races: {e}")
+        print(f"  [WARN] Failed to delete phantom races: {e}")
         return 0
 
-    print(f"  [OK] Deleted {len(race_ids)} future races")
-    return len(race_ids)
+    print(f"  [OK] Deleted {len(phantom)} phantom races")
+    return len(phantom)
 
 
 def cleanup_orphaned_runners(supabase: Client, dry_run: bool = False) -> int:
     """Remove runners that don't have a corresponding race."""
     print("\n[2/4] Cleaning orphaned runners...")
 
-    all_races = supabase.table('races').select('race_id').execute()
-    valid_race_ids = set(r['race_id'] for r in all_races.data) if all_races.data else set()
+    valid_race_ids = set(r['race_id'] for r in fetch_all_rows(supabase.table('races'), 'race_id', 'race_id'))
+    all_runners = fetch_all_rows(supabase.table('race_runners'), 'runner_id,race_id', 'runner_id')
+    orphaned = [r for r in all_runners if r['race_id'] not in valid_race_ids]
 
-    all_runners = supabase.table('race_runners').select('runner_id, race_id').execute()
-    orphaned = [r for r in all_runners.data if r['race_id'] not in valid_race_ids] if all_runners.data else []
+    print(f"  Found {len(orphaned)} orphaned runners (of {len(all_runners)})")
 
-    print(f"  Found {len(orphaned)} orphaned runners")
-
-    if all_runners.data and len(orphaned) >= len(all_runners.data):
-        print(f"  [SAFE EXIT] All runners appear orphaned ({len(orphaned)}/{len(all_runners.data)}). Aborting.")
+    if all_runners and len(orphaned) >= len(all_runners):
+        print(f"  [SAFE EXIT] All runners appear orphaned ({len(orphaned)}/{len(all_runners)}). Aborting.")
         return 0
 
     if dry_run or not orphaned:
@@ -111,16 +135,12 @@ def cleanup_old_predictions(supabase: Client, days: int = 90, dry_run: bool = Fa
     print(f"\n[3/4] Cleaning predictions older than {days} days (before {cutoff_date})...")
 
     # Get old race IDs
-    old_races = supabase.table('races') \
-        .select('race_id') \
-        .lt('race_date', cutoff_date) \
-        .execute()
-
-    if not old_races.data:
+    race_ids = [r['race_id'] for r in
+                fetch_all_rows(supabase.table('races'), 'race_id', 'race_id', race_date__lt=cutoff_date)]
+    if not race_ids:
         print("  [OK] No old races found")
         return 0
 
-    race_ids = [r['race_id'] for r in old_races.data]
     print(f"  Found {len(race_ids)} old races")
 
     if dry_run:
