@@ -21,7 +21,7 @@ ODDS_REFRESH_WINDOW_MIN = 45
 ODDS_LEAD_MIN = 180
 POST_RACE_SETTLE_MIN = 25
 DISCOVERY_HORIZON_DAYS = 2
-DISCOVERY_TICK_HOUR_HKT = 11
+DISCOVERY_MARKER_ID = 'tick_discovery'
 
 URL = os.environ.get('SUPABASE_URL') or os.environ.get('NEXT_PUBLIC_SUPABASE_URL')
 KEY = os.environ.get('SUPABASE_SERVICE_KEY') or os.environ.get('NEXT_PUBLIC_SUPABASE_ANON_KEY')
@@ -63,27 +63,15 @@ def main():
         f'&race_date=lte.{today}&or=(is_finished.eq.false,is_finished.is.null)&limit=200'
     )
 
-    # Nothing in the near future means Stage 1 never landed — odds and results
-    # have no rows to attach to, so discovery is the only useful phase.
-    horizon = (now + timedelta(days=DISCOVERY_HORIZON_DAYS)).strftime('%Y-%m-%d')
-    upcoming_meeting = fetch(
-        f'races?select=race_date&and=(race_date.gte.{today},race_date.lte.{horizon})&limit=1'
-    )
-    do_discover = not upcoming_meeting
-
-    # The Mon/Fri seed can drift, so the first tick of the day also checks one
-    # slot further out. Capped to a single hour: an HKJC calendar with a genuine
-    # 3-day gap then costs one discovery run, not one per tick.
-    if not do_discover and now.hour == DISCOVERY_TICK_HOUR_HKT and now.minute < 30:
-        ahead = fetch(
-            f'races?select=race_date&and=(race_date.gt.{today},race_date.lte.{horizon})&limit=1'
-        )
-        do_discover = not ahead
+    # Nothing queued ahead means Stage 1 never landed — odds and results would
+    # have no rows to attach to, so discovery is the only useful phase. Capped at
+    # one attempt per calendar day (Actions drifts by hours here, so a fixed slot
+    # would simply be missed) and only when the next two days look thin.
+    do_discover, reason_seed = seed_check(now, today)
 
     if not unfinished:
         print(f'[GATE] nothing unfinished up to today — {"discovery needed" if do_discover else "idle"}')
-        emit(do_discover, False, False, do_discover,
-             'no upcoming meeting in DB' if do_discover else 'no unfinished races')
+        finish(do_discover, False, False, do_discover, reason_seed or 'no unfinished races', today)
         return 0
 
     todays = [r for r in unfinished if str(r['race_date'])[:10] == today]
@@ -115,9 +103,59 @@ def main():
     print(f'[GATE] today={today} unfinished={len(unfinished)} upcoming={len(upcoming)} '
           f'odds={"yes" if do_odds else "no"} archive={"yes" if do_archive else "no"} '
           f'discover={"yes" if do_discover else "no"}')
-    emit(do_odds or do_archive or do_discover, do_odds, do_archive, do_discover,
-         f'{len(upcoming)} upcoming, {len(stale)} stale')
+    finish(do_odds or do_archive or do_discover, do_odds, do_archive, do_discover,
+           f'{len(upcoming)} upcoming, {len(stale)} stale' + (f'; {reason_seed}' if reason_seed else ''),
+           today)
     return 0
+
+
+def seed_check(now, today: str):
+    """Is the database too thin ahead of us to serve the next meetings?"""
+    if discovery_attempted_today(today):
+        return False, 'discovery already attempted today'
+
+    horizon = (now + timedelta(days=DISCOVERY_HORIZON_DAYS)).strftime('%Y-%m-%d')
+    near = fetch(f'races?select=race_date&and=(race_date.gte.{today},race_date.lte.{horizon})&limit=1')
+    if not near:
+        return True, f'no meeting between {today} and {horizon}'
+
+    ahead = fetch(f'races?select=race_date&and=(race_date.gt.{today},race_date.lte.{horizon})&limit=1')
+    if not ahead:
+        return True, f'nothing queued after {today}'
+    return False, None
+
+
+def discovery_attempted_today(today: str) -> bool:
+    try:
+        rows = fetch(f'pipeline_status?select=status_json&id=eq.{DISCOVERY_MARKER_ID}')
+    except Exception as e:
+        print(f'[GATE] could not read discovery marker: {e}')
+        return False
+    return bool(rows) and rows[0].get('status_json', {}).get('attempted_date') == today
+
+
+def mark_discovery_attempt(today: str):
+    body = json.dumps({
+        'id': DISCOVERY_MARKER_ID,
+        'last_run': datetime.now(HKT).isoformat(),
+        'status_json': {'attempted_date': today},
+    }).encode()
+    req = urllib.request.Request(
+        f'{URL}/rest/v1/pipeline_status', data=body, method='POST',
+        headers={'apikey': KEY, 'Authorization': f'Bearer {KEY}',
+                 'Content-Type': 'application/json',
+                 'Prefer': 'return=minimal,resolution=merge-duplicates'},
+    )
+    try:
+        urllib.request.urlopen(req, timeout=30).read()
+    except Exception as e:
+        print(f'[GATE] could not record discovery attempt: {e}')
+
+
+def finish(need_work: bool, do_odds: bool, do_archive: bool, do_discover: bool, reason: str, today: str):
+    if do_discover:
+        mark_discovery_attempt(today)
+    emit(need_work, do_odds, do_archive, do_discover, reason)
 
 
 def emit(need_work: bool, do_odds: bool, do_archive: bool, do_discover: bool, reason: str):
