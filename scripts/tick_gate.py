@@ -13,6 +13,7 @@ import json
 import urllib.parse
 import urllib.request
 from datetime import datetime, timedelta
+from typing import Dict
 from zoneinfo import ZoneInfo
 
 HKT = ZoneInfo('Asia/Hong_Kong')
@@ -57,22 +58,28 @@ def main():
 
     now = datetime.now(HKT)
     today = now.strftime('%Y-%m-%d')
+    d = decide(now, today)
 
+    if d['discover']:
+        mark_discovery_attempt(today)
+    print(f"[GATE] today={today} upcoming={d['upcoming']} stale={d['stale']} "
+          f"odds={'yes' if d['odds'] else 'no'} archive={'yes' if d['archive'] else 'no'} "
+          f"discover={'yes' if d['discover'] else 'no'} — {d['reason']}")
+    emit(d['odds'] or d['archive'] or d['discover'], d['odds'], d['archive'], d['discover'], d['reason'])
+    return 0
+
+
+def decide(now, today: str) -> Dict:
+    """What does the database need right now? Shared by Actions and the local tick."""
     unfinished = fetch(
         'races?select=race_id,race_date,venue,race_no,race_time'
         f'&race_date=lte.{today}&or=(is_finished.eq.false,is_finished.is.null)&limit=200'
     )
-
-    # Nothing queued ahead means Stage 1 never landed — odds and results would
-    # have no rows to attach to, so discovery is the only useful phase. Capped at
-    # one attempt per calendar day (Actions drifts by hours here, so a fixed slot
-    # would simply be missed) and only when the next two days look thin.
     do_discover, reason_seed = seed_check(now, today)
 
     if not unfinished:
-        print(f'[GATE] nothing unfinished up to today — {"discovery needed" if do_discover else "idle"}')
-        finish(do_discover, False, False, do_discover, reason_seed or 'no unfinished races', today)
-        return 0
+        return {'odds': False, 'archive': False, 'discover': do_discover, 'upcoming': 0, 'stale': 0,
+                'reason': reason_seed or 'no unfinished races'}
 
     todays = [r for r in unfinished if str(r['race_date'])[:10] == today]
     stale = [r for r in unfinished if str(r['race_date'])[:10] < today]
@@ -100,13 +107,10 @@ def main():
                 do_odds = True
                 break
 
-    print(f'[GATE] today={today} unfinished={len(unfinished)} upcoming={len(upcoming)} '
-          f'odds={"yes" if do_odds else "no"} archive={"yes" if do_archive else "no"} '
-          f'discover={"yes" if do_discover else "no"}')
-    finish(do_odds or do_archive or do_discover, do_odds, do_archive, do_discover,
-           f'{len(upcoming)} upcoming, {len(stale)} stale' + (f'; {reason_seed}' if reason_seed else ''),
-           today)
-    return 0
+    return {'odds': do_odds, 'archive': do_archive, 'discover': do_discover,
+            'upcoming': len(upcoming), 'stale': len(stale),
+            'reason': f'{len(upcoming)} upcoming, {len(stale)} stale'
+                      + (f'; {reason_seed}' if reason_seed else '')}
 
 
 def seed_check(now, today: str):
@@ -150,12 +154,6 @@ def mark_discovery_attempt(today: str):
         urllib.request.urlopen(req, timeout=30).read()
     except Exception as e:
         print(f'[GATE] could not record discovery attempt: {e}')
-
-
-def finish(need_work: bool, do_odds: bool, do_archive: bool, do_discover: bool, reason: str, today: str):
-    if do_discover:
-        mark_discovery_attempt(today)
-    emit(need_work, do_odds, do_archive, do_discover, reason)
 
 
 def emit(need_work: bool, do_odds: bool, do_archive: bool, do_discover: bool, reason: str):
