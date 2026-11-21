@@ -81,9 +81,10 @@ def tick(dry_run: bool = False) -> int:
     today = now.strftime('%Y-%m-%d')
     d = tick_gate.decide(now, today)
     print(f"[TICK] {now.strftime('%Y-%m-%d %H:%M')} HKT — odds={d['odds']} "
-          f"archive={d['archive']} discover={d['discover']} ({d['reason']})")
+          f"archive={d['archive']} discover={d['discover']} integrity={d['integrity_work']} "
+          f"({d['reason']})")
 
-    if not (d['odds'] or d['archive'] or d['discover']):
+    if not (d['odds'] or d['archive'] or d['discover'] or d['integrity_work']):
         return 0
 
     supabase = get_supabase()
@@ -113,6 +114,30 @@ def tick(dry_run: bool = False) -> int:
                 tick_gate.mark_attempt(tick_gate.STALE_MARKER_ID, today)
 
         failures += not run_phase('Phase 2: archive results + AI review', _archive)
+
+    if d['integrity_work']:
+        def _integrity():
+            import backfill_results
+            from playwright.sync_api import sync_playwright
+            recovered = 0
+            with sync_playwright() as p:
+                browser, page = backfill_results.open_page(p)
+                for m in d['integrity']:
+                    nos = m['races'] or backfill_results.broken_race_nos(
+                        supabase, m['race_date'], m['venue'])
+                    if not nos:
+                        print(f"  {m['race_date']} {m['venue']}: already complete")
+                        continue
+                    recovered += backfill_results.refill_meeting(
+                        supabase, page, m['race_date'], m['venue'], nos)
+                browser.close()
+            print(f"  [Integrity] {recovered} runner rows recovered")
+            if not dry_run:
+                # One attempt per calendar day, whatever the outcome — a card HKJC
+                # has stopped publishing would otherwise be re-scraped every 15 min.
+                tick_gate.mark_attempt(tick_gate.INTEGRITY_MARKER_ID, today)
+
+        failures += not run_phase('Phase 3: refill purged runner rows', _integrity)
 
     return 1 if failures else 0
 

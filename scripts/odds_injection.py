@@ -4,8 +4,8 @@ scripts/odds_injection.py
 Stage 2: Race-Day Odds Injection
 
 Scrapes live odds from bet.hkjc.com and computes:
-  1. P_market = (1/odds) / sum(1/odds)
-  2. P_final = 0.5 * P_model + 0.5 * P_market (linear fusion)
+  1. P_market = (1/odds)^GAMMA normalised (takeout + favourite/longshot bias removed)
+  2. P_final = MODEL_WEIGHT * P_model + MARKET_WEIGHT * P_market (see model_config.py)
   3. EV = P_final * odds - 1
   4. Kelly = max(0, EV/(odds-1)) * 0.25
 
@@ -23,6 +23,7 @@ HKT = ZoneInfo('Asia/Hong_Kong')
 
 sys.path.insert(0, os.path.dirname(__file__))
 from common import get_supabase, retry_supabase
+from model_config import market_probabilities, fuse
 
 
 def scrape_odds_for_race(page, date_str: str, venue: str, race_no: int) -> dict:
@@ -61,27 +62,22 @@ def scrape_odds_for_race(page, date_str: str, venue: str, race_no: int) -> dict:
 def compute_market_fusion(odds_list: list, p_models: list) -> list:
     """
     Compute P_market, P_final, EV, Kelly for each horse.
-    Uses linear fusion: P_final = 0.5 * P_model + 0.5 * P_market
+    P_market strips the takeout (model_config.MARKET_GAMMA); fusion weights live there too.
     """
-    # P_market = (1/odds) / sum(1/odds)
-    reciprocals = [1.0 / odds if odds and odds > 1.0 else None for odds in odds_list]
-    valid_reciprocals = [r for r in reciprocals if r is not None]
-
-    if not valid_reciprocals:
+    if not any(o and o > 1.0 for o in odds_list):
         return [{'p_market': None, 'p_final': None, 'ev': None, 'kelly': None} for _ in odds_list]
 
-    total_reciprocal = sum(valid_reciprocals)
+    p_markets = market_probabilities(odds_list)
 
     results = []
     for i, odds in enumerate(odds_list):
         p_model = p_models[i]
 
         if odds and odds > 1.0:
-            p_market = (1.0 / odds) / total_reciprocal
-            # Linear fusion (matching frontend recomputePFusion)
-            p_final = 0.5 * p_model + 0.5 * p_market
+            p_market = p_markets[i]
+            p_final = fuse(p_model, p_market)
             ev = p_final * odds - 1
-            kelly = max(0, ev / (odds - 1)) * 0.25 if odds > 1.0 else 0
+            kelly = max(0, ev / (odds - 1)) * 0.25
         else:
             p_market = None
             p_final = None

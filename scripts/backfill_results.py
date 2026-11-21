@@ -9,7 +9,8 @@ Usage:
   python scripts/backfill_results.py --dates 2026-10-28,2026-11-01,2026-11-04
 """
 import sys, os, io, time, re, argparse, random
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', line_buffering=True)
+if hasattr(sys.stdout, 'buffer'):  # a caller may already own the stream (tick_local's Tee)
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', line_buffering=True)
 sys.path.insert(0, os.path.dirname(__file__))
 
 from datetime import datetime
@@ -68,7 +69,7 @@ def scrape_results_page(page, date_str: str, venue: str, race_no: int) -> Option
                     const horseNo = parseInt(get("馬號"));
                     const horseNameRaw = get("馬名");
                     const horseName = horseNameRaw.replace(/\(.*\)/, '').trim();
-                    const horseId = (horseNameRaw.match(/\((L\d+|S\d+|A\d+|C\d+|G\d+|H\d+|K\d+)\)/) || [])[1] || "";
+                    const horseId = (horseNameRaw.match(/\(([A-Z]{1,2}\d{1,4})\)/) || [])[1] || "";
 
                     const winOdds = parseFloat(get("獨贏賠率")) || 0;
                     const draw = parseInt(get("檔位")) || 0;
@@ -108,10 +109,15 @@ def scrape_results_page(page, date_str: str, venue: str, race_no: int) -> Option
             const isST = allText.includes("沙田");
             const isHV = allText.includes("跑馬地");
 
+            // A declared-void race publishes no finishers; every pool reads 退款.
+            result.void_race = (allText.match(/退款/g) || []).length >= 3;
+
             return result;
         }''')
 
-        if not race_data or not race_data.get('horses'):
+        if not race_data:
+            return None
+        if not race_data.get('horses') and not race_data.get('void_race'):
             return None
 
         return race_data
@@ -134,10 +140,235 @@ def extract_race_class(title_text: str, page_text: str = "") -> Optional[str]:
     return None
 
 
+MIN_RUNNERS = 4
+DEFAULT_DATES = '2026-10-28:ST;2026-11-01:HV;2026-11-04:HV'
+
+
+def parse_specs(specs_str: str) -> List[Dict]:
+    """Parse ';'-separated 'DATE[:VENUE[:R1,R2]]' into meeting dicts."""
+    out = []
+    for raw in specs_str.split(';'):
+        parts = raw.strip().split(':')
+        if not parts[0].strip():
+            continue
+        out.append({
+            'race_date': parts[0].strip(),
+            'venue': parts[1].strip() if len(parts) > 1 and parts[1].strip() else None,
+            'races': [int(x) for x in parts[2].split(',') if x.strip().isdigit()]
+                     if len(parts) > 2 else [],
+        })
+    return out
+
+
+def broken_race_nos(supabase, date_str: str, venue: str) -> List[int]:
+    """Race numbers on this card that exist but have no (or purged) runner rows."""
+    try:
+        reg = retry_supabase(
+            lambda: supabase.table('pipeline_status').select('status_json')
+            .eq('id', VOID_REGISTRY_ID).limit(1).execute()
+        ).data or []
+        voided = set((reg[0].get('status_json') or {}).get('race_ids', [])) if reg else set()
+    except Exception:
+        voided = set()
+    date_path = date_str.replace('-', '')
+    races = retry_supabase(
+        lambda: supabase.table('races').select('race_no')
+        .eq('race_date', date_str).eq('venue', venue).order('race_no').limit(30).execute()
+    ).data or []
+    broken = []
+    for r in races:
+        if f"{venue}-{date_path}-{r['race_no']:02d}" in voided:
+            continue
+        rows = retry_supabase(
+            lambda rn=r['race_no']: supabase.table('race_runners').select('finish_position')
+            .eq('race_id', f"{venue}-{date_str.replace('-', '')}-{rn:02d}").limit(30).execute()
+        ).data or []
+        if len(rows) < MIN_RUNNERS or not any(x.get('finish_position') for x in rows):
+            broken.append(r['race_no'])
+    return broken
+
+
+def scan_broken_meetings() -> List[Dict]:
+    """Ask the tick gate which finished meetings are missing runners (DB-only, free)."""
+    import tick_gate
+    now = tick_gate.clock_now()
+    return [{'race_date': m['race_date'], 'venue': m['venue'], 'races': m['races'],
+             'from_gate': True}
+            for m in tick_gate.runnerless_races(now, now.strftime('%Y-%m-%d'))]
+
+
+def detect_venue(page, date_str: str) -> Optional[str]:
+    """Which course ran on this date? HKJC answers with a different day if we guess wrong."""
+    date_slash = date_str.replace('-', '/')
+    for v in ['ST', 'HV']:
+        url = (f'https://racing.hkjc.com/zh-hk/local/information/localresults'
+               f'?racedate={date_slash}&Racecourse={v}&RaceNo=1')
+        page.goto(url, wait_until='domcontentloaded', timeout=15000)
+        time.sleep(3)
+        if date_slash not in page.url:
+            continue
+        horses = page.evaluate('''() => {
+            for (const t of document.querySelectorAll("table")) {
+                const rows = t.querySelectorAll("tr");
+                if (rows.length >= 5) {
+                    const headers = Array.from(rows[0].querySelectorAll("td, th")).map(c => c.textContent.trim());
+                    if (headers.includes("名次")) return rows.length - 1;
+                }
+            }
+            return 0;
+        }''')
+        if horses >= MIN_RUNNERS:
+            return v
+    return None
+
+
+def build_meeting_records(date_str: str, venue: str, races_data: List[tuple]):
+    """Turn scraped result pages into races / race_runners / horses rows."""
+    date_path = date_str.replace('-', '')
+    races, all_runners, all_horses, horse_set = [], [], [], set()
+
+    for race_no, result in races_data:
+        race_id = f"{venue}-{date_path}-{race_no:02d}"
+        race_info = result.get('race_info', {})
+        race_class = extract_race_class(race_info.get('title', ''), race_info.get('class', ''))
+
+        races.append({
+            'race_id': race_id,
+            'race_date': date_str,
+            'venue': venue,
+            'race_no': race_no,
+            'class_level': race_class or race_info.get('class'),
+            'distance': race_info.get('distance'),
+            'going': race_info.get('going'),
+            'is_finished': True,
+        })
+
+        for h in result['horses']:
+            horse_name = h['horse_name']
+            horse_id_str = (h.get('horse_id') or '').strip() or horse_name
+
+            all_runners.append({
+                'runner_id': f"{race_id}_H{h['horse_no']:02d}",
+                'race_id': race_id,
+                'horse_no': h['horse_no'],
+                'horse_id': horse_id_str,
+                'jockey': h['jockey'],
+                'trainer': h['trainer'],
+                'draw': h['draw'],
+                'actual_weight': h['weight_carried'],
+                'declared_weight': h['declared_weight'],
+                'win_odds': h['win_odds'] if h['win_odds'] > 1.0 else None,
+                'finish_position': h['pos'],
+            })
+
+            horse_key = horse_id_str or horse_name
+            if horse_key not in horse_set:
+                horse_set.add(horse_key)
+                all_horses.append({'horse_name': horse_name, 'horse_id': horse_id_str or horse_name})
+
+    return races, all_runners, all_horses
+
+
+def scrape_meeting(page, date_str: str, venue: str, race_nos: List[int],
+                   stop_at_first_miss: bool = False):
+    """Scrape the given race numbers. Returns (races_data, void_race_ids)."""
+    races_data, void_ids = [], []
+    date_path = date_str.replace('-', '')
+    for race_no in race_nos:
+        print(f"  {date_str} {venue} R{race_no}: ", end='', flush=True)
+        result = scrape_results_page(page, date_str, venue, race_no)
+        if not result:
+            print('no data')
+            if stop_at_first_miss:
+                break
+            continue
+        if not result.get('horses'):
+            print('declared void (all pools refunded)')
+            void_ids.append(f"{venue}-{date_path}-{race_no:02d}")
+            continue
+        print(f"{len(result['horses'])} horses")
+        races_data.append((race_no, result))
+        time.sleep(random.uniform(1.0, 2.0))
+    return races_data, void_ids
+
+
+VOID_REGISTRY_ID = 'void_races'
+
+
+def record_void_races(supabase, race_ids: List[str]):
+    """Close out declared-void races so neither the archive nor the integrity phase
+    re-scrapes a result page that will never be published."""
+    if not race_ids:
+        return
+    try:
+        cur = retry_supabase(
+            lambda: supabase.table('pipeline_status').select('status_json')
+            .eq('id', VOID_REGISTRY_ID).limit(1).execute()
+        ).data or []
+        known = set((cur[0].get('status_json') or {}).get('race_ids', [])) if cur else set()
+        known.update(race_ids)
+        supabase.table('pipeline_status').upsert({
+            'id': VOID_REGISTRY_ID,
+            'last_run': datetime.now(HKT).isoformat(),
+            'status_json': {'race_ids': sorted(known)},
+        }, on_conflict='id').execute()
+        for rid in race_ids:
+            retry_supabase(
+                lambda r=rid: supabase.table('races').update({'is_finished': True})
+                .eq('race_id', r).execute()
+            )
+        print(f"  [OK] {len(race_ids)} race(s) recorded as void: {race_ids}")
+    except Exception as e:
+        print(f"  [WARN] could not record void races: {e}")
+
+
+def write_meeting(supabase, races: List[Dict], all_runners: List[Dict], all_horses: List[Dict]):
+    if all_horses:
+        try:
+            batch_upsert(supabase, 'horses', all_horses, 'horse_id')
+        except Exception as e:
+            print(f"  [WARN] horses upsert failed: {e}")
+    try:
+        batch_upsert(supabase, 'races', races, 'race_id')
+    except Exception as e:
+        print(f"  [FAIL] races upsert: {e}")
+        return False
+    try:
+        batch_upsert(supabase, 'race_runners', all_runners, 'runner_id')
+    except Exception as e:
+        print(f"  [FAIL] race_runners upsert: {e}")
+        return False
+    return True
+
+
+def refill_meeting(supabase, page, date_str: str, venue: str, race_nos: List[int]) -> int:
+    """Re-scrape races that exist but lost their runner rows (purge-then-write failures).
+
+    Only horses and race_runners are written: the race rows themselves are what we
+    keyed off, and rewriting their class/going would clobber the scraper's own
+    format with the results page's.
+    """
+    races_data, void_ids = scrape_meeting(page, date_str, venue, race_nos)
+    record_void_races(supabase, void_ids)
+    if not races_data:
+        return 0
+    _, all_runners, all_horses = build_meeting_records(date_str, venue, races_data)
+    if all_horses:
+        try:
+            batch_upsert(supabase, 'horses', all_horses, 'horse_id')
+        except Exception as e:
+            print(f"  [WARN] horses upsert failed: {e}")
+    try:
+        batch_upsert(supabase, 'race_runners', all_runners, 'runner_id')
+    except Exception as e:
+        print(f"  [FAIL] race_runners upsert: {e}")
+        return 0
+    print(f"  [OK] {date_str} {venue}: refilled {len(all_runners)} runners over {len(races_data)} races")
+    return len(all_runners)
+
+
 def backfill_race_day(supabase, page, date_str: str, venue: str):
     """Scrape and write all races for a single race day."""
-    date_path = date_str.replace('-', '')
-
     # Check if already in DB
     existing = retry_supabase(
         lambda: supabase.table('races').select('race_id').eq('race_date', date_str).eq('venue', venue).limit(1).execute()
@@ -150,108 +381,43 @@ def backfill_race_day(supabase, page, date_str: str, venue: str):
     print(f"  Backfilling {date_str} {venue}")
     print(f"{'='*50}")
 
-    races_data = []
-    for race_no in range(1, 12):
-        print(f"  Scraping R{race_no}...", end=' ', flush=True)
-        result = scrape_results_page(page, date_str, venue, race_no)
-        if not result or not result.get('horses'):
-            print(f"no data (end of card)")
-            break
-        print(f"{len(result['horses'])} horses")
-        races_data.append((race_no, result))
-        time.sleep(random.uniform(1.0, 2.0))
-
+    races_data, void_ids = scrape_meeting(page, date_str, venue, list(range(1, 12)),
+                                          stop_at_first_miss=True)
+    record_void_races(supabase, void_ids)
     if not races_data:
         print(f"  [WARN] No races found for {date_str} {venue}")
         return 0
 
-    # Build races and race_runners records
-    races = []
-    all_runners = []
-    all_horses = []
-    horse_set = set()
+    races, all_runners, all_horses = build_meeting_records(date_str, venue, races_data)
 
-    for race_no, result in races_data:
-        race_id = f"{venue}-{date_path}-{race_no:02d}"
-        race_info = result.get('race_info', {})
-
-        race_class = extract_race_class(race_info.get('title', ''), race_info.get('class', ''))
-
-        race_record = {
-            'race_id': race_id,
-            'race_date': date_str,
-            'venue': venue,
-            'race_no': race_no,
-            'class_level': race_class or race_info.get('class'),
-            'distance': result.get('race_info', {}).get('distance'),
-            'going': result.get('race_info', {}).get('going'),
-            'is_finished': True,
-        }
-        races.append(race_record)
-
-        for h in result['horses']:
-            horse_name = h['horse_name']
-            horse_id_str = h.get('horse_id', '')
-
-            runner_id = f"{race_id}_H{h['horse_no']:02d}"
-            runner = {
-                'runner_id': runner_id,
-                'race_id': race_id,
-                'horse_no': h['horse_no'],
-                'horse_id': horse_id_str or None,
-                'jockey': h['jockey'],
-                'trainer': h['trainer'],
-                'draw': h['draw'],
-                'actual_weight': h['weight_carried'],
-                'declared_weight': h['declared_weight'],
-                'win_odds': h['win_odds'] if h['win_odds'] > 1.0 else None,
-                'finish_position': h['pos'],
-            }
-            all_runners.append(runner)
-
-            horse_key = horse_id_str or horse_name
-            if horse_key not in horse_set:
-                horse_set.add(horse_key)
-                horse_record = {
-                    'horse_name': horse_name,
-                    'horse_id': horse_id_str or horse_name,
-                }
-                all_horses.append(horse_record)
-
-    # Write to Supabase
     print(f"\n  [Write] Writing {len(races)} races, {len(all_runners)} runners...")
-
-    # Upsert horses first
-    if all_horses:
-        try:
-            batch_upsert(supabase, 'horses', all_horses, 'horse_id')
-            print(f"  [OK] {len(all_horses)} horses upserted")
-        except Exception as e:
-            print(f"  [WARN] horses upsert failed: {e}")
-
-    # Upsert races
-    try:
-        batch_upsert(supabase, 'races', races, 'race_id')
-        print(f"  [OK] {len(races)} races upserted")
-    except Exception as e:
-        print(f"  [FAIL] races upsert: {e}")
-        return 0
-
-    # Upsert race_runners
-    try:
-        batch_upsert(supabase, 'race_runners', all_runners, 'runner_id')
-        print(f"  [OK] {len(all_runners)} runners upserted")
-    except Exception as e:
-        print(f"  [FAIL] race_runners upsert: {e}")
+    if not write_meeting(supabase, races, all_runners, all_horses):
         return 0
 
     return len(races)
 
 
+def open_page(playwright):
+    """Headless Chromium with the bot-detection tweaks the HKJC pages need."""
+    browser = playwright.chromium.launch(
+        headless=True,
+        args=['--no-sandbox', '--disable-gpu', '--disable-blink-features=AutomationControlled'])
+    page = browser.new_page()
+    page.set_extra_http_headers({
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+        'Referer': 'https://racing.hkjc.com/',
+    })
+    page.add_init_script('()=>{Object.defineProperty(navigator,"webdriver",{get:()=>undefined})}')
+    return browser, page
+
+
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dates', default='2026-10-28,2026-11-01,2026-11-04',
-                        help='Comma-separated dates to backfill')
+    parser.add_argument('--dates', default='',
+                        help=';-separated DATE[:VENUE[:R1,R2]] meetings to process. '
+                             'Empty = auto (new cards for --dates, tick gate scan for --refill)')
+    parser.add_argument('--refill', action='store_true',
+                        help='Re-scrape races that exist but lost their runner rows')
     parser.add_argument('--skip-benter', action='store_true')
     parser.add_argument('--skip-review', action='store_true')
     args = parser.parse_args()
@@ -264,53 +430,42 @@ def main():
         print("[FAIL] Cannot connect to Supabase")
         sys.exit(1)
 
-    dates = [d.strip() for d in args.dates.split(',') if d.strip()]
+    if args.refill:
+        meetings = parse_specs(args.dates) if args.dates else scan_broken_meetings()
+        for m in meetings:
+            if not m['races']:
+                m['races'] = broken_race_nos(supabase, m['race_date'], m['venue'])
+        meetings = [m for m in meetings if m['venue'] and m['races']]
+        if not meetings:
+            print('[REFILL] nothing broken — all finished races have runners')
+            return
+        print(f"[REFILL] {len(meetings)} meeting(s): "
+              + ', '.join(f"{m['race_date']} {m['venue']} R{m['races']}" for m in meetings))
+        from playwright.sync_api import sync_playwright
+        with sync_playwright() as p:
+            browser, page = open_page(p)
+            written = 0
+            for m in meetings:
+                written += refill_meeting(supabase, page, m['race_date'], m['venue'], m['races'])
+            browser.close()
+        print(f"\n[REFILL] done: {written} runner rows rewritten")
+        return
 
-    # Known venue mapping
-    venue_map = {
-        '2026-10-28': 'ST',
-        '2026-11-01': 'HV',
-        '2026-11-04': 'HV',
-    }
-
-    from playwright.sync_api import sync_playwright
+    specs = parse_specs(args.dates or DEFAULT_DATES)
+    dates = [f"{m['race_date']}:{m['venue']}" for m in specs] or []
 
     total_races = 0
     all_race_ids = []
 
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True, args=['--no-sandbox', '--disable-gpu', '--disable-blink-features=AutomationControlled'])
-        page = browser.new_page()
-        page.set_extra_http_headers({
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-            'Referer': 'https://racing.hkjc.com/',
-        })
-        page.add_init_script('()=>{Object.defineProperty(navigator,"webdriver",{get:()=>undefined})}')
+    from playwright.sync_api import sync_playwright
 
-        for date_str in dates:
-            venue = venue_map.get(date_str)
+    with sync_playwright() as p:
+        browser, page = open_page(p)
+
+        for spec in specs:
+            date_str, venue = spec['race_date'], spec['venue']
             if not venue:
-                # Auto-detect venue
-                for v in ['ST', 'HV']:
-                    date_slash = date_str.replace('-', '/')
-                    url = f'https://racing.hkjc.com/zh-hk/local/information/localresults?racedate={date_slash}&Racecourse={v}&RaceNo=1'
-                    page.goto(url, wait_until='domcontentloaded', timeout=15000)
-                    time.sleep(3)
-                    if date_slash in page.url:
-                        horses = page.evaluate('''() => {
-                            const tables = document.querySelectorAll("table");
-                            for (const t of tables) {
-                                const rows = t.querySelectorAll("tr");
-                                if (rows.length >= 5) {
-                                    const headers = Array.from(rows[0].querySelectorAll("td, th")).map(c => c.textContent.trim());
-                                    if (headers.includes("名次")) return rows.length - 1;
-                                }
-                            }
-                            return 0;
-                        }''')
-                        if horses >= 4:
-                            venue = v
-                            break
+                venue = detect_venue(page, date_str)
 
             if not venue:
                 print(f"[SKIP] {date_str}: cannot determine venue")
@@ -322,8 +477,7 @@ def main():
             # Collect race IDs for Benter/review
             date_path = date_str.replace('-', '')
             for rn in range(1, 12):
-                race_id = f"{venue}-{date_path}-{rn:02d}"
-                all_race_ids.append(race_id)
+                all_race_ids.append(f"{venue}-{date_path}-{rn:02d}")
 
         browser.close()
 

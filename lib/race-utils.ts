@@ -4,13 +4,27 @@ import { getFormColor } from './color-utils'
 
 export { getFormColor }
 
-const MODEL_WEIGHT = 0.5
-const MARKET_WEIGHT = 0.5
+// Calibrated on 2026-02..2026-11 results (364 races, fit on Feb-Aug / validated Sep-Nov):
+// the 9-factor P_model ranks worse than the price alone (NLL 2.34 vs 2.11), so the market
+// is the anchor and the model is only a value tilt. See memory/backtest-market-echo.
+const MODEL_WEIGHT = 0.2
+const MARKET_WEIGHT = 0.8
 const FRACTIONAL_KELLY = 0.25
 
+// Win-pool implied probabilities are inflated by the ~22% overround AND over-bet on
+// longshots: actual/implied falls from 0.74 (favourites) to 0.45 (deep longshots).
+// Raising the reciprocal to GAMMA>1 removes the takeout and re-weights that slope.
+const MARKET_GAMMA = 1.3
+
 // Temperature scaling for softmax (prevents extreme probability distribution)
-// T=15 gives reasonable win probabilities: top horse ~18-25%, others ~3-10%
-const SOFTMAX_TEMPERATURE = 15
+// T=8 was the best on the validation slice; T=15 flattened P_model too much.
+const SOFTMAX_TEMPERATURE = 8
+
+// Factors that carry no information on today's inputs — measured mean rank correlation
+// against the real finish order, and the share of races where every runner scores alike:
+//   weight -0.09 (direction is backwards), pace +0.01 (86% constant), gear n/a (100% constant)
+// They stay in the table so the breakdown UI can show them as excluded.
+const DEAD_FACTORS: (keyof RacecourseWeights)[] = ['weight', 'gear', 'pace']
 
 // Dynamic weighting by racecourse — 9 factors total
 export interface RacecourseWeights {
@@ -25,17 +39,36 @@ export interface RacecourseWeights {
   classMov: number
 }
 
-export function getWeightsByVenue(venue: string | undefined): RacecourseWeights {
-  if (venue === 'HV') {
-    return {
-      form: 0.18, draw: 0.14, jockeyTrainer: 0.12, weight: 0.08,
-      courseDistance: 0.16, restDays: 0.10, gear: 0.06, pace: 0.08, classMov: 0.08,
-    }
-  }
-  return {
+const RAW_WEIGHTS: Record<'HV' | 'ST', RacecourseWeights> = {
+  HV: {
+    form: 0.18, draw: 0.14, jockeyTrainer: 0.12, weight: 0.08,
+    courseDistance: 0.16, restDays: 0.10, gear: 0.06, pace: 0.08, classMov: 0.08,
+  },
+  ST: {
     form: 0.16, draw: 0.08, jockeyTrainer: 0.14, weight: 0.08,
     courseDistance: 0.18, restDays: 0.10, gear: 0.06, pace: 0.10, classMov: 0.10,
+  },
+}
+
+export function getWeightsByVenue(venue: string | undefined): RacecourseWeights {
+  const raw = { ...(venue === 'HV' ? RAW_WEIGHTS.HV : RAW_WEIGHTS.ST) }
+  let live = 0
+  for (const k of DEAD_FACTORS) {
+    live += raw[k]
+    raw[k] = 0
   }
+  const scale = 1 / (1 - live)
+  for (const k of Object.keys(raw) as (keyof RacecourseWeights)[]) {
+    raw[k] = Math.round(raw[k] * scale * 10000) / 10000
+  }
+  return raw
+}
+
+/** P_MARKET = (1/odds)^GAMMA normalised — takeout and favourite/longshot bias removed. */
+export function marketProbabilities(odds: (number | null | undefined)[]): number[] {
+  const raw = odds.map(o => (o != null && o > 1 ? Math.pow(1 / o, MARKET_GAMMA) : 0))
+  const total = raw.reduce((a, b) => a + b, 0)
+  return total > 0 ? raw.map(r => r / total) : odds.map(() => 1 / Math.max(1, odds.length))
 }
 
 function softmax(scores: number[], temperature: number = SOFTMAX_TEMPERATURE): number[] {
@@ -262,6 +295,7 @@ export function computeClientPredictions(
 
   const oddsList = rows.map(r => r.win_odds)
   const hasValidOdds = oddsList.some(o => o != null && o > 1)
+  const pMarketList = marketProbabilities(oddsList)
 
   return rows.map((row, i) => {
     const pModel = pModels[i]
@@ -280,10 +314,8 @@ export function computeClientPredictions(
       return { ...row, prediction }
     }
 
-    // P_MARKET = (1/odds) / sum(1/odds) — simple normalization, NOT softmax
-    const pRawList = oddsList.map(o => (o != null && o > 1) ? 1 / o : 0)
-    const sumPRaw = pRawList.reduce((a, b) => a + b, 0)
-    const pMarket = sumPRaw > 0 ? pRawList[i] / sumPRaw : 1 / oddsList.length
+    // P_MARKET = (1/odds)^GAMMA normalised — see marketProbabilities()
+    const pMarket = pMarketList[i]
     const pFinal = MODEL_WEIGHT * pModel + MARKET_WEIGHT * pMarket
     const odds = row.win_odds
     const ev = (odds != null && odds > 1) ? pFinal * odds - 1 : null

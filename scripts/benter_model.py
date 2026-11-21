@@ -14,6 +14,7 @@ from typing import Dict, List, Optional, Tuple
 
 sys.path.insert(0, os.path.dirname(__file__))
 from common import get_supabase, batch_upsert
+from model_config import MODEL_WEIGHT, MARKET_GAMMA
 
 try:
     from supabase import create_client, Client
@@ -29,7 +30,7 @@ except ImportError:
 # 階段二（融合勝率 P_final）：結合開盤後的賠率算出 P_market，
 #   透過對數加權融合生成 P_final
 # =====================================================================
-ALPHA = 0.25          # P_model 在融合中的權重 (1-ALPHA = P_market 權重)
+ALPHA = MODEL_WEIGHT  # P_model 在融合中的權重 (1-ALPHA = P_market 權重)，與 client 同步
 FRACTIONAL_KELLY = 0.25  # 1/4 Kelly 降低方差
 TEMPERATURE = 1.0     # Softmax 溫度參數
 
@@ -470,20 +471,20 @@ def softmax_probabilities(scores: List[float], temperature: float = TEMPERATURE)
 # =====================================================================
 def market_implied_probabilities(odds: List[float]) -> List[float]:
     """
-    P_market_i = (1 / O_i) / sum(1 / O_j)
-    去除過round (overround) 使總和 = 1
-    缺少賠率的馬匹使用有效賠率的平均倒數作為 fallback
+    P_market_i = (1 / O_i)^GAMMA / sum((1 / O_j)^GAMMA)
+    同時去除 overround（總和 = 1）同市場嘅热门/冷門偏差（見 model_config.MARKET_GAMMA）
+    缺少賠率的馬匹使用有效賠率嘅平均作為 fallback
     """
     if not odds:
         return []
 
-    valid_recips = [1.0 / o for o in odds if o is not None and o > 1.0]
+    valid_recips = [(1.0 / o) ** MARKET_GAMMA for o in odds if o is not None and o > 1.0]
     avg_recip = sum(valid_recips) / len(valid_recips) if valid_recips else 0.0
 
     reciprocals = []
     for o in odds:
         if o is not None and o > 1.0:
-            reciprocals.append(1.0 / o)
+            reciprocals.append((1.0 / o) ** MARKET_GAMMA)
         elif avg_recip > 0:
             reciprocals.append(avg_recip)
         else:

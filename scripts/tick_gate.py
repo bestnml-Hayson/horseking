@@ -2,8 +2,9 @@
 Race-day tick gate — decides whether the Auto-Pilot tick has anything to do.
 
 Runs on the bare GitHub runner (stdlib only, no pip install) so an idle
-half-hour costs seconds instead of a Playwright bootstrap. Writes four
-outputs for the following steps: need_work, do_odds, do_archive, do_discover.
+half-hour costs seconds instead of a Playwright bootstrap. Writes the
+need_work / do_odds / do_archive / do_discover / do_integrity outputs that the
+following steps are gated on.
 
 Usage: python3 scripts/tick_gate.py
 """
@@ -25,6 +26,10 @@ POST_RACE_SETTLE_MIN = 25
 DISCOVERY_HORIZON_DAYS = 2
 DISCOVERY_MARKER_ID = 'tick_discovery'
 STALE_MARKER_ID = 'tick_stale_archive'
+INTEGRITY_MARKER_ID = 'tick_integrity_backfill'
+VOID_REGISTRY_ID = 'void_races'
+INTEGRITY_LOOKBACK_DAYS = 45
+MIN_RUNNERS = 4
 
 URL = os.environ.get('SUPABASE_URL') or os.environ.get('NEXT_PUBLIC_SUPABASE_URL')
 KEY = os.environ.get('SUPABASE_SERVICE_KEY') or os.environ.get('NEXT_PUBLIC_SUPABASE_ANON_KEY')
@@ -97,10 +102,16 @@ def main():
         mark_discovery_attempt(today)
     if d['stale_wait']:
         mark_attempt(STALE_MARKER_ID, today)
+    if d['integrity_work']:
+        mark_attempt(INTEGRITY_MARKER_ID, today)
     print(f"[GATE] today={today} upcoming={d['upcoming']} stale={d['stale']} "
           f"odds={'yes' if d['odds'] else 'no'} archive={'yes' if d['archive'] else 'no'} "
-          f"discover={'yes' if d['discover'] else 'no'} — {d['reason']}")
-    emit(d['odds'] or d['archive'] or d['discover'], d['odds'], d['archive'], d['discover'], d['reason'])
+          f"discover={'yes' if d['discover'] else 'no'} "
+          f"integrity={'yes' if d['integrity_work'] else 'no'} — {d['reason']}")
+    emit(d['odds'] or d['archive'] or d['discover'] or d['integrity_work'],
+         d['odds'], d['archive'], d['discover'], d['reason'],
+         do_integrity=d['integrity_work'],
+         integrity_dates=';'.join(f"{m['race_date']}:{m['venue']}" for m in d['integrity']))
     return 0
 
 
@@ -113,11 +124,23 @@ def decide(now, today: str) -> Dict:
     )
     do_discover, reason_seed = seed_check(now, today)
 
+    # A finished race can lose its race_runners rows to the scraper's purge-then-write
+    # cycle, and the queued-work query above cannot see it (unfinished races only).
+    # Check for them explicitly, once a day.
+    do_integrity = False
+    integrity = []
+    if not attempted_today(INTEGRITY_MARKER_ID, today):
+        integrity = runnerless_races(now, today)
+        do_integrity = bool(integrity)
+
     overdue = [r for r in queued if str(r['race_date'])[:10] <= today]
     if not queued:
+        idle = reason_seed or 'nothing queued up to tomorrow'
         return {'odds': False, 'archive': False, 'discover': do_discover, 'stale_wait': False,
+                'integrity': integrity, 'integrity_work': do_integrity,
                 'upcoming': 0, 'stale': 0,
-                'reason': reason_seed or 'nothing queued up to tomorrow'}
+                'reason': f'{len(integrity)} runnerless meeting(s); {idle}'
+                          if do_integrity else idle}
 
     todays = [r for r in overdue if str(r['race_date'])[:10] == today]
     stale = [r for r in overdue if str(r['race_date'])[:10] < today]
@@ -151,10 +174,52 @@ def decide(now, today: str) -> Dict:
                 do_odds = True
                 break
 
-    return {'odds': do_odds, 'archive': do_archive, 'discover': do_discover, 'stale_wait': stale_wait,
+    return {'odds': do_odds, 'archive': do_archive, 'discover': do_discover,
+            'integrity': integrity, 'integrity_work': do_integrity,
+            'stale_wait': stale_wait,
             'upcoming': len(upcoming), 'stale': len(stale),
             'reason': f'{len(upcoming)} upcoming, {len(stale)} stale'
+                      + (f'; {len(integrity)} runnerless meeting(s)' if do_integrity else '')
                       + (f'; {reason_seed}' if reason_seed else '')}
+
+
+def void_race_ids() -> set:
+    """Races HKJC declared void — every pool refunded, so no result page will ever exist."""
+    try:
+        rows = fetch(f'pipeline_status?select=status_json&id=eq.{VOID_REGISTRY_ID}')
+    except Exception as e:
+        print(f'[GATE] could not read the void registry: {e}')
+        return set()
+    return set(rows[0].get('status_json', {}).get('race_ids', [])) if rows else set()
+
+
+def runnerless_races(now, today: str):
+    """Finished meetings in the lookback window whose runner rows or result rows are missing."""
+    since = (now - timedelta(days=INTEGRITY_LOOKBACK_DAYS)).strftime('%Y-%m-%d')
+    rows = fetch(f'races?select=race_id,race_date,venue,race_no&race_date=gte.{since}'
+                 f'&race_date=lte.{today}&is_finished=eq.true&order=race_date.desc&limit=400')
+    if not rows:
+        return []
+    voided = void_race_ids()
+    rows = [r for r in rows if r['race_id'] not in voided]
+    by_id = {r['race_id']: r for r in rows}
+    ids = list(by_id)
+    counts, positions = {}, {}
+    for i in range(0, len(ids), 60):
+        chunk = ','.join(f'"{x}"' for x in ids[i:i + 60])
+        got = fetch(f'race_runners?select=race_id,finish_position&race_id=in.({chunk})&limit=5000')
+        for g in got:
+            rid = g['race_id']
+            counts[rid] = counts.get(rid, 0) + 1
+            if g.get('finish_position'):
+                positions[rid] = positions.get(rid, 0) + 1
+    broken = [by_id[x] for x in ids if counts.get(x, 0) < MIN_RUNNERS or not positions.get(x)]
+    meetings = {}
+    for r in broken:
+        key = (str(r['race_date'])[:10], r['venue'])
+        meetings.setdefault(key, []).append(r['race_no'])
+    return [{'race_date': d, 'venue': v, 'races': sorted(n for n in ns)}
+            for (d, v), ns in sorted(meetings.items())]
 
 
 def seed_check(now, today: str):
@@ -211,7 +276,8 @@ def mark_discovery_attempt(today: str):
     mark_attempt(DISCOVERY_MARKER_ID, today)
 
 
-def emit(need_work: bool, do_odds: bool, do_archive: bool, do_discover: bool, reason: str):
+def emit(need_work: bool, do_odds: bool, do_archive: bool, do_discover: bool, reason: str,
+         do_integrity: bool = False, integrity_dates: str = ''):
     out = os.environ.get('GITHUB_OUTPUT')
     if out:
         with open(out, 'a', encoding='utf-8') as fh:
@@ -219,13 +285,16 @@ def emit(need_work: bool, do_odds: bool, do_archive: bool, do_discover: bool, re
             fh.write(f'do_odds={"true" if do_odds else "false"}\n')
             fh.write(f'do_archive={"true" if do_archive else "false"}\n')
             fh.write(f'do_discover={"true" if do_discover else "false"}\n')
+            fh.write(f'do_integrity={"true" if do_integrity else "false"}\n')
+            fh.write(f'integrity_dates={integrity_dates}\n')
     summary = os.environ.get('GITHUB_STEP_SUMMARY')
     if summary:
         with open(summary, 'a', encoding='utf-8') as fh:
             fh.write(f'- Tick: work={"yes" if need_work else "no"} ({reason}) '
                      f'odds={"yes" if do_odds else "no"} archive={"yes" if do_archive else "no"} '
-                     f'discover={"yes" if do_discover else "no"}\n')
-    print(f'[GATE] need_work={need_work} do_odds={do_odds} do_archive={do_archive} do_discover={do_discover}')
+                     f'discover={"yes" if do_discover else "no"} integrity={"yes" if do_integrity else "no"}\n')
+    print(f'[GATE] need_work={need_work} do_odds={do_odds} do_archive={do_archive} '
+          f'do_discover={do_discover} do_integrity={do_integrity}')
 
 
 if __name__ == '__main__':

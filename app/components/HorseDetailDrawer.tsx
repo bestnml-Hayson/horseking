@@ -122,7 +122,7 @@ export function HorseDetailDrawer({ horseId, horseName, raceRow, venue, onClose 
               {/* Benter Factor Breakdown */}
               {raceRow && (() => {
                 const bd = computeBenterBreakdown(raceRow, venue)
-                const wPct = (v: number) => `${Math.round(v * 100)}%`
+                const wPct = (v: number) => (v > 0 ? `${Math.round(v * 100)}%` : '未納入')
                 const factors = [
                   {
                     label: '近況走勢分', sublabel: 'Form Score', score: bd.formScore, weight: wPct(bd.weights.form), color: FACTOR_COLORS.form,

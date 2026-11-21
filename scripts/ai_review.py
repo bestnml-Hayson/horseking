@@ -32,18 +32,8 @@ from common import get_supabase, retry_supabase, has_column
 # =====================================================================
 # Client-side prediction formula (matches lib/race-utils.ts exactly)
 # =====================================================================
-MODEL_WEIGHT = 0.5
-MARKET_WEIGHT = 0.5
-SOFTMAX_TEMPERATURE = 15
-
-WEIGHTS_ST = {
-    'form': 0.16, 'draw': 0.08, 'jockeyTrainer': 0.14, 'weight': 0.08,
-    'courseDistance': 0.18, 'restDays': 0.10, 'gear': 0.06, 'pace': 0.10, 'classMov': 0.10,
-}
-WEIGHTS_HV = {
-    'form': 0.18, 'draw': 0.14, 'jockeyTrainer': 0.12, 'weight': 0.08,
-    'courseDistance': 0.16, 'restDays': 0.10, 'gear': 0.06, 'pace': 0.08, 'classMov': 0.08,
-}
+from model_config import (MODEL_WEIGHT, MARKET_WEIGHT, SOFTMAX_TEMPERATURE,
+                          market_probabilities, weights_for)
 
 
 def _parse_form_history(form: Optional[str]) -> List[int]:
@@ -195,7 +185,7 @@ def _compute_total_score(row: Dict, total_runners: int, venue: Optional[str],
                          race_class: Optional[str],
                          horse_history: Dict[str, List[Dict]],
                          pace_label: str) -> float:
-    w = WEIGHTS_HV if venue == 'HV' else WEIGHTS_ST
+    w = weights_for(venue)
 
     form = _parse_form_history(row.get('form_history'))
     form_avg = sum(form) / len(form) if form else 10
@@ -258,20 +248,12 @@ def compute_client_predictions_py(runners: List[Dict], venue: Optional[str],
     odds_list = [r.get('win_odds') for r in runners]
     has_valid_odds = any(o is not None and o > 1 for o in odds_list)
 
-    if has_valid_odds:
-        p_raw = [1.0 / o if o is not None and o > 1 else 0 for o in odds_list]
-        sum_p_raw = sum(p_raw)
-    else:
-        p_raw = None
-        sum_p_raw = 0
+    p_markets = market_probabilities(odds_list) if has_valid_odds else [None] * len(odds_list)
 
     results = []
     for i, runner in enumerate(runners):
         p_model = p_models[i]
-        if has_valid_odds and sum_p_raw > 0:
-            p_market = p_raw[i] / sum_p_raw
-        else:
-            p_market = None
+        p_market = p_markets[i] if has_valid_odds else None
 
         if p_market is not None:
             p_final = MODEL_WEIGHT * p_model + MARKET_WEIGHT * p_market

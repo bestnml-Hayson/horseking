@@ -70,11 +70,17 @@ jobs:
         if: steps.gate.outputs.do_archive == 'true' || github.event.inputs.force == 'true'
         run: python scripts/auto_pilot.py --archive-only
 
+      # A finished race can keep its races row and lose its race_runners rows, which
+      # quietly removes it from every backtest — re-scrape those results pages.
+      - name: 'Phase 3: refill purged runner rows'
+        if: steps.gate.outputs.do_integrity == 'true' || github.event.inputs.force == 'true'
+        run: python scripts/backfill_results.py --refill --dates "${{ steps.gate.outputs.integrity_dates }}"
+
       - name: Summary
         if: always()
         run: |
           echo "## Race-Day Tick" >> $GITHUB_STEP_SUMMARY
           echo "- Trigger: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Gate: discover=${{ steps.gate.outputs.do_discover }} odds=${{ steps.gate.outputs.do_odds }} archive=${{ steps.gate.outputs.do_archive }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Gate: discover=${{ steps.gate.outputs.do_discover }} odds=${{ steps.gate.outputs.do_odds }} archive=${{ steps.gate.outputs.do_archive }} integrity=${{ steps.gate.outputs.do_integrity }}" >> $GITHUB_STEP_SUMMARY
           echo "- Time: $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
           echo "- Status: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
