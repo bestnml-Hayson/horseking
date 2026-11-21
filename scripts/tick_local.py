@@ -77,7 +77,7 @@ def tick(dry_run: bool = False) -> int:
         print('[TICK] no Supabase credentials — nothing to do')
         return 1
 
-    now = datetime.now(tick_gate.HKT)
+    now = tick_gate.clock_now()
     today = now.strftime('%Y-%m-%d')
     d = tick_gate.decide(now, today)
     print(f"[TICK] {now.strftime('%Y-%m-%d %H:%M')} HKT — odds={d['odds']} "
@@ -90,12 +90,12 @@ def tick(dry_run: bool = False) -> int:
     failures = 0
 
     if d['discover']:
-        tick_gate.mark_discovery_attempt(today)
-
         def _discover():
             upcoming = auto_pilot.discover_upcoming_race_days(lookahead_days=7)
             scraped = auto_pilot.scrape_new_race_days(supabase, upcoming, dry_run=dry_run)
             print(f"  [Discover] {len(upcoming)} race days checked, {scraped} scraped")
+            if not dry_run:
+                tick_gate.mark_discovery_attempt(today)
 
         failures += not run_phase('Phase 1: discover race days', _discover)
 
@@ -109,6 +109,8 @@ def tick(dry_run: bool = False) -> int:
             unfinished = auto_pilot.find_unfinished_past_races(supabase)
             archived, reviewed = auto_pilot.archive_past_races(supabase, unfinished, dry_run=dry_run)
             print(f"  [Archive] {archived} races archived, {reviewed} AI reviews")
+            if d['stale_wait'] and not dry_run:
+                tick_gate.mark_attempt(tick_gate.STALE_MARKER_ID, today)
 
         failures += not run_phase('Phase 2: archive results + AI review', _archive)
 

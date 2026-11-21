@@ -9,10 +9,10 @@ Phase 1 — Auto-Discovery & Stage 1 Pre-Scrape:
   and runs Benter P_model (Stage 1: pure ability, no odds).
 
 Phase 1.5 — Live Odds Injection:
-  For today's races that are within ODDS_LEAD_MIN of the barrier and still
-  carry the placeholder win_odds=0, auto-scrapes live pool odds from HKJC.
-  Races inside ODDS_REFRESH_WINDOW_MIN get re-scraped so the price near the
-  start is the one stored. Feeds Benter fusion (P_final = 50% P_model + 50% P_market).
+  For every unfinished race starting within ODDS_SEED_HOURS that still carries
+  the placeholder win_odds=0, auto-scrapes live pool odds from HKJC. Races
+  inside ODDS_LEAD_MIN are re-scraped so the price near the start is the one
+  stored. Feeds Benter fusion (P_final = 50% P_model + 50% P_market).
 
 Phase 2 — Auto-Archive & Post-Race Review:
   Finds unfinished races before today, plus today's races once POST_RACE_SETTLE_MIN
@@ -51,14 +51,22 @@ VENUE_WEEKDAYS = {
 
 
 def now_hkt() -> datetime:
-    return datetime.now(HKT)
+    """Server-anchored HKT clock: a drifted machine clock must not retarget the
+    pipeline onto the wrong race day (tick_gate.clock_now caches one probe)."""
+    try:
+        import tick_gate
+        return tick_gate.clock_now()
+    except Exception as e:
+        print(f"[CLOCK] falling back to local clock: {type(e).__name__}: {e}")
+        return datetime.now(HKT)
 
 
 # A race's live price is only useful before the barrier; HKJC publishes
-# dividends a few minutes after the off. Odds are first pulled this far out,
-# then refreshed again inside the window right before the barrier.
+# dividends a few minutes after the off. Odds are first pulled as soon as the
+# race is within a race-day's reach, then re-pulled on every tick inside the
+# lead window so the stored price ends up near the barrier.
+ODDS_SEED_HOURS = 26
 ODDS_LEAD_MIN = 180
-ODDS_REFRESH_WINDOW_MIN = 45
 POST_RACE_SETTLE_MIN = 25
 
 
@@ -178,53 +186,64 @@ def inject_odds_for_upcoming_races(supabase, dry_run: bool = False):
     Phase 1.5: Put live pool odds on every race that still needs them.
 
     A race needs odds when no runner carries a usable price (the pre-race
-    scrape writes win_odds=0 as a placeholder) or when it is about to start —
-    prices get truer closer to the barrier. Races already off are left to the
-    archive phase, which stores the official dividends.
+    scrape writes win_odds=0 as a placeholder) or when it is inside the lead
+    window — prices get truer closer to the barrier. Races already off are left
+    to the archive phase, which stores the official dividends.
     """
     now = now_hkt()
-    today_str = now.strftime('%Y-%m-%d')
+    seed_str = (now + timedelta(hours=ODDS_SEED_HOURS)).strftime('%Y-%m-%d')
 
     resp = retry_supabase(
         lambda: supabase.table('races').select('race_id,race_date,venue,race_no,race_time')
-        .eq('race_date', today_str)
+        .lte('race_date', seed_str)
         .or_('is_finished.eq.false,is_finished.is.null')
         .execute()
     )
-    today_races = resp.data or []
+    queued = resp.data or []
 
-    if not today_races:
-        print(f"\n[Odds Injection] No unfinished races today ({today_str})")
+    if not queued:
+        print(f"\n[Odds Injection] Nothing unfinished up to {seed_str}")
+        return 0
+
+    in_window, already_off = [], 0
+    for race in queued:
+        start = parse_race_start(race)
+        if start is None or start > now:
+            in_window.append(race)
+        else:
+            already_off += 1
+
+    if not in_window:
+        print(f"\n[Odds Injection] No race starts before {seed_str} "
+              f"({already_off} already off, left to archive)")
         return 0
 
     odds_resp = retry_supabase(
         lambda: supabase.table('race_runners').select('race_id,win_odds')
-        .in_('race_id', [r['race_id'] for r in today_races])
+        .in_('race_id', [r['race_id'] for r in in_window])
         .gt('win_odds', 1.0).execute()
     )
     priced = set(r['race_id'] for r in (odds_resp.data or []))
 
     needed = []
     skipped_late = 0
-    for race in today_races:
+    for race in in_window:
         start = parse_race_start(race)
         if start is None:
             if race['race_id'] not in priced:
                 needed.append(race)
             continue
-        if start <= now:
-            continue
-        if (start - now).total_seconds() > ODDS_LEAD_MIN * 60:
+        if (start - now).total_seconds() > ODDS_SEED_HOURS * 3600:
             skipped_late += 1
             continue
         if race['race_id'] not in priced:
             needed.append(race)
-        elif (start - now).total_seconds() <= ODDS_REFRESH_WINDOW_MIN * 60:
+        elif (start - now).total_seconds() <= ODDS_LEAD_MIN * 60:
             needed.append(race)
 
     if not needed:
-        print(f"\n[Odds Injection] Nothing due: {len(today_races)} races today, "
-              f"{skipped_late} still more than {ODDS_LEAD_MIN}min away")
+        print(f"\n[Odds Injection] Nothing due: {len(in_window)} races in the {ODDS_SEED_HOURS}h window, "
+              f"{skipped_late} too far out, rest priced and outside the {ODDS_LEAD_MIN}min lead")
         return 0
 
     print(f"\n[Odds Injection] {len(needed)} races need odds:")
