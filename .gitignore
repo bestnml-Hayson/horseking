@@ -53,3 +53,8 @@ yarn-error.log*
 data/references/*.pdf
 data/references/_debug*.html
 .vercel
+
+# === Python / TS build artifacts (never worth diffing) ===
+__pycache__/
+*.py[cod]
+*.tsbuildinfo
