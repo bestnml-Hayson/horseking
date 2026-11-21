@@ -7,8 +7,8 @@ export { getFormColor }
 // Calibrated on 2026-02..2026-11 results (364 races, fit on Feb-Aug / validated Sep-Nov):
 // the 9-factor P_model ranks worse than the price alone (NLL 2.34 vs 2.11), so the market
 // is the anchor and the model is only a value tilt. See memory/backtest-market-echo.
-const MODEL_WEIGHT = 0.2
-const MARKET_WEIGHT = 0.8
+export const MODEL_WEIGHT = 0.2
+export const MARKET_WEIGHT = 0.8
 const FRACTIONAL_KELLY = 0.25
 
 // Win-pool implied probabilities are inflated by the ~22% overround AND over-bet on
@@ -339,7 +339,7 @@ export function computeClientPredictions(
 
 /**
  * Recompute P_final, EV, Kelly from existing P_model and P_market values.
- * Uses the new linear fusion: P_final = 0.5*P_model + 0.5*P_market.
+ * Uses the calibrated linear fusion: P_final = MODEL_WEIGHT*P_model + MARKET_WEIGHT*P_market.
  * Preserves server-computed P_model and P_market, only updates fusion output.
  */
 export function recomputePFusion(rows: RaceRow[]): RaceRow[] {

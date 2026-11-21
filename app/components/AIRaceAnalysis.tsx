@@ -1,7 +1,7 @@
 'use client'
 
 import type { Race, RaceRow } from '@/lib/types'
-import { generateRaceAnalysis, getTopPicks } from '@/lib/race-utils'
+import { generateRaceAnalysis, getTopPicks, MODEL_WEIGHT, MARKET_WEIGHT } from '@/lib/race-utils'
 
 interface AIRaceAnalysisProps {
   race: Race | undefined
@@ -78,7 +78,7 @@ export function AIRaceAnalysis({ race, rows }: AIRaceAnalysisProps) {
               </span>
               <span className="legend-item">
                 <span className="legend-dot dot-final" />
-                P_final = 50% 模型 + 50% 市場
+                P_final = {Math.round(MODEL_WEIGHT * 100)}% 模型 + {Math.round(MARKET_WEIGHT * 100)}% 市場
               </span>
             </div>
           </div>

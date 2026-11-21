@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { fetchRaceRunners, fetchPredictions, fetchHorses, fetchRecentForm, fetchHorseRaceHistory } from '@/lib/supabase-client'
 import type { Race, RaceRunner, ModelPrediction, Horse, RaceRow } from '@/lib/types'
-import { getTopPicks, estimateRaceTime, predictPace, isOddsPending, computeClientPredictions } from '@/lib/race-utils'
+import { getTopPicks, estimateRaceTime, predictPace, isOddsPending, computeClientPredictions, MODEL_WEIGHT, MARKET_WEIGHT } from '@/lib/race-utils'
 import { PacingBriefing } from './PacingBriefing'
 import { AIRaceAnalysis } from './AIRaceAnalysis'
 import { TopPicksCards } from './TopPicksCards'
@@ -248,7 +248,7 @@ export function RaceDashboard({ races, allUpData, allRaceData }: RaceDashboardPr
       {rows.length > 0 && (
         <div className={`stage-banner ${oddsAllReady ? 'stage-2' : 'stage-1'}`}>
           {oddsAllReady ? (
-            <span><strong>Stage 2 — 賠率融合模式</strong> &nbsp;|&nbsp; 即時賠率已注入，P_final = 50% P_model + 50% P_market，EV 與 Kelly 注碼已解鎖</span>
+            <span><strong>Stage 2 — 賠率融合模式</strong> &nbsp;|&nbsp; 即時賠率已注入，P_final = {Math.round(MODEL_WEIGHT * 100)}% P_model + {Math.round(MARKET_WEIGHT * 100)}% P_market，EV 與 Kelly 注碼已解鎖</span>
           ) : (
             <span><strong>Stage 1 — 純實力預測模式</strong> &nbsp;|&nbsp; 待賽日賠率開出並注入後，即自動解鎖市場期望值 (EV) 與 Kelly 注碼。當前 P_final = P_model</span>
           )}
@@ -291,7 +291,7 @@ export function RaceDashboard({ races, allUpData, allRaceData }: RaceDashboardPr
           </span>
           <span className="full-table-sub">
             {oddsAllReady
-              ? 'P_model (模型評分) × P_market (市場賠率) → P_final (50% 線性融合) · Sorted by P_final'
+              ? `P_model (模型評分) × P_market (市場賠率) → P_final (${Math.round(MODEL_WEIGHT * 100)}%/${Math.round(MARKET_WEIGHT * 100)}% 線性融合) · Sorted by P_final`
               : 'P_model (純實力評分) · P_final = P_model（賠率尚未開出）· Sorted by P_model'
             }
           </span>
