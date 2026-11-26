@@ -261,7 +261,7 @@ export function RaceDashboard({ races, allUpData }: RaceDashboardProps) {
       <PacingBriefing race={selectedRace} rows={rows} horseHistory={horseHistory} />
 
       {/* Section 2: AI Race Analysis (NEW) */}
-      <AIRaceAnalysis race={selectedRace} rows={rows} horseHistory={horseHistory} />
+      <AIRaceAnalysis race={selectedRace} rows={rows} horseHistory={horseHistory} oddsDrift={oddsDrift} />
 
       {/* Section 3: AI 精選 4 膽（卡片 + 逐隻分析） */}
       <TopPicksCards picks={topPicks} totalRunners={rows.length} paceLabel={paceInfo.label} onHorseClick={handleHorseClick} />

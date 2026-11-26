@@ -2370,7 +2370,7 @@ html, body {
 
 .ai-analysis-grid {
   display: grid;
-  grid-template-columns: 1fr 1.5fr 1.5fr;
+  grid-template-columns: 1.1fr 1.4fr 1.1fr;
   gap: 1rem;
 }
 
@@ -2425,6 +2425,128 @@ html, body {
 .logic-text {
   margin-bottom: 8px;
 }
+
+/* AI analysis v5.85 additions */
+.ai-analysis-info {
+  color: #6e7681;
+  cursor: help;
+  font-size: 0.9rem;
+}
+
+.ai-card-value-sub {
+  font-size: 0.7rem;
+  font-weight: 400;
+  color: #8b949e;
+}
+
+.ai-style-tag {
+  display: inline-block;
+  margin-right: 6px;
+  padding: 0 6px;
+  border-radius: 4px;
+  background: rgba(188, 140, 255, 0.12);
+  border: 1px solid rgba(188, 140, 255, 0.3);
+  color: #bc8cff;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.ai-pace-implication {
+  margin-top: 4px;
+  color: #6e7681;
+}
+
+.ai-factor-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 6px;
+  font-size: 0.8rem;
+  line-height: 1.6;
+}
+
+.ai-factor-name {
+  font-weight: 700;
+  color: #c9d1d9;
+  white-space: nowrap;
+}
+
+.ai-factor-weight {
+  font-size: 0.7rem;
+  color: #6e7681;
+  white-space: nowrap;
+}
+
+.ai-factor-detail {
+  color: #b1bac4;
+  white-space: nowrap;
+}
+
+.ai-factor-gap {
+  margin-left: auto;
+  font-weight: 700;
+  color: #3fb950;
+  font-family: monospace;
+}
+
+.ai-card-foot {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(188, 140, 255, 0.08);
+  font-size: 0.68rem;
+  color: #6e7681;
+}
+
+.ai-drift-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ai-drift-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 0.8rem;
+}
+
+.ai-drift-tag {
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.ai-drift-tag.down {
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.ai-drift-tag.up {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.ai-drift-horse {
+  color: #c9d1d9;
+}
+
+.ai-drift-prices {
+  color: #8b949e;
+  font-family: monospace;
+}
+
+.ai-drift-pct {
+  margin-left: auto;
+  font-weight: 700;
+  font-family: monospace;
+}
+
+.ai-drift-pct.down { color: #10b981; }
+.ai-drift-pct.up { color: #ef4444; }
 
 /* AI Factors List */
 .ai-factors-list {
