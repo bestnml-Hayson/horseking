@@ -15,7 +15,7 @@ import urllib.parse
 import urllib.request
 from datetime import datetime, timedelta
 from email.utils import parsedate_to_datetime
-from typing import Dict
+from typing import Dict, Optional
 from zoneinfo import ZoneInfo
 
 HKT = ZoneInfo('Asia/Hong_Kong')
@@ -24,6 +24,7 @@ ODDS_SEED_HOURS = 26
 ODDS_LEAD_MIN = 180
 POST_RACE_SETTLE_MIN = 25
 DISCOVERY_HORIZON_DAYS = 2
+DISCOVERY_RETRY_HOURS = 6
 DISCOVERY_MARKER_ID = 'tick_discovery'
 STALE_MARKER_ID = 'tick_stale_archive'
 INTEGRITY_MARKER_ID = 'tick_integrity_backfill'
@@ -223,22 +224,40 @@ def runnerless_races(now, today: str):
 
 
 def seed_check(now, today: str):
-    """Is the database too thin around us to serve the next meetings?"""
-    if discovery_attempted_today(today):
-        return False, 'discovery already attempted today'
+    """Is the database too thin around us to serve the next meetings?
 
-    if not fetch(f'races?select=race_id&race_date=eq.{today}&limit=1'):
-        return True, f'no meeting dated {today} in DB'
-
+    Not "once a day": HKJC publishes a card during the day, and whichever tick
+    stamps the marker first (Actions at dawn, or the local loop) would lock
+    discovery out until the next morning, leaving a meeting unpriced. With
+    nothing queued the tick has no other work anyway, so retry on a timer.
+    """
     horizon = (now + timedelta(days=DISCOVERY_HORIZON_DAYS)).strftime('%Y-%m-%d')
-    near = fetch(f'races?select=race_date&and=(race_date.gte.{today},race_date.lte.{horizon})&limit=1')
-    if not near:
-        return True, f'no meeting between {today} and {horizon}'
+    queued = fetch(f'races?select=race_id&race_date=gte.{today}&race_date=lte.{horizon}'
+                   f'&or=(is_finished.eq.false,is_finished.is.null)&limit=1')
+    if queued:
+        return False, None
 
-    ahead = fetch(f'races?select=race_date&and=(race_date.gt.{today},race_date.lte.{horizon})&limit=1')
-    if not ahead:
-        return True, f'nothing queued after {today}'
-    return False, None
+    age = last_attempt_age_hours(DISCOVERY_MARKER_ID, now)
+    if age is not None and age < DISCOVERY_RETRY_HOURS:
+        return False, f'nothing queued, next discovery in {DISCOVERY_RETRY_HOURS - age:.0f}h'
+    return True, f'no meeting between {today} and {horizon}'
+
+
+def last_attempt_age_hours(marker_id: str, now) -> Optional[float]:
+    try:
+        rows = fetch(f'pipeline_status?select=last_run&id=eq.{marker_id}')
+    except Exception:
+        return None
+    stamp = (rows[0].get('last_run') if rows else None)
+    if not stamp:
+        return None
+    try:
+        when = datetime.fromisoformat(str(stamp))
+    except ValueError:
+        return None
+    if when.tzinfo is None:
+        when = when.replace(tzinfo=HKT)
+    return (now - when).total_seconds() / 3600.0
 
 
 def attempted_today(marker_id: str, today: str) -> bool:
@@ -266,10 +285,6 @@ def mark_attempt(marker_id: str, today: str):
         urllib.request.urlopen(req, timeout=30).read()
     except Exception as e:
         print(f'[GATE] could not record marker {marker_id}: {e}')
-
-
-def discovery_attempted_today(today: str) -> bool:
-    return attempted_today(DISCOVERY_MARKER_ID, today)
 
 
 def mark_discovery_attempt(today: str):
