@@ -321,12 +321,58 @@ def record_void_races(supabase, race_ids: List[str]):
         print(f"  [WARN] could not record void races: {e}")
 
 
+def split_dividends(supabase, races: List[Dict], all_runners: List[Dict]):
+    """Results pages only carry the settled SP, but `race_runners.win_odds` must keep
+    the price the app showed before the barrier — otherwise the backtest measures
+    itself against the price it destroyed. Push the SP to the `race_results` ledger
+    and restore any pre-race price already on the row."""
+    meta = {r['race_id']: r for r in races}
+    ids = list(meta)
+    existing: Dict[str, float] = {}
+    for i in range(0, len(ids), 10):
+        chunk = ids[i:i + 10]
+        resp = retry_supabase(
+            lambda c=chunk: supabase.table('race_runners')
+            .select('runner_id,win_odds').in_('race_id', c).execute()
+        )
+        existing.update({r['runner_id']: r.get('win_odds') for r in (resp.data or [])})
+
+    ledger = []
+    for row in all_runners:
+        sp = row.get('win_odds')
+        prior = existing.get(row['runner_id'])
+        if prior and prior > 1.0:
+            row['win_odds'] = prior
+        if sp and sp > 1.0 and row.get('finish_position'):
+            race = meta.get(row['race_id'], {})
+            ledger.append({
+                'race_id': row['race_id'],
+                'race_date': race.get('race_date'),
+                'venue': race.get('venue'),
+                'race_no': race.get('race_no'),
+                'finish_position': row['finish_position'],
+                'horse_no': row['horse_no'],
+                'horse_name': row['horse_id'],
+                'jockey': row['jockey'],
+                'trainer': row['trainer'],
+                'win_odds': sp,
+            })
+
+    if ledger:
+        try:
+            batch_upsert(supabase, 'race_results', ledger, 'race_id,horse_no')
+        except Exception as e:
+            print(f"  [WARN] race_results dividend ledger failed: {e}")
+    return len(ledger)
+
+
 def write_meeting(supabase, races: List[Dict], all_runners: List[Dict], all_horses: List[Dict]):
     if all_horses:
         try:
             batch_upsert(supabase, 'horses', all_horses, 'horse_id')
         except Exception as e:
             print(f"  [WARN] horses upsert failed: {e}")
+    split_dividends(supabase, races, all_runners)
     try:
         batch_upsert(supabase, 'races', races, 'race_id')
     except Exception as e:
@@ -351,12 +397,13 @@ def refill_meeting(supabase, page, date_str: str, venue: str, race_nos: List[int
     record_void_races(supabase, void_ids)
     if not races_data:
         return 0
-    _, all_runners, all_horses = build_meeting_records(date_str, venue, races_data)
+    race_rows, all_runners, all_horses = build_meeting_records(date_str, venue, races_data)
     if all_horses:
         try:
             batch_upsert(supabase, 'horses', all_horses, 'horse_id')
         except Exception as e:
             print(f"  [WARN] horses upsert failed: {e}")
+    split_dividends(supabase, race_rows, all_runners)
     try:
         batch_upsert(supabase, 'race_runners', all_runners, 'runner_id')
     except Exception as e:

@@ -44,6 +44,15 @@ export function RaceTable({ rows, topPickId, hasPositiveEV = true, onHorseClick 
     return pb - pa
   })
 
+  // Where the market itself would rank each horse (favourite = 1). The table is
+  // ordered by P_final, so showing the price rank and the gap makes it visible
+  // when the model is merely echoing the market versus genuinely disagreeing.
+  const marketRank = new Map<string, number>()
+  ;[...rows]
+    .filter(r => !isOddsPending(r.win_odds))
+    .sort((a, b) => (a.win_odds ?? 0) - (b.win_odds ?? 0))
+    .forEach((r, i) => marketRank.set(r.runner_id, i + 1))
+
   return (
     <div className="race-table-scroll">
       {!hasPositiveEV && (
@@ -62,7 +71,7 @@ export function RaceTable({ rows, topPickId, hasPositiveEV = true, onHorseClick 
             <th style={{ textAlign: 'center', width: 56 }}>配備</th>
             <th style={{ textAlign: 'center', width: 48 }}>休養</th>
             <th style={{ textAlign: 'center', width: 56 }}>體能</th>
-            <th style={{ textAlign: 'right', width: 64 }}>賠率</th>
+            <th style={{ textAlign: 'right', width: 76 }} title="賠率下方 市#n 係市場排位（熱門=1），n 後嘅 ± 係同分析排位嘅差距">賠率 / 市#</th>
             <th className="th-model" style={{ textAlign: 'right', width: 72 }}>P_model</th>
             <th className="th-market" style={{ textAlign: 'right', width: 72 }}>P_market</th>
             <th className="th-final" style={{ textAlign: 'right', width: 72 }}>P_final</th>
@@ -184,6 +193,24 @@ export function RaceTable({ rows, topPickId, hasPositiveEV = true, onHorseClick 
                   <span className={`badge ${isOddsPending(row.win_odds) ? 'badge-odds-pending' : 'badge-odds'}`}>
                     {isOddsPending(row.win_odds) ? '待定' : fmtOdds(row.win_odds)}
                   </span>
+                  {(() => {
+                    const mr = marketRank.get(row.runner_id)
+                    if (mr == null) return null
+                    const delta = mr - (idx + 1)
+                    return (
+                      <div
+                        className="market-rank-hint"
+                        title={`賠率排位第 ${mr}，分析排位第 ${idx + 1}（${delta === 0 ? '與市場一致' : `模型比市場${delta > 0 ? '睇好' : '睇淡'} ${Math.abs(delta)} 位`}）`}
+                        style={{
+                          fontSize: '0.68rem',
+                          marginTop: 2,
+                          color: delta === 0 ? '#9ca3af' : delta > 0 ? '#10b981' : '#ef4444',
+                        }}
+                      >
+                        市#{mr}{delta !== 0 ? ` ${delta > 0 ? `+${delta}` : delta}` : ''}
+                      </div>
+                    )
+                  })()}
                 </td>
                 <td style={{ textAlign: 'right' }} className="tabular-nums prob-model-cell">
                   <span className="prob-pill prob-model">{fmtProb(pModel)}</span>

@@ -499,29 +499,63 @@ def scrape_results_for_race(page, date_str: str, venue: str, race_no: int) -> Li
 
 
 def apply_results(supabase, race_id: str, results: List[Dict]) -> int:
-    """Apply scraped results to race_runners table."""
-    updated = 0
-    for r in results:
-        horse_no = r['horse_no']
-        finish_pos = r['pos']
-        win_odds = r['win_odds']
+    """Record the finishing order and the official SP dividend.
 
-        if win_odds <= 1.0:
+    `race_runners.win_odds` holds the price the app showed *before* the race, and
+    that is what every EV/ROI audit scores against, so the archive must not
+    overwrite it. The 獨贏賠率 from the results page goes to `race_results`
+    instead. A runner that never got priced at all takes the SP into
+    race_runners, otherwise the dividend would be lost entirely.
+    """
+    meta = retry_supabase(
+        lambda: supabase.table('races').select('race_date,venue,race_no').eq('race_id', race_id).execute()
+    )
+    races = meta.data or []
+    if not races:
+        print(f"    [WARN] {race_id}: no race meta, results skipped")
+        return 0
+    race = races[0]
+
+    resp = retry_supabase(
+        lambda: supabase.table('race_runners').select(
+            'runner_id,horse_id,horse_no,jockey,trainer,win_odds'
+        ).eq('race_id', race_id).execute()
+    )
+    by_no = {r['horse_no']: r for r in (resp.data or [])}
+
+    updated = 0
+    ledger = []
+    for r in results:
+        runner = by_no.get(r['horse_no'])
+        if not runner:
             continue
 
-        resp = retry_supabase(
-            lambda: supabase.table('race_runners').select('runner_id').eq('race_id', race_id).eq('horse_no', horse_no).execute()
+        pre_race_price = runner.get('win_odds')
+        patch = {'finish_position': r['pos']}
+        if not pre_race_price or pre_race_price <= 1.0:
+            patch['win_odds'] = r['win_odds']
+
+        retry_supabase(
+            lambda p=patch, rid=runner['runner_id']: supabase.table('race_runners').update(p).eq('runner_id', rid).execute()
         )
-        runners = resp.data or []
-        if runners:
-            runner_id = runners[0]['runner_id']
-            retry_supabase(
-                lambda rid=runner_id, fp=finish_pos, wo=win_odds: supabase.table('race_runners').update({
-                    'finish_position': fp,
-                    'win_odds': wo
-                }).eq('runner_id', rid).execute()
-            )
-            updated += 1
+        ledger.append({
+            'race_id': race_id,
+            'race_date': race['race_date'],
+            'venue': race['venue'],
+            'race_no': race['race_no'],
+            'finish_position': r['pos'],
+            'horse_no': r['horse_no'],
+            'horse_name': runner.get('horse_id'),
+            'jockey': runner.get('jockey'),
+            'trainer': runner.get('trainer'),
+            'win_odds': r['win_odds'],
+        })
+        updated += 1
+
+    if ledger:
+        retry_supabase(
+            lambda: supabase.table('race_results').upsert(ledger, on_conflict='race_id,horse_no').execute()
+        )
     return updated
 
 

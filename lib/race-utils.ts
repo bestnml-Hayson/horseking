@@ -81,6 +81,31 @@ function softmax(scores: number[], temperature: number = SOFTMAX_TEMPERATURE): n
 }
 
 /**
+ * Records a horse had *before* this race. The history map is sorted newest-first
+ * and includes the race being reviewed itself, so anything that reads history[0]
+ * without this filter is looking at the result it is meant to predict.
+ */
+function priorStarts(
+  history: HorseRaceRecord[] | undefined,
+  raceDate: string | undefined,
+): HorseRaceRecord[] {
+  if (!history) return []
+  return raceDate ? history.filter(h => h.race_date < raceDate) : history
+}
+
+/**
+ * Recent finishing positions: the scraped form_history string when it exists,
+ * otherwise derived from the horse's own prior starts. form_history covers only
+ * ~61% of runners while the derived path reaches ~88%, which is what made the
+ * form factor a constant across whole meetings.
+ */
+export function recentFormPositions(row: RaceRow, history: HorseRaceRecord[]): number[] {
+  const parsed = parseFormHistory(row.form_history)
+  if (parsed.length > 0) return parsed
+  return history.slice(0, 6).map(h => h.finish_position)
+}
+
+/**
  * Compute course/distance specialization score (0-100).
  * Checks horse's past performance at same venue+distance.
  */
@@ -91,8 +116,8 @@ function computeCourseDistanceScore(
 ): number {
   if (!race?.venue || !race?.distance || !horseHistory) return 50
 
-  const history = horseHistory.get(row.horse_id)
-  if (!history || history.length === 0) return 50
+  const history = priorStarts(horseHistory.get(row.horse_id), race.race_date)
+  if (history.length === 0) return 50
 
   const sameVenueDist = history.filter(
     h => h.venue === race.venue && h.distance === race.distance,
@@ -227,8 +252,8 @@ function computeClassMovementScore(
 ): number {
   if (!race?.class_level || !horseHistory) return 50
 
-  const history = horseHistory.get(row.horse_id)
-  if (!history || history.length === 0) return 50
+  const history = priorStarts(horseHistory.get(row.horse_id), race.race_date)
+  if (history.length === 0) return 50
 
   const recentClass = history[0]?.class_level
   if (!recentClass) return 50
@@ -256,7 +281,8 @@ function computeTotalScore(
   paceLabel?: string,
 ): number {
   const w = getWeightsByVenue(venue)
-  const form = parseFormHistory(row.form_history)
+  const prior = priorStarts(horseHistory?.get(row.horse_id), race?.race_date)
+  const form = recentFormPositions(row, prior)
   const draw = row.draw
   const jockeyWr = row.jockey_win_rate ?? 0.1
   const trainerWr = row.trainer_win_rate ?? 0.1

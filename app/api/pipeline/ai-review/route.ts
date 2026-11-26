@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getServerSupabase, directFetch } from '@/lib/supabase-server'
+import { getServerSupabase, directFetchAll } from '@/lib/supabase-server'
 import { computeClientPredictions } from '@/lib/race-utils'
 import type { RaceRow, RaceRunner, Race } from '@/lib/types'
 import type { HorseRaceRecord } from '@/lib/supabase-client'
@@ -57,8 +57,9 @@ async function fetchHorseHistoryForReview(horseIds: string[]): Promise<Map<strin
   if (horseIds.length === 0) return historyMap
 
   const idList = horseIds.map(id => `"${id}"`).join(',')
-  const rows = await directFetch(
-    `race_runners?select=horse_id,finish_position,races!inner(race_date,venue,distance,class_level)&horse_id=in.(${idList})&finish_position=not.is.null&limit=2000`
+  const rows = await directFetchAll(
+    `race_runners?select=horse_id,finish_position,races!inner(race_date,venue,distance,class_level)&horse_id=in.(${idList})&finish_position=not.is.null`,
+    'runner_id'
   ) as Array<{
     horse_id: string
     finish_position: number | null

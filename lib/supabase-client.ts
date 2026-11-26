@@ -271,20 +271,29 @@ export async function fetchRecentForm(horseIds: string[]): Promise<Map<string, s
     const batch = horseIds.slice(i, i + batchSize)
     // Ordering on the embedded `races` table is rejected by this PostgREST
     // (PGRST100), so the starts are dated and sorted here instead.
-    const { data, error } = await supabase
-      .from('race_runners')
-      .select('horse_id, finish_position, race_id, races!inner(race_date)')
-      .in('horse_id', batch)
-      .lt('races.race_date', today)
-      .limit(3000)
+    // max-rows=1000 clamps limit() no matter what it says, so page by offset —
+    // an unpaged batch lost roughly two thirds of every horse's starts.
+    const collected: unknown[] = []
+    for (let from = 0; ; from += 1000) {
+      const { data, error } = await supabase
+        .from('race_runners')
+        .select('horse_id, finish_position, race_id, races!inner(race_date)')
+        .in('horse_id', batch)
+        .lt('races.race_date', today)
+        .order('runner_id')
+        .range(from, from + 999)
 
-    if (error) {
-      console.error('[fetchRecentForm] error:', error)
-      continue
+      if (error) {
+        console.error('[fetchRecentForm] error:', error)
+        break
+      }
+      const rows = data ?? []
+      collected.push(...rows)
+      if (rows.length < 1000) break
     }
 
     const grouped = new Map<string, Array<{ race_date: string; finish_position: number }>>()
-    for (const r of (data ?? [])) {
+    for (const r of collected) {
       const row = r as { horse_id: string; finish_position: number | null; race_id: string; races: { race_date: string } | Array<{ race_date: string }> | null }
       const raceDate = unwrapEmbed(row.races)?.race_date
       if (raceDate == null) continue
@@ -324,43 +333,50 @@ export async function fetchHorseRaceHistory(horseIds: string[]): Promise<Map<str
   for (let i = 0; i < horseIds.length; i += batchSize) {
     const batch = horseIds.slice(i, i + batchSize)
 
-    const { data, error } = await supabase
-      .from('race_runners')
-      .select('horse_id, finish_position, official_rating, races!inner(race_date, venue, distance, class_level)')
-      .in('horse_id', batch)
-      .not('finish_position', 'is', 'null')
-      .limit(2000)
+    // The server clamps every request to 1000 rows regardless of limit(), so a
+    // 50-horse batch silently lost most of its history. Page by offset instead.
+    for (let from = 0; ; from += 1000) {
+      const { data, error } = await supabase
+        .from('race_runners')
+        .select('horse_id, finish_position, official_rating, races!inner(race_date, venue, distance, class_level)')
+        .in('horse_id', batch)
+        .not('finish_position', 'is', 'null')
+        .order('runner_id')
+        .range(from, from + 999)
 
-    if (error) {
-      console.error('[fetchHorseRaceHistory] error:', error)
-      continue
-    }
-
-    const rows = (data ?? []) as Array<{
-      horse_id: string
-      finish_position: number | null
-      official_rating: number | null
-      races: { race_date: string; venue: string; distance: number | null; class_level: string | null }
-        | Array<{ race_date: string; venue: string; distance: number | null; class_level: string | null }>
-        | null
-    }>
-
-    for (const row of rows) {
-      if (row.finish_position == null || row.finish_position <= 0) continue
-      const race = unwrapEmbed(row.races)
-      if (!race?.venue || !race?.distance) continue
-
-      const entry: HorseRaceRecord = {
-        venue: race.venue,
-        distance: race.distance,
-        finish_position: row.finish_position,
-        race_date: race.race_date,
-        class_level: race.class_level ?? '',
+      if (error) {
+        console.error('[fetchHorseRaceHistory] error:', error)
+        break
       }
 
-      const existing = historyMap.get(row.horse_id) ?? []
-      existing.push(entry)
-      historyMap.set(row.horse_id, existing)
+      const rows = (data ?? []) as Array<{
+        horse_id: string
+        finish_position: number | null
+        official_rating: number | null
+        races: { race_date: string; venue: string; distance: number | null; class_level: string | null }
+          | Array<{ race_date: string; venue: string; distance: number | null; class_level: string | null }>
+          | null
+      }>
+
+      for (const row of rows) {
+        if (row.finish_position == null || row.finish_position <= 0) continue
+        const race = unwrapEmbed(row.races)
+        if (!race?.venue || !race?.distance) continue
+
+        const entry: HorseRaceRecord = {
+          venue: race.venue,
+          distance: race.distance,
+          finish_position: row.finish_position,
+          race_date: race.race_date,
+          class_level: race.class_level ?? '',
+        }
+
+        const existing = historyMap.get(row.horse_id) ?? []
+        existing.push(entry)
+        historyMap.set(row.horse_id, existing)
+      }
+
+      if (rows.length < 1000) break
     }
   }
 

@@ -291,7 +291,7 @@ export function RaceDashboard({ races, allUpData, allRaceData }: RaceDashboardPr
           </span>
           <span className="full-table-sub">
             {oddsAllReady
-              ? `P_model (模型評分) × P_market (市場賠率) → P_final (${Math.round(MODEL_WEIGHT * 100)}%/${Math.round(MARKET_WEIGHT * 100)}% 線性融合) · Sorted by P_final`
+              ? `P_model (模型評分) × P_market (市場賠率) → P_final (${Math.round(MODEL_WEIGHT * 100)}%/${Math.round(MARKET_WEIGHT * 100)}% 線性融合) · Sorted by P_final · 市# = 賠率排位，± 為同分析排位之差距`
               : 'P_model (純實力評分) · P_final = P_model（賠率尚未開出）· Sorted by P_model'
             }
           </span>
