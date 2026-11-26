@@ -46,8 +46,71 @@ const RAW_WEIGHTS: Record<'HV' | 'ST', RacecourseWeights> = {
   },
 }
 
+const WEIGHT_KEYS: (keyof RacecourseWeights)[] = [
+  'form', 'draw', 'jockeyTrainer', 'weight', 'courseDistance',
+  'restDays', 'gear', 'pace', 'classMov',
+]
+
+let activeWeights: Partial<Record<'HV' | 'ST', RacecourseWeights>> | null = null
+let activeWeightsSettled = false
+let activeWeightsRequest: Promise<void> | null = null
+
+function isValidWeightTable(table: unknown): table is RacecourseWeights {
+  if (!table || typeof table !== 'object') return false
+  const obj = table as Record<string, unknown>
+  let sum = 0
+  for (const key of WEIGHT_KEYS) {
+    const v = obj[key]
+    if (typeof v !== 'number' || !isFinite(v) || v < 0 || v > 0.5) return false
+    sum += v
+  }
+  return Math.abs(sum - 1) < 0.02
+}
+
+export function sanitizeWeights(raw: unknown): Partial<Record<'HV' | 'ST', RacecourseWeights>> | null {
+  if (!raw || typeof raw !== 'object') return null
+  const obj = raw as Record<string, unknown>
+  const out: Partial<Record<'HV' | 'ST', RacecourseWeights>> = {}
+  for (const venue of ['HV', 'ST'] as const) {
+    if (isValidWeightTable(obj[venue])) out[venue] = obj[venue]
+  }
+  return out.HV || out.ST ? out : null
+}
+
+/** Weights published by scripts/recalibrate_weights.py; null falls back to RAW_WEIGHTS. */
+export function setActiveWeights(weights: Partial<Record<'HV' | 'ST', RacecourseWeights>> | null): void {
+  activeWeights = weights
+  activeWeightsSettled = true
+}
+
+/**
+ * Load the recalibrated tables once per page. Every engine calls this before
+ * computeClientPredictions, otherwise the treble/all-up cards and the race table
+ * would score the same race with different weights.
+ */
+export function ensureActiveWeights(): Promise<void> {
+  if (activeWeightsSettled) return Promise.resolve()
+  if (typeof window === 'undefined') {
+    activeWeightsSettled = true
+    return Promise.resolve()
+  }
+  if (!activeWeightsRequest) {
+    activeWeightsRequest = fetch('/api/model-weights', { cache: 'no-store' })
+      .then(res => (res.ok ? res.json() : null))
+      .then(json => {
+        const weights = sanitizeWeights(json?.weights)
+        if (weights) activeWeights = weights
+      })
+      .catch(() => {})
+      .finally(() => { activeWeightsSettled = true })
+  }
+  return activeWeightsRequest
+}
+
 export function getWeightsByVenue(venue: string | undefined): RacecourseWeights {
-  return { ...(venue === 'HV' ? RAW_WEIGHTS.HV : RAW_WEIGHTS.ST) }
+  const key = venue === 'HV' ? 'HV' : 'ST'
+  const override = activeWeights?.[key]
+  return { ...(override ?? RAW_WEIGHTS[key]) }
 }
 
 /** P_MARKET = (1/odds)^GAMMA normalised — takeout and favourite/longshot bias removed. */
@@ -167,20 +230,125 @@ function computeGearScore(row: RaceRow): number {
   return Math.max(0, Math.min(100, score))
 }
 
+export type RunStyle = 'leader' | 'stalker' | 'closer'
+
+export const RUN_STYLE_META: Record<RunStyle, { label: string; color: string }> = {
+  leader: { label: '領放', color: '#ef4444' },
+  stalker: { label: '跟前', color: '#3b82f6' },
+  closer: { label: '後上', color: '#10b981' },
+}
+
+export interface RunningPositions {
+  positions: number[]
+  fieldSize: number | null
+}
+
+/**
+ * race_runners.sectional_times holds the results page 沿途走位 as "場頭數|4 4 4 1"
+ * (the field size is needed to read the early call as a ratio). HKJC publishes no
+ * per-horse sectionals for this instance, so the column had no other use.
+ */
+export function parseRunningPositions(raw: string | null | undefined): RunningPositions {
+  if (!raw) return { positions: [], fieldSize: null }
+  const text = String(raw)
+  const bar = text.indexOf('|')
+  const fieldSize = bar >= 0 ? Number(text.slice(0, bar)) || null : null
+  const body = bar >= 0 ? text.slice(bar + 1) : text
+  const positions = (body.match(/\d{1,2}/g) ?? [])
+    .map(Number)
+    .filter(n => n >= 1 && n <= 30)
+  return { positions, fieldSize }
+}
+
+export function encodeRunningPositions(fieldSize: number | null, positions: number[]): string | null {
+  if (positions.length < 2) return null
+  return `${fieldSize && fieldSize > 0 ? fieldSize : ''}|${positions.join(' ')}`
+}
+
+/**
+ * Early call decides front-runner vs pack; ground made from the first call to the
+ * finish decides closer vs stalker. Style is about where the horse raced, not how
+ * it finished, so a front-runner that fades still reads 領放.
+ */
+export function classifyRunStyle(positions: number[], fieldSize: number | null): RunStyle | null {
+  if (positions.length < 2) return null
+  const field = fieldSize && fieldSize > 1 ? fieldSize : Math.max(12, ...positions)
+  const first = positions[0]
+  const last = positions[positions.length - 1]
+  const rel = first / Math.max(field, 2)
+  const gained = first - last
+  if (rel <= 0.34) return 'leader'
+  if (rel >= 0.5 && (gained >= 2 || (last <= 3 && gained >= 1))) return 'closer'
+  return 'stalker'
+}
+
+export interface RunStyleRecord {
+  race_date: string
+  positions: number[]
+  field_size: number | null
+  style: RunStyle
+}
+
+export function recentRunStyles(history: HorseRaceRecord[] | undefined, limit = 6): RunStyleRecord[] {
+  if (!history) return []
+  const out: RunStyleRecord[] = []
+  for (const h of history) {
+    if (out.length >= limit) break
+    const parsed = parseRunningPositions(h.running_positions)
+    const style = classifyRunStyle(parsed.positions, parsed.fieldSize)
+    if (!style) continue
+    out.push({ race_date: h.race_date, positions: parsed.positions, field_size: parsed.fieldSize, style })
+  }
+  return out
+}
+
+/** Majority style across recent starts; null when fewer than two rated runs. */
+export function dominantRunStyle(styles: RunStyleRecord[]): { style: RunStyle | null; counts: Record<RunStyle, number> } {
+  const counts: Record<RunStyle, number> = { leader: 0, stalker: 0, closer: 0 }
+  for (const s of styles) counts[s.style] += 1
+  if (styles.length < 2) return { style: null, counts }
+  const ranked = (Object.keys(counts) as RunStyle[]).sort((a, b) => counts[b] - counts[a])
+  if (counts[ranked[0]] === counts[ranked[1]]) return { style: null, counts }
+  return { style: ranked[0], counts }
+}
+
 /**
  * Compute pace scenario fit score (0-100).
- * Fast pace favors closers (high draw, poor early form), slow pace favors leaders (low draw).
+ * When the horse has rated runs, its own run style replaces the draw/form proxy:
+ * fast paces punish front-runners and reward closers, slow paces do the reverse.
  */
 function computePaceScore(
   row: RaceRow,
   paceLabel: string,
   totalRunners: number,
+  recentStyles: RunStyle[] = [],
 ): number {
   const draw = row.draw
+  let score = 50
+
+  if (recentStyles.length >= 2) {
+    const leaderRuns = recentStyles.filter(s => s === 'leader').length
+    const closerRuns = recentStyles.filter(s => s === 'closer').length
+    const isFront = leaderRuns > closerRuns && leaderRuns >= recentStyles.length / 2
+    const isCloser = closerRuns > leaderRuns && closerRuns >= recentStyles.length / 2
+
+    if (paceLabel === '快步速') {
+      if (isCloser) score += 16
+      else if (isFront) score -= 12
+      if (draw != null && draw >= 10 && isCloser) score += 4
+    } else if (paceLabel === '慢步速') {
+      if (isFront) score += 16
+      else if (isCloser) score -= 12
+      if (draw != null && draw <= 4 && isFront) score += 4
+    } else {
+      if (isFront) score += 4
+      else if (isCloser) score -= 2
+    }
+    return Math.max(0, Math.min(100, score))
+  }
+
   const form = parseFormHistory(row.form_history)
   const formAvg = form.length > 0 ? form.reduce((s, p) => s + p, 0) / form.length : 8
-
-  let score = 50
 
   if (paceLabel === '快步速') {
     if (draw != null && draw >= 10) score += 18
@@ -296,7 +464,8 @@ function computeTotalScore(
   const cdScore = computeCourseDistanceScore(row, race, horseHistory)
   const restScore = computeRestDaysScore(row)
   const gearScore = computeGearScore(row)
-  const paceScore = computePaceScore(row, paceLabel ?? '中等步速', totalRunners)
+  const styleHistory = recentRunStyles(prior, 6).map(s => s.style)
+  const paceScore = computePaceScore(row, paceLabel ?? '中等步速', totalRunners, styleHistory)
   const classScore = computeClassMovementScore(row, race, horseHistory)
 
   return (
@@ -485,9 +654,43 @@ export function generateExpertAnalysis(row: RaceRow, rank: number): string {
 /**
  * Predict race pace scenario from runner data.
  */
-export function predictPace(rows: RaceRow[]): { label: string; detail: string } {
+export function predictPace(
+  rows: RaceRow[],
+  horseHistory?: Map<string, HorseRaceRecord[]> | null,
+  race?: Race | null,
+): { label: string; detail: string; styleCoverage: number } {
   if (rows.length === 0) {
-    return { label: '未知', detail: '暫無數據' }
+    return { label: '未知', detail: '暫無數據', styleCoverage: 0 }
+  }
+
+  // Run-style evidence beats the weight proxy: what matters is how many horses
+  // in this field actually want the lead, not how much they carry.
+  const tendencies = rows
+    .map(r => dominantRunStyle(recentRunStyles(priorStarts(horseHistory?.get(r.horse_id), race?.race_date), 4)).style)
+    .filter((s): s is RunStyle => s !== null)
+
+  if (tendencies.length >= Math.max(4, Math.ceil(rows.length * 0.4))) {
+    const leaders = tendencies.filter(s => s === 'leader').length
+    const closers = tendencies.filter(s => s === 'closer').length
+    const stalkers = tendencies.length - leaders - closers
+    const leaderShare = leaders / tendencies.length
+    const closerShare = closers / tendencies.length
+
+    let label = '中等步速'
+    if (leaderShare >= 0.3) label = '快步速'
+    else if (leaderShare <= 0.12 && closerShare >= 0.4) label = '慢步速'
+
+    const implication = label === '快步速'
+      ? '前領馬互相搶口，後上馬形勢有利'
+      : label === '慢步速'
+        ? '領放馬偏少，前領馬有機會一放到底'
+        : '步速預計中等，跑法形勢較均衡'
+
+    return {
+      label,
+      detail: `跑法分佈：領放 ${leaders} / 跟前 ${stalkers} / 後上 ${closers}（${tendencies.length}/${rows.length} 匹有往績跑法）· ${implication}`,
+      styleCoverage: tendencies.length,
+    }
   }
 
   const avgWeight = rows.reduce((s, r) => s + (r.actual_weight ?? 126), 0) / rows.length
@@ -513,7 +716,7 @@ export function predictPace(rows: RaceRow[]): { label: string; detail: string } 
     detail += '；外檔馬偏多，注意外側擠迫'
   }
 
-  return { label: paceLabel, detail }
+  return { label: paceLabel, detail, styleCoverage: 0 }
 }
 
 /**
@@ -659,13 +862,13 @@ export function estimateRaceTime(venue: string | undefined, raceNo: number, race
 /**
  * Generate comprehensive AI race analysis text.
  */
-export function generateRaceAnalysis(rows: RaceRow[], race: Race | undefined, topPicks: RaceRow[]): {
+export function generateRaceAnalysis(rows: RaceRow[], race: Race | undefined, topPicks: RaceRow[], horseHistory?: Map<string, HorseRaceRecord[]> | null): {
   paceLabel: string
   paceDetail: string
   keyFactors: { type: string; text: string; impact: 'positive' | 'negative' | 'neutral' }[]
   modelLogic: string
 } {
-  const pace = predictPace(rows)
+  const pace = predictPace(rows, horseHistory, race)
   const going = getGoingInfo(race)
 
   const keyFactors: { type: string; text: string; impact: 'positive' | 'negative' | 'neutral' }[] = []
@@ -1164,7 +1367,8 @@ export function computeBenterBreakdown(
   const courseDistanceScoreRaw = computeCourseDistanceScore(row, ctx.race, ctx.horseHistory)
   const restDaysScoreRaw = computeRestDaysScore(row)
   const gearScoreRaw = computeGearScore(row)
-  const paceScoreRaw = computePaceScore(row, ctx.paceLabel ?? '中等步速', totalRunners)
+  const styleHistory = recentRunStyles(prior, 6).map(s => s.style)
+  const paceScoreRaw = computePaceScore(row, ctx.paceLabel ?? '中等步速', totalRunners, styleHistory)
   const classMovScoreRaw = computeClassMovementScore(row, ctx.race, ctx.horseHistory)
 
   const totalScore = Math.round(

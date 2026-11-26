@@ -1,0 +1,46 @@
+{
+  "fitted_at": "2026-11-26T16:34:41.423192+08:00",
+  "sample_races": 274,
+  "nll": 2.43371,
+  "baseline_nll": 2.48823,
+  "venues": {
+    "HV": {
+      "train_races": 92,
+      "test_races": 24,
+      "nll": 2.40413,
+      "baseline_nll": 2.46102,
+      "improved": true
+    },
+    "ST": {
+      "train_races": 126,
+      "test_races": 32,
+      "nll": 2.46329,
+      "baseline_nll": 2.51544,
+      "improved": true
+    }
+  },
+  "weights": {
+    "HV": {
+      "form": 0.2371,
+      "draw": 0.1203,
+      "jockeyTrainer": 0.1804,
+      "weight": 0.02,
+      "courseDistance": 0.2005,
+      "restDays": 0.02,
+      "gear": 0.0313,
+      "pace": 0.0802,
+      "classMov": 0.1102
+    },
+    "ST": {
+      "form": 0.2226,
+      "draw": 0.0947,
+      "jockeyTrainer": 0.1424,
+      "weight": 0.04,
+      "courseDistance": 0.2201,
+      "restDays": 0.02,
+      "gear": 0.02,
+      "pace": 0.1285,
+      "classMov": 0.1117
+    }
+  }
+}

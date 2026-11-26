@@ -1,18 +1,20 @@
 'use client'
 
 import type { Race, RaceRow } from '@/lib/types'
+import type { HorseRaceRecord } from '@/lib/supabase-client'
 import { generateRaceAnalysis, getTopPicks, MODEL_WEIGHT, MARKET_WEIGHT } from '@/lib/race-utils'
 
 interface AIRaceAnalysisProps {
   race: Race | undefined
   rows: RaceRow[]
+  horseHistory?: Map<string, HorseRaceRecord[]> | null
 }
 
-export function AIRaceAnalysis({ race, rows }: AIRaceAnalysisProps) {
+export function AIRaceAnalysis({ race, rows, horseHistory }: AIRaceAnalysisProps) {
   if (rows.length === 0) return null
 
   const topPicks = getTopPicks(rows, 4)
-  const analysis = generateRaceAnalysis(rows, race, topPicks)
+  const analysis = generateRaceAnalysis(rows, race, topPicks, horseHistory)
 
   const impactIcon = (impact: string) => {
     if (impact === 'positive') return '\u2705'

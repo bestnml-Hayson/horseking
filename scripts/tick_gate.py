@@ -22,6 +22,8 @@ HKT = ZoneInfo('Asia/Hong_Kong')
 
 ODDS_SEED_HOURS = 26
 ODDS_LEAD_MIN = 180
+ODDS_REFRESH_MIN = 20
+DRIFT_MARKER_ID = 'odds_drift'
 POST_RACE_SETTLE_MIN = 25
 DISCOVERY_HORIZON_DAYS = 2
 DISCOVERY_RETRY_HOURS = 6
@@ -170,10 +172,19 @@ def decide(now, today: str) -> Dict:
             f'race_runners?select=race_id,win_odds&race_id=in.({ids})&win_odds=gt.1.0&limit=1000'
         )
         priced = set(r['race_id'] for r in priced_rows)
+        near_age = None
         for r in upcoming:
-            if r['race_id'] not in priced or (race_start(r) - now) <= lead:
+            if r['race_id'] not in priced:
                 do_odds = True
                 break
+            if (race_start(r) - now) <= lead:
+                # Even with every runner priced, the last 3 hours are where the
+                # money moves — re-pull so the drift series sees it, throttled.
+                if near_age is None:
+                    near_age = last_attempt_age_hours(DRIFT_MARKER_ID, now)
+                if near_age is None or near_age * 60 >= ODDS_REFRESH_MIN:
+                    do_odds = True
+                    break
 
     return {'odds': do_odds, 'archive': do_archive, 'discover': do_discover,
             'integrity': integrity, 'integrity_work': do_integrity,

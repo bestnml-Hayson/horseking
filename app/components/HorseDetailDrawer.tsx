@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import type { HorseDetail, Race, RaceRow } from '@/lib/types'
-import type { HorseRaceRecord } from '@/lib/supabase-client'
-import { getFormColor, generateHorseComprehensiveInsight, computeBenterBreakdown } from '@/lib/race-utils'
+import type { HorseRaceRecord, OddsDriftEntry } from '@/lib/supabase-client'
+import { getFormColor, generateHorseComprehensiveInsight, computeBenterBreakdown, recentRunStyles, dominantRunStyle, RUN_STYLE_META } from '@/lib/race-utils'
 import { FACTOR_COLORS, STAT_COLORS } from '@/lib/color-utils'
 
 interface HorseDetailDrawerProps {
@@ -15,6 +15,7 @@ interface HorseDetailDrawerProps {
   horseHistory?: Map<string, HorseRaceRecord[]> | null
   paceLabel?: string
   totalRunners?: number
+  oddsDrift?: Map<string, OddsDriftEntry>
   onClose: () => void
 }
 
@@ -27,10 +28,17 @@ function fmtTime(seconds: number | null): string {
   return min > 0 ? `${min}:${sec.padStart(5, '0')}` : `${sec}s`
 }
 
-export function HorseDetailDrawer({ horseId, horseName, raceRow, venue, race, horseHistory, paceLabel, totalRunners, onClose }: HorseDetailDrawerProps) {
+export function HorseDetailDrawer({ horseId, horseName, raceRow, venue, race, horseHistory, paceLabel, totalRunners, oddsDrift, onClose }: HorseDetailDrawerProps) {
   const [detail, setDetail] = useState<HorseDetail | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const styleRecords = raceRow ? recentRunStyles(horseHistory?.get(raceRow.horse_id), 6) : []
+  const styleTendency = dominantRunStyle(styleRecords)
+  const drift = raceRow ? oddsDrift?.get(raceRow.runner_id) : undefined
+  const driftPct = drift && drift.open > 1 && drift.last !== drift.open
+    ? (drift.last - drift.open) / drift.open * 100
+    : null
 
   const fetchDetail = useCallback(async () => {
     if (!horseId) return
@@ -193,6 +201,7 @@ export function HorseDetailDrawer({ horseId, horseName, raceRow, venue, race, ho
                     subs: [
                       { label: '預計步速', value: paceLabel ?? '中等步速' },
                       { label: '檔位', value: raceRow.draw != null ? `${raceRow.draw} 檔` : '-' },
+                      { label: '跑法傾向', value: styleTendency.style ? `${RUN_STYLE_META[styleTendency.style].label}（近 ${styleRecords.length} 仗）` : '待定' },
                     ],
                   },
                   {
@@ -253,6 +262,94 @@ export function HorseDetailDrawer({ horseId, horseName, raceRow, venue, race, ho
                   </div>
                 )
               })()}
+
+              {/* Run Style & Market Movement */}
+              {(styleRecords.length > 0 || drift) && (
+                <div className="drawer-section">
+                  <h3 className="drawer-section-title">跑法與市場動態</h3>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 12 }}>
+                    {styleRecords.length > 0 && (
+                      <div style={{ border: '1px solid #334155', borderRadius: 8, padding: 12, backgroundColor: '#0f172a' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                          <span style={{ fontSize: '0.85rem', color: '#e2e8f0', fontWeight: 600 }}>跑法分析</span>
+                          {styleTendency.style ? (
+                            <span style={{
+                              fontSize: '0.72rem',
+                              padding: '2px 8px',
+                              borderRadius: 999,
+                              color: RUN_STYLE_META[styleTendency.style].color,
+                              backgroundColor: `${RUN_STYLE_META[styleTendency.style].color}20`,
+                              border: `1px solid ${RUN_STYLE_META[styleTendency.style].color}50`,
+                            }}>
+                              {RUN_STYLE_META[styleTendency.style].label}
+                            </span>
+                          ) : (
+                            <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>跑法混合</span>
+                          )}
+                          <span style={{ fontSize: '0.7rem', color: '#64748b', marginLeft: 'auto' }}>
+                            領放 {styleTendency.counts.leader} · 跟前 {styleTendency.counts.stalker} · 後上 {styleTendency.counts.closer}
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                          {styleRecords.map((s, i) => (
+                            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.75rem' }}>
+                              <span style={{ color: '#64748b', width: 44 }}>{s.race_date.slice(5)}</span>
+                              <span style={{ color: '#cbd5e1', fontFamily: 'monospace', letterSpacing: 1 }}>
+                                {s.positions.join('-')}
+                              </span>
+                              <span style={{ color: RUN_STYLE_META[s.style].color, marginLeft: 'auto' }}>
+                                {RUN_STYLE_META[s.style].label}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                        <div style={{ fontSize: '0.68rem', color: '#475569', marginTop: 8 }}>
+                          沿途走位為每個分段的名次；領放 = 首段守前列，後上 = 早段留後、末段追回
+                        </div>
+                      </div>
+                    )}
+
+                    {drift && (
+                      <div style={{ border: '1px solid #334155', borderRadius: 8, padding: 12, backgroundColor: '#0f172a' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                          <span style={{ fontSize: '0.85rem', color: '#e2e8f0', fontWeight: 600 }}>市場動態</span>
+                          {driftPct !== null ? (
+                            <span style={{
+                              fontSize: '0.72rem',
+                              padding: '2px 8px',
+                              borderRadius: 999,
+                              color: driftPct < 0 ? '#10b981' : '#ef4444',
+                              backgroundColor: driftPct < 0 ? '#10b98120' : '#ef444420',
+                              border: `1px solid ${driftPct < 0 ? '#10b98150' : '#ef444450'}`,
+                            }}>
+                              {driftPct < 0 ? '落飛' : '回飛'} {driftPct > 0 ? '+' : ''}{driftPct.toFixed(1)}%
+                            </span>
+                          ) : (
+                            <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>暫未見明顯變動</span>
+                          )}
+                          <span style={{ fontSize: '0.7rem', color: '#64748b', marginLeft: 'auto' }}>
+                            已收集 {drift.points.length} 個時點
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, fontSize: '0.8rem', color: '#cbd5e1' }}>
+                          <span style={{ color: '#64748b', fontSize: '0.72rem' }}>開盤</span>
+                          <span style={{ fontFamily: 'monospace' }}>{drift.open.toFixed(1)}</span>
+                          <span style={{ color: '#475569' }}>&rarr;</span>
+                          <span style={{ color: '#64748b', fontSize: '0.72rem' }}>最新</span>
+                          <span style={{ fontFamily: 'monospace', fontWeight: 700, color: driftPct !== null && driftPct < 0 ? '#10b981' : '#e2e8f0' }}>
+                            {drift.last.toFixed(1)}
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8, fontSize: '0.72rem', color: '#94a3b8', fontFamily: 'monospace' }}>
+                          {drift.points.slice(-8).map((p, i) => (
+                            <span key={i}>{p.o.toFixed(1)}{i < Math.min(drift.points.length, 8) - 1 ? ' →' : ''}</span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Career Stats Grid */}
               <div className="horse-stats-grid">

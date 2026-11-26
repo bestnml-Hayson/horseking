@@ -1,10 +1,10 @@
 'use client'
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { fetchRaceRunners, fetchPredictions, fetchHorses, fetchRecentForm, fetchHorseRaceHistory } from '@/lib/supabase-client'
-import type { HorseRaceRecord } from '@/lib/supabase-client'
+import { fetchRaceRunners, fetchPredictions, fetchHorses, fetchRecentForm, fetchHorseRaceHistory, fetchOddsDrift } from '@/lib/supabase-client'
+import type { HorseRaceRecord, OddsDriftEntry } from '@/lib/supabase-client'
 import type { Race, RaceRunner, ModelPrediction, Horse, RaceRow } from '@/lib/types'
-import { getTopPicks, estimateRaceTime, predictPace, isOddsPending, computeClientPredictions, MODEL_WEIGHT, MARKET_WEIGHT } from '@/lib/race-utils'
+import { getTopPicks, estimateRaceTime, predictPace, isOddsPending, computeClientPredictions, ensureActiveWeights, MODEL_WEIGHT, MARKET_WEIGHT } from '@/lib/race-utils'
 import { PacingBriefing } from './PacingBriefing'
 import { AIRaceAnalysis } from './AIRaceAnalysis'
 import { TopPicksCards } from './TopPicksCards'
@@ -32,15 +32,18 @@ export function RaceDashboard({ races, allUpData }: RaceDashboardProps) {
   const [drawerHorseName, setDrawerHorseName] = useState<string>('')
   const [drawerRaceRow, setDrawerRaceRow] = useState<RaceRow | null>(null)
   const [horseHistory, setHorseHistory] = useState<Map<string, HorseRaceRecord[]> | null>(null)
+  const [oddsDrift, setOddsDrift] = useState<Map<string, OddsDriftEntry>>(new Map())
 
   const loadRaceData = useCallback(async (raceId: string) => {
     setLoading(true)
     setError(null)
     try {
-      const [runners, predictions] = await Promise.all([
+      const [runners, predictions, drift] = await Promise.all([
         fetchRaceRunners(raceId),
         fetchPredictions(raceId),
+        fetchOddsDrift(raceId),
       ])
+      setOddsDrift(drift)
 
       const horseMap = new Map<string, Horse>()
       if (runners.length > 0) {
@@ -74,6 +77,7 @@ export function RaceDashboard({ races, allUpData }: RaceDashboardProps) {
       if (raceRows.length > 0) {
         const raceForVenue = races.find(r => r.race_id === raceId)
         const venue = raceForVenue?.venue
+        await ensureActiveWeights()
         const historyMap = await fetchHorseRaceHistory(horseIds)
         setHorseHistory(historyMap)
         console.log(`[RaceDashboard] Computing client-side predictions (dynamic weights: ${venue === 'HV' ? 'Happy Valley' : 'Sha Tin'})`)
@@ -124,7 +128,7 @@ export function RaceDashboard({ races, allUpData }: RaceDashboardProps) {
     return (best.prediction?.expected_value ?? 0) > 0 ? best.runner_id : null
   }, [topPicks])
   const hasPositiveEV = useMemo(() => rows.some(r => (r.prediction?.expected_value ?? 0) > 0), [rows])
-  const paceInfo = useMemo(() => predictPace(rows), [rows])
+  const paceInfo = useMemo(() => predictPace(rows, horseHistory, selectedRace ?? null), [rows, horseHistory, selectedRace])
 
   const handleHorseClick = useCallback((horseId: string, horseName: string) => {
     setDrawerHorseId(horseId)
@@ -254,10 +258,10 @@ export function RaceDashboard({ races, allUpData }: RaceDashboardProps) {
       )}
 
       {/* Section 1: Pacing Briefing */}
-      <PacingBriefing race={selectedRace} rows={rows} />
+      <PacingBriefing race={selectedRace} rows={rows} horseHistory={horseHistory} />
 
       {/* Section 2: AI Race Analysis (NEW) */}
-      <AIRaceAnalysis race={selectedRace} rows={rows} />
+      <AIRaceAnalysis race={selectedRace} rows={rows} horseHistory={horseHistory} />
 
       {/* Section 3: AI 精選 4 膽（卡片 + 逐隻分析） */}
       <TopPicksCards picks={topPicks} totalRunners={rows.length} paceLabel={paceInfo.label} onHorseClick={handleHorseClick} />
@@ -285,7 +289,7 @@ export function RaceDashboard({ races, allUpData }: RaceDashboardProps) {
           </span>
         </div>
         <div className="full-table-body">
-          {loading && rows.length === 0 ? <SkeletonTable /> : <RaceTable rows={rows} topPickId={topPickId} hasPositiveEV={hasPositiveEV} onHorseClick={handleHorseClick} />}
+          {loading && rows.length === 0 ? <SkeletonTable /> : <RaceTable rows={rows} topPickId={topPickId} hasPositiveEV={hasPositiveEV} horseHistory={horseHistory} oddsDrift={oddsDrift} onHorseClick={handleHorseClick} />}
         </div>
       </div>
 
@@ -298,6 +302,7 @@ export function RaceDashboard({ races, allUpData }: RaceDashboardProps) {
         horseHistory={horseHistory}
         paceLabel={paceInfo.label}
         totalRunners={rows.length}
+        oddsDrift={oddsDrift}
         onClose={handleCloseDrawer}
       />
     </div>

@@ -16,7 +16,7 @@ CLI:
 import os
 import sys
 import argparse
-from datetime import datetime
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 HKT = ZoneInfo('Asia/Hong_Kong')
@@ -24,6 +24,69 @@ HKT = ZoneInfo('Asia/Hong_Kong')
 sys.path.insert(0, os.path.dirname(__file__))
 from common import get_supabase, retry_supabase
 from model_config import market_probabilities, fuse
+
+DRIFT_ID = 'odds_drift'
+DRIFT_MAX_POINTS = 24
+DRIFT_KEEP_DAYS = 3
+
+
+def _load_drift(supabase) -> dict:
+    try:
+        resp = retry_supabase(
+            lambda: supabase.table('pipeline_status').select('status_json').eq('id', DRIFT_ID).execute()
+        )
+        rows = resp.data or []
+        return (rows[0].get('status_json') or {}) if rows else {}
+    except Exception as e:
+        print(f"    [WARN] drift state unreadable: {e}")
+        return {}
+
+
+def record_drift(supabase, race_id: str, race_date: str, runners: list):
+    """Append this tick's prices to the drift series (opening price + latest + path).
+
+    Stored in pipeline_status.odds_drift rather than a table of its own: this
+    instance has no DDL path, and the payload is a few KB per meeting. The
+    frontend reads it through /api/odds-drift.
+    """
+    priced = [r for r in runners if r.get('win_odds') and r['win_odds'] > 1.0]
+    if not priced:
+        return
+
+    now = datetime.now(HKT)
+    now_iso = now.isoformat()
+    ts = int(now.timestamp())
+    state = _load_drift(supabase)
+    races = state.get('races') or {}
+    entry = races.get(race_id) or {'race_date': race_date, 'runners': {}}
+    entry['race_date'] = race_date
+    bag = entry.setdefault('runners', {})
+
+    for runner in priced:
+        odds = float(runner['win_odds'])
+        rid = runner['runner_id']
+        current = bag.get(rid)
+        if not current:
+            bag[rid] = {'open': odds, 'open_at': now_iso, 'last': odds, 'last_at': now_iso,
+                        'points': [[ts, odds]]}
+            continue
+        current['last'] = odds
+        current['last_at'] = now_iso
+        points = current.get('points') or []
+        if not points or points[-1][1] != odds:
+            points.append([ts, odds])
+            current['points'] = points[-DRIFT_MAX_POINTS:]
+
+    races[race_id] = entry
+    cutoff = (now - timedelta(days=DRIFT_KEEP_DAYS)).strftime('%Y-%m-%d')
+    races = {rid: v for rid, v in races.items() if str(v.get('race_date', ''))[:10] >= cutoff}
+
+    retry_supabase(lambda: supabase.table('pipeline_status').upsert({
+        'id': DRIFT_ID,
+        'last_run': now_iso,
+        'status_json': {'races': races, 'updated_at': now_iso},
+    }, on_conflict='id').execute())
+    print(f"    [Drift] {len(priced)} price points recorded")
 
 
 def scrape_odds_for_race(page, date_str: str, venue: str, race_no: int) -> dict:
@@ -53,7 +116,7 @@ def scrape_odds_for_race(page, date_str: str, venue: str, race_no: int) -> dict:
             return map;
         }''')
 
-        return odds_map
+        return {int(k): float(v) for k, v in odds_map.items() if v and v > 1.0}
     except Exception as e:
         print(f"    [FAIL] R{race_no} odds scrape: {e}")
         return {}
@@ -196,6 +259,13 @@ def inject_odds(supabase, date_str: str, venue: str, race_nos: list = None):
                     retry_supabase(lambda r=runner: supabase.table('race_runners').update(
                         {'win_odds': r['win_odds']}
                     ).eq('runner_id', r['runner_id']).execute())
+
+            # Only this scrape's prices go into the drift series; stale DB values
+            # would make a horse look like it never moved.
+            record_drift(
+                supabase, race_id, date_str,
+                [r for r in runners if r['horse_no'] in odds_map],
+            )
 
         browser.close()
 

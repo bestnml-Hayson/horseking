@@ -1,7 +1,8 @@
 'use client'
 
 import type { RaceRow } from '@/lib/types'
-import { fmtOdds, fmtEV, fmtKelly, parseFormHistory, getFormColor, generateQuantInsight, isOddsPending } from '@/lib/race-utils'
+import type { HorseRaceRecord, OddsDriftEntry } from '@/lib/supabase-client'
+import { fmtOdds, fmtEV, fmtKelly, parseFormHistory, getFormColor, generateQuantInsight, isOddsPending, recentRunStyles, dominantRunStyle, RUN_STYLE_META } from '@/lib/race-utils'
 import { getKellyColor } from '@/lib/color-utils'
 
 const VALUE_THRESHOLD = 0.15
@@ -19,6 +20,8 @@ interface RaceTableProps {
   rows: RaceRow[]
   topPickId: string | null
   hasPositiveEV?: boolean
+  horseHistory?: Map<string, HorseRaceRecord[]> | null
+  oddsDrift?: Map<string, OddsDriftEntry>
   onHorseClick?: (horseId: string, horseName: string) => void
 }
 
@@ -27,7 +30,7 @@ function fmtProb(p: number | null): string {
   return (p * 100).toFixed(1) + '%'
 }
 
-export function RaceTable({ rows, topPickId, hasPositiveEV = true, onHorseClick }: RaceTableProps) {
+export function RaceTable({ rows, topPickId, hasPositiveEV = true, horseHistory, oddsDrift, onHorseClick }: RaceTableProps) {
   if (rows.length === 0) {
     return (
       <div className="table-empty">
@@ -95,6 +98,11 @@ export function RaceTable({ rows, topPickId, hasPositiveEV = true, onHorseClick 
             const isValueBet = isValue && kelly !== null && kelly > 0
             const isTopByPFinal = idx === 0 && !isTopPick
             const formPositions = parseFormHistory(row.form_history)
+            const styleTendency = dominantRunStyle(recentRunStyles(horseHistory?.get(row.horse_id), 4)).style
+            const drift = oddsDrift?.get(row.runner_id)
+            const driftPct = drift && drift.open > 1 && drift.last !== drift.open
+              ? (drift.last - drift.open) / drift.open * 100
+              : null
 
             let evClass = 'ev-negative'
             if (ev !== null && ev > 0 && ev <= VALUE_THRESHOLD) evClass = 'ev-neutral'
@@ -118,6 +126,24 @@ export function RaceTable({ rows, topPickId, hasPositiveEV = true, onHorseClick 
                     >
                       {row.horse_name}
                     </button>
+                    {styleTendency && (
+                      <span
+                        className="run-style-chip"
+                        title={`近仗跑法傾向：${RUN_STYLE_META[styleTendency].label}`}
+                        style={{
+                          fontSize: '0.65rem',
+                          marginLeft: 6,
+                          padding: '1px 5px',
+                          borderRadius: 4,
+                          border: `1px solid ${RUN_STYLE_META[styleTendency].color}50`,
+                          color: RUN_STYLE_META[styleTendency].color,
+                          backgroundColor: `${RUN_STYLE_META[styleTendency].color}15`,
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {RUN_STYLE_META[styleTendency].label}
+                      </span>
+                    )}
                   </div>
                 </td>
                 <td>
@@ -211,6 +237,19 @@ export function RaceTable({ rows, topPickId, hasPositiveEV = true, onHorseClick 
                       </div>
                     )
                   })()}
+                  {driftPct !== null && (
+                    <div
+                      className="odds-drift-hint"
+                      title={`開盤 ${drift!.open} → 最新 ${drift!.last}（${driftPct > 0 ? '回飛' : '落飛'} ${Math.abs(driftPct).toFixed(0)}%）`}
+                      style={{
+                        fontSize: '0.68rem',
+                        marginTop: 2,
+                        color: driftPct < 0 ? '#10b981' : '#ef4444',
+                      }}
+                    >
+                      {driftPct < 0 ? '落飛' : '回飛'} {driftPct < 0 ? '' : '+'}{driftPct.toFixed(1)}%
+                    </div>
+                  )}
                 </td>
                 <td style={{ textAlign: 'right' }} className="tabular-nums prob-model-cell">
                   <span className="prob-pill prob-model">{fmtProb(pModel)}</span>

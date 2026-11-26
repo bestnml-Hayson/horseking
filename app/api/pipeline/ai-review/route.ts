@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
-import { getServerSupabase, directFetchAll } from '@/lib/supabase-server'
-import { computeClientPredictions } from '@/lib/race-utils'
+import { getServerSupabase, directFetchAll, loadActiveWeights } from '@/lib/supabase-server'
+import { computeClientPredictions, sanitizeWeights, setActiveWeights } from '@/lib/race-utils'
 import type { RaceRow, RaceRunner, Race } from '@/lib/types'
 import type { HorseRaceRecord } from '@/lib/supabase-client'
 
@@ -58,11 +58,12 @@ async function fetchHorseHistoryForReview(horseIds: string[]): Promise<Map<strin
 
   const idList = horseIds.map(id => `"${id}"`).join(',')
   const rows = await directFetchAll(
-    `race_runners?select=horse_id,finish_position,races!inner(race_date,venue,distance,class_level)&horse_id=in.(${idList})&finish_position=not.is.null`,
+    `race_runners?select=horse_id,finish_position,sectional_times,races!inner(race_date,venue,distance,class_level)&horse_id=in.(${idList})&finish_position=not.is.null`,
     'runner_id'
   ) as Array<{
     horse_id: string
     finish_position: number | null
+    sectional_times: string | null
     races: { race_date: string; venue: string; distance: number | null; class_level: string | null } | null
   }>
 
@@ -76,6 +77,7 @@ async function fetchHorseHistoryForReview(horseIds: string[]): Promise<Map<strin
       finish_position: row.finish_position,
       race_date: race.race_date,
       class_level: race.class_level ?? '',
+      running_positions: row.sectional_times ?? null,
     }
     const existing = historyMap.get(row.horse_id) ?? []
     existing.push(entry)
@@ -125,6 +127,7 @@ async function reviewRace(supabase: ReturnType<typeof getServerSupabase>, raceId
     going: null,
   }
 
+  setActiveWeights(sanitizeWeights(await loadActiveWeights()))
   const predicted = computeClientPredictions(
     raceRowItems, raceMeta.venue, raceInfo, horseHistory,
   )

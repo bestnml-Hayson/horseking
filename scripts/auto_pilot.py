@@ -40,6 +40,7 @@ from datetime import datetime, timedelta
 from typing import Optional, List, Dict
 from zoneinfo import ZoneInfo
 from common import get_supabase, retry_supabase
+from run_style import encode_running_positions
 
 HKT = ZoneInfo('Asia/Hong_Kong')
 
@@ -273,6 +274,16 @@ def inject_odds_for_upcoming_races(supabase, dry_run: bool = False):
                 if updated > 0:
                     injected += 1
                     print(f"  [OK] {date_str} {venue}: {updated} odds injected")
+                    from odds_injection import record_drift
+                    for race in needed:
+                        if race['race_date'] != date_str or race['venue'] != venue:
+                            continue
+                        spread = odds_map.get(race['race_no']) or {}
+                        snapshot = [{
+                            'runner_id': f"{race['race_id']}_H{int(no):02d}",
+                            'win_odds': float(price),
+                        } for no, price in spread.items() if price and price > 1.0]
+                        record_drift(supabase, race['race_id'], date_str, snapshot)
                 else:
                     print(f"  [WARN] {date_str} {venue}: no odds written")
             else:
@@ -475,7 +486,8 @@ def scrape_results_for_race(page, date_str: str, venue: str, race_no: int) -> Li
                     horseName: headers.indexOf('馬名'),
                     jockey: headers.indexOf('騎師'),
                     trainer: headers.indexOf('練馬師'),
-                    winOdds: headers.indexOf('獨贏賠率')
+                    winOdds: headers.indexOf('獨贏賠率'),
+                    running: headers.indexOf('沿途走位')
                 };
 
                 for (let i = 1; i < rows.length; i++) {
@@ -485,7 +497,8 @@ def scrape_results_for_race(page, date_str: str, venue: str, race_no: int) -> Li
                     if (isNaN(pos) || pos <= 0) continue;
                     const horseNo = parseInt(cells[colMap.horseNo]?.textContent.trim());
                     const winOdds = parseFloat(cells[colMap.winOdds]?.textContent.trim()) || 0;
-                    results.push({ pos, horse_no: horseNo, win_odds: winOdds });
+                    const running = colMap.running >= 0 ? (cells[colMap.running]?.textContent.trim() || '') : '';
+                    results.push({ pos, horse_no: horseNo, win_odds: winOdds, running_positions: running });
                 }
                 break;
             }
@@ -534,6 +547,9 @@ def apply_results(supabase, race_id: str, results: List[Dict]) -> int:
         patch = {'finish_position': r['pos']}
         if not pre_race_price or pre_race_price <= 1.0:
             patch['win_odds'] = r['win_odds']
+        encoded_positions = encode_running_positions(len(results), r.get('running_positions'))
+        if encoded_positions:
+            patch['sectional_times'] = encoded_positions
 
         retry_supabase(
             lambda p=patch, rid=runner['runner_id']: supabase.table('race_runners').update(p).eq('runner_id', rid).execute()
@@ -669,6 +685,23 @@ def main():
         except Exception as e:
             print(f"[ERROR] Phase 2 failed: {e}")
             status['errors'].append(f'Phase 2: {str(e)}')
+
+    # Phase 2.5: weight recalibration (only after fresh results landed)
+    if do_archive and status['archived'] > 0 and not args.dry_run:
+        print("\n" + "=" * 50)
+        print("PHASE 2.5: WEIGHT RECALIBRATION CHECK")
+        print("=" * 50)
+        try:
+            import subprocess
+            rc = subprocess.run(
+                [sys.executable, os.path.join(os.path.dirname(__file__), 'recalibrate_weights.py'),
+                 '--auto', '--days', '150'],
+                timeout=1200,
+            ).returncode
+            status['recalibrated'] = rc == 0
+        except Exception as e:
+            print(f"[ERROR] Phase 2.5 failed: {e}")
+            status['errors'].append(f'Phase 2.5: {str(e)}')
 
     # Phase 3: Status
     elapsed = (now_hkt() - start_time).total_seconds()

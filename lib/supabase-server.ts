@@ -39,3 +39,15 @@ export async function directFetchAll(baseQuery: string, orderBy: string): Promis
     if (rows.length < 1000) return all
   }
 }
+
+/** Recalibrated weight tables published by scripts/recalibrate_weights.py. */
+export async function loadActiveWeights(): Promise<unknown> {
+  try {
+    const rows = await directFetch(
+      'pipeline_status?id=eq.model_weights_active&select=status_json'
+    ) as Array<{ status_json?: { weights?: unknown } }>
+    return rows?.[0]?.status_json?.weights ?? null
+  } catch {
+    return null
+  }
+}

@@ -322,6 +322,7 @@ export interface HorseRaceRecord {
   finish_position: number
   race_date: string
   class_level: string
+  running_positions: string | null
 }
 
 export async function fetchHorseRaceHistory(horseIds: string[]): Promise<Map<string, HorseRaceRecord[]>> {
@@ -338,7 +339,7 @@ export async function fetchHorseRaceHistory(horseIds: string[]): Promise<Map<str
     for (let from = 0; ; from += 1000) {
       const { data, error } = await supabase
         .from('race_runners')
-        .select('horse_id, finish_position, official_rating, races!inner(race_date, venue, distance, class_level)')
+        .select('horse_id, finish_position, official_rating, sectional_times, races!inner(race_date, venue, distance, class_level)')
         .in('horse_id', batch)
         .not('finish_position', 'is', 'null')
         .order('runner_id')
@@ -353,6 +354,7 @@ export async function fetchHorseRaceHistory(horseIds: string[]): Promise<Map<str
         horse_id: string
         finish_position: number | null
         official_rating: number | null
+        sectional_times: string | null
         races: { race_date: string; venue: string; distance: number | null; class_level: string | null }
           | Array<{ race_date: string; venue: string; distance: number | null; class_level: string | null }>
           | null
@@ -369,6 +371,7 @@ export async function fetchHorseRaceHistory(horseIds: string[]): Promise<Map<str
           finish_position: row.finish_position,
           race_date: race.race_date,
           class_level: race.class_level ?? '',
+          running_positions: row.sectional_times ?? null,
         }
 
         const existing = historyMap.get(row.horse_id) ?? []
@@ -422,4 +425,31 @@ export async function fetchAllRaceData(races: Race[]): Promise<Map<string, RaceR
   }
 
   return result
+}
+
+export interface OddsDriftPoint {
+  t: number
+  o: number
+}
+
+export interface OddsDriftEntry {
+  open: number
+  last: number
+  open_at?: string
+  last_at?: string
+  points: OddsDriftPoint[]
+}
+
+/** Opening vs latest price, collected by scripts/odds_injection.py on every tick. */
+export async function fetchOddsDrift(raceId: string): Promise<Map<string, OddsDriftEntry>> {
+  try {
+    const res = await fetch(`/api/odds-drift?raceId=${encodeURIComponent(raceId)}`, { cache: 'no-store' })
+    if (!res.ok) return new Map()
+    const json = await res.json()
+    const runners = (json?.runners ?? {}) as Record<string, OddsDriftEntry>
+    return new Map(Object.entries(runners))
+  } catch (e) {
+    console.error('[fetchOddsDrift] error:', e)
+    return new Map()
+  }
 }

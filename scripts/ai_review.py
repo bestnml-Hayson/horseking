@@ -34,6 +34,7 @@ from common import get_supabase, retry_supabase, has_column
 # =====================================================================
 from model_config import (MODEL_WEIGHT, MARKET_WEIGHT, SOFTMAX_TEMPERATURE,
                           market_probabilities, weights_for)
+from run_style import dominant_run_style, recent_run_styles
 
 
 def _parse_form_history(form: Optional[str]) -> List[int]:
@@ -72,9 +73,28 @@ def _softmax(scores: List[float], temperature: float = SOFTMAX_TEMPERATURE) -> L
     return [e / total for e in exps]
 
 
-def _predict_pace(runners: List[Dict]) -> str:
+def _predict_pace(runners: List[Dict], horse_history: Optional[Dict[str, List[Dict]]] = None,
+                  race_date: Optional[str] = None) -> str:
+    """Field pace from run-style evidence when available, weight proxy otherwise."""
     if not runners:
         return '中等步速'
+
+    if horse_history:
+        tendencies = []
+        for r in runners:
+            prior = _prior_starts(horse_history.get(r.get('horse_id', ''), []), race_date)
+            style, _ = dominant_run_style(recent_run_styles(prior, 4))
+            if style:
+                tendencies.append(style)
+        if len(tendencies) >= max(4, math.ceil(len(runners) * 0.4)):
+            leader_share = tendencies.count('leader') / len(tendencies)
+            closer_share = tendencies.count('closer') / len(tendencies)
+            if leader_share >= 0.3:
+                return '快步速'
+            if leader_share <= 0.12 and closer_share >= 0.4:
+                return '慢步速'
+            return '中等步速'
+
     avg_weight = sum(r.get('actual_weight') or 126 for r in runners) / len(runners)
     if avg_weight < 122:
         return '快步速'
@@ -147,11 +167,39 @@ def _compute_gear_score(row: Dict) -> float:
     return max(0, min(100, score))
 
 
-def _compute_pace_score(row: Dict, pace_label: str, total_runners: int) -> float:
+def _compute_pace_score(row: Dict, pace_label: str, total_runners: int,
+                        recent_styles: Optional[List[str]] = None) -> float:
     draw = row.get('draw')
+    score = 50
+
+    if recent_styles and len(recent_styles) >= 2:
+        leader_runs = recent_styles.count('leader')
+        closer_runs = recent_styles.count('closer')
+        is_front = leader_runs > closer_runs and leader_runs >= len(recent_styles) / 2
+        is_closer = closer_runs > leader_runs and closer_runs >= len(recent_styles) / 2
+        if pace_label == '快步速':
+            if is_closer:
+                score += 16
+            elif is_front:
+                score -= 12
+            if draw is not None and draw >= 10 and is_closer:
+                score += 4
+        elif pace_label == '慢步速':
+            if is_front:
+                score += 16
+            elif is_closer:
+                score -= 12
+            if draw is not None and draw <= 4 and is_front:
+                score += 4
+        else:
+            if is_front:
+                score += 4
+            elif is_closer:
+                score -= 2
+        return max(0, min(100, score))
+
     form = _parse_form_history(row.get('form_history'))
     form_avg = sum(form) / len(form) if form else 8
-    score = 50
     if pace_label == '快步速':
         if draw is not None and draw >= 10:
             score += 18
@@ -218,14 +266,18 @@ def _compute_class_movement_score(row: Dict, race_class: Optional[str],
     return 55
 
 
-def _compute_total_score(row: Dict, total_runners: int, venue: Optional[str],
-                         race_venue: Optional[str], race_distance: Optional[int],
-                         race_class: Optional[str],
-                         horse_history: Dict[str, List[Dict]],
-                         pace_label: str,
-                         race_date: Optional[str] = None) -> float:
-    w = weights_for(venue)
+FACTOR_ORDER = ('form', 'draw', 'jockeyTrainer', 'weight', 'courseDistance',
+                'restDays', 'gear', 'pace', 'classMov')
 
+
+def compute_factor_scores(row: Dict, total_runners: int,
+                          race_venue: Optional[str], race_distance: Optional[int],
+                          race_class: Optional[str],
+                          horse_history: Dict[str, List[Dict]],
+                          pace_label: str,
+                          race_date: Optional[str] = None) -> Dict[str, float]:
+    """Per-factor 0-100 scores. Weights are applied outside so recalibration can
+    refit them without recomputing the factors."""
     prior = _prior_starts(horse_history.get(row.get('horse_id', ''), []), race_date)
     form = _recent_form_positions(row, prior)
     if form:
@@ -263,12 +315,35 @@ def _compute_total_score(row: Dict, total_runners: int, venue: Optional[str],
     cd_score = _compute_course_distance_score(row, race_venue, race_distance, horse_history, race_date)
     rest_score = _compute_rest_days_score(row)
     gear_score = _compute_gear_score(row)
-    pace_score = _compute_pace_score(row, pace_label, total_runners)
+    pace_score = _compute_pace_score(
+        row, pace_label, total_runners,
+        [s['style'] for s in recent_run_styles(prior, 6)],
+    )
     class_score = _compute_class_movement_score(row, race_class, horse_history, race_date)
 
-    return (form_score * w['form'] + draw_score * w['draw'] + jt_score * w['jockeyTrainer'] +
-            weight_score * w['weight'] + cd_score * w['courseDistance'] + rest_score * w['restDays'] +
-            gear_score * w['gear'] + pace_score * w['pace'] + class_score * w['classMov'])
+    return {
+        'form': form_score,
+        'draw': draw_score,
+        'jockeyTrainer': jt_score,
+        'weight': weight_score,
+        'courseDistance': cd_score,
+        'restDays': rest_score,
+        'gear': gear_score,
+        'pace': pace_score,
+        'classMov': class_score,
+    }
+
+
+def _compute_total_score(row: Dict, total_runners: int, venue: Optional[str],
+                         race_venue: Optional[str], race_distance: Optional[int],
+                         race_class: Optional[str],
+                         horse_history: Dict[str, List[Dict]],
+                         pace_label: str,
+                         race_date: Optional[str] = None) -> float:
+    w = weights_for(venue)
+    scores = compute_factor_scores(row, total_runners, race_venue, race_distance,
+                                   race_class, horse_history, pace_label, race_date)
+    return sum(scores[k] * w[k] for k in FACTOR_ORDER)
 
 
 def compute_client_predictions_py(runners: List[Dict], venue: Optional[str],
@@ -284,7 +359,7 @@ def compute_client_predictions_py(runners: List[Dict], venue: Optional[str],
     if not runners:
         return []
 
-    pace_label = _predict_pace(runners)
+    pace_label = _predict_pace(runners, horse_history, race_date)
     total = len(runners)
 
     scores = [
@@ -330,7 +405,7 @@ def _fetch_horse_history(supabase, horse_ids: List[str]) -> Dict[str, List[Dict]
                 # max-rows=1000 clamps limit() on this server, so page by offset
                 # or most of a batch's history silently disappears.
                 resp = supabase.table('race_runners').select(
-                    'horse_id,finish_position,races!inner(race_date,venue,distance,class_level)'
+                    'horse_id,finish_position,sectional_times,races!inner(race_date,venue,distance,class_level)'
                 ).in_('horse_id', batch).not_is_('finish_position', 'null').order('runner_id') \
                     .range(frm, frm + 999).execute()
                 rows = resp.data or []
@@ -349,6 +424,7 @@ def _fetch_horse_history(supabase, horse_ids: List[str]) -> Dict[str, List[Dict]
                         'finish_position': fp,
                         'race_date': race.get('race_date', ''),
                         'class_level': race.get('class_level', ''),
+                        'running_positions': row.get('sectional_times'),
                     }
                     hid = row['horse_id']
                     history_map.setdefault(hid, []).append(entry)

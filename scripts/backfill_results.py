@@ -20,6 +20,7 @@ from typing import Dict, List, Optional
 HKT = ZoneInfo('Asia/Hong_Kong')
 
 from common import get_supabase, batch_upsert, retry_supabase
+from run_style import encode_running_positions
 
 
 def scrape_results_page(page, date_str: str, venue: str, race_no: int) -> Optional[Dict]:
@@ -79,12 +80,14 @@ def scrape_results_page(page, date_str: str, venue: str, race_no: int) -> Option
                     const declaredWeight = parseInt(get("排位體重")) || 0;
                     const margin = get("頭馬距離");
                     const finishTime = get("完成時間");
+                    const runningPositions = get("沿途走位");
 
                     result.horses.push({
                         pos, horse_no: horseNo, horse_name: horseName, horse_id: horseId,
                         jockey, trainer, draw, weight_carried: weightCarried,
                         declared_weight: declaredWeight, win_odds: winOdds,
-                        margin, finish_time: finishTime
+                        margin, finish_time: finishTime,
+                        running_positions: runningPositions
                     });
                 }
                 break;
@@ -258,6 +261,9 @@ def build_meeting_records(date_str: str, venue: str, races_data: List[tuple]):
                 'declared_weight': h['declared_weight'],
                 'win_odds': h['win_odds'] if h['win_odds'] > 1.0 else None,
                 'finish_position': h['pos'],
+                'sectional_times': encode_running_positions(
+                    len(result['horses']), h.get('running_positions', '')
+                ),
             })
 
             horse_key = horse_id_str or horse_name

@@ -1,15 +1,17 @@
 'use client'
 
 import type { Race, RaceRow } from '@/lib/types'
+import type { HorseRaceRecord } from '@/lib/supabase-client'
 import { predictPace, getGoingInfo } from '@/lib/race-utils'
 
 interface PacingBriefingProps {
   race: Race | undefined
   rows: RaceRow[]
+  horseHistory?: Map<string, HorseRaceRecord[]> | null
 }
 
-export function PacingBriefing({ race, rows }: PacingBriefingProps) {
-  const pace = predictPace(rows)
+export function PacingBriefing({ race, rows, horseHistory }: PacingBriefingProps) {
+  const pace = predictPace(rows, horseHistory, race)
   const going = getGoingInfo(race)
 
   return (
