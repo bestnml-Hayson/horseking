@@ -39,12 +39,57 @@ def fetch_all(table, select, filters, order='runner_id'):
         frm += 1000
 
 
+def repair_ledger(supabase, ledger_rows, dry_run):
+    """Some legacy ledger rows were written in *finish order* onto `horse_no` 1..n, so
+    row H holds the H-th finisher's dividend instead of horse H's. Re-align every
+    ledger row to `race_runners`, which is what the app and the AI review key off."""
+    by_race = {}
+    for x in ledger_rows:
+        if x.get('horse_no') is not None:
+            by_race.setdefault(x['race_id'], []).append(x)
+
+    rids = sorted(by_race)
+    checked = fixed = 0
+    for i in range(0, len(rids), 40):
+        chunk = rids[i:i + 40]
+        runners = fetch_all(
+            supabase.table('race_runners'),
+            'race_id,horse_no,win_odds,finish_position',
+            [('in_', ('race_id', chunk))], order='runner_id')
+        truth = {(r['race_id'], r['horse_no']): r for r in runners if r.get('horse_no') is not None}
+        for rid in chunk:
+            for row in by_race[rid]:
+                t = truth.get((rid, row['horse_no']))
+                if not t or not t.get('win_odds') or t['win_odds'] <= 1.0:
+                    continue
+                checked += 1
+                bad_pos = t.get('finish_position') and row.get('finish_position') != t['finish_position']
+                if not bad_pos:
+                    # Odds that merely differ are the genuine pre-race vs SP gap — leave them.
+                    continue
+                fixed += 1
+                patch = {'finish_position': t['finish_position']}
+                if t['win_odds'] and abs((row.get('win_odds') or 0) - t['win_odds']) > 0.05:
+                    patch['win_odds'] = t['win_odds']
+                if dry_run:
+                    print(f'  [DRY-RUN] {rid} H{row["horse_no"]}: '
+                          f'ledger {row.get("win_odds")}/{row.get("finish_position")} '
+                          f'-> runners {t["win_odds"]}/{t.get("finish_position")}')
+                    continue
+                retry_supabase(lambda p=patch, rid_=row['id']: supabase.table('race_results')
+                               .update(p).eq('id', rid_).execute())
+    print(f'{"[DRY-RUN] 將修正" if dry_run else "[OK] 已修正"} {fixed} / {checked} 注派帳記錄')
+    return fixed
+
+
 def main():
     parser = argparse.ArgumentParser(description='Copy pre-change SP into the race_results ledger')
     parser.add_argument('--from', dest='date_from', default='2026-08-22')
     parser.add_argument('--to', dest='date_to',
                         default=datetime.now(timezone.utc).strftime('%Y-%m-%d'))
     parser.add_argument('--dry-run', action='store_true')
+    parser.add_argument('--repair', action='store_true',
+                        help='re-align existing ledger rows that were keyed by finish order')
     args = parser.parse_args()
 
     supabase = get_supabase()
@@ -60,8 +105,12 @@ def main():
     # A race is covered only if the ledger holds per-runner dividends. The old
     # per-race summary rows (horse_no null) don't count.
     ledger_rows = fetch_all(
-        supabase.table('race_results'), 'race_id,horse_no,win_odds',
+        supabase.table('race_results'),
+        'id,race_id,horse_no,win_odds,finish_position',
         [('lte', ('race_date', args.date_to))], order='id')
+    if args.repair:
+        repair_ledger(supabase, ledger_rows, args.dry_run)
+
     have = {r['race_id'] for r in ledger_rows
             if r.get('horse_no') is not None and (r.get('win_odds') or 0) > 1.0}
     todo = [r for r in races if r['race_id'] not in have]

@@ -459,8 +459,18 @@ def review_single_race(supabase, race_id: str) -> Optional[Dict]:
 
     # race_runners.win_odds = the price shown before the barrier (what a bet was
     # actually placed at); the official SP dividend lives in race_results.
-    sp_resp = supabase.table('race_results').select('horse_no,win_odds').eq('race_id', race_id).execute()
-    sp_by_no = {r['horse_no']: r.get('win_odds') for r in (sp_resp.data or []) if r.get('win_odds')}
+    sp_resp = supabase.table('race_results').select('horse_no,win_odds,finish_position').eq('race_id', race_id).execute()
+    pos_by_no = {r.get('horse_no'): r.get('finish_position') for r in runners}
+    sp_by_no = {}
+    for row in (sp_resp.data or []):
+        if not row.get('win_odds'):
+            continue
+        # A ledger row whose position disagrees with the runner was keyed by finish
+        # order, not by horse number — paying out on it prices the wrong horse.
+        real = pos_by_no.get(row.get('horse_no'))
+        if real is not None and row.get('finish_position') and row['finish_position'] != real:
+            continue
+        sp_by_no[row['horse_no']] = row['win_odds']
 
     if not runners:
         print(f"  [SKIP] {race_id}: no runners")
