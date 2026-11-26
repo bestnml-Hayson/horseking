@@ -18,7 +18,6 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard')
   const [trebleData, setTrebleData] = useState<TrebleResult | null>(null)
   const [allUpData, setAllUpData] = useState<AllUpResult | null>(null)
-  const [allRaceData, setAllRaceData] = useState<Map<string, RaceRow[]>>(new Map())
   const [races, setRaces] = useState<Race[]>([])
 
   useEffect(() => {
@@ -53,7 +52,6 @@ export default function Home() {
           }
         }
 
-        setAllRaceData(allData)
         const treble = generateTreble(allData, raceList)
         if (cancelled) return
         setTrebleData(treble)
@@ -105,7 +103,7 @@ export default function Home() {
         {trebleData && <TrebleCard treble={trebleData} />}
       </nav>
 
-      {activeTab === 'dashboard' && <RaceDashboard races={races} allUpData={allUpData} allRaceData={allRaceData} />}
+      {activeTab === 'dashboard' && <RaceDashboard races={races} allUpData={allUpData} />}
       {activeTab === 'analysis' && <AIPerformance />}
     </main>
   )

@@ -3,17 +3,13 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { fetchRaceRunners, fetchPredictions, fetchHorses, fetchRecentForm, fetchHorseRaceHistory } from '@/lib/supabase-client'
 import type { Race, RaceRunner, ModelPrediction, Horse, RaceRow } from '@/lib/types'
-import { getTopPicks, estimateRaceTime, predictPace, isOddsPending, computeClientPredictions, MODEL_WEIGHT, MARKET_WEIGHT } from '@/lib/race-utils'
+import { getTopPicks, estimateRaceTime, isOddsPending, computeClientPredictions, MODEL_WEIGHT, MARKET_WEIGHT } from '@/lib/race-utils'
 import { PacingBriefing } from './PacingBriefing'
 import { AIRaceAnalysis } from './AIRaceAnalysis'
-import { TopPicksCards } from './TopPicksCards'
-import { BettingStrategy } from './BettingStrategy'
+import { BetRecommendation } from './BetRecommendation'
 import { RaceTable } from './RaceTable'
 import { SkeletonTable } from './SkeletonTable'
 import { HorseDetailDrawer } from './HorseDetailDrawer'
-import { DualBettingView } from './DualBettingView'
-import { AllUpCard } from './AllUpCard'
-import { OptimalBetStrategy } from './OptimalBetStrategy'
 import { AutoPilotStatus } from './AutoPilotStatus'
 import type { AllUpResult } from '@/lib/allup-engine'
 
@@ -22,10 +18,9 @@ const REFRESH_INTERVAL = 15000
 interface RaceDashboardProps {
   races: Race[]
   allUpData?: AllUpResult | null
-  allRaceData?: Map<string, RaceRow[]>
 }
 
-export function RaceDashboard({ races, allUpData, allRaceData }: RaceDashboardProps) {
+export function RaceDashboard({ races, allUpData }: RaceDashboardProps) {
   const [selectedRaceId, setSelectedRaceId] = useState<string | null>(null)
   const [rows, setRows] = useState<RaceRow[]>([])
   const [loading, setLoading] = useState(true)
@@ -118,15 +113,12 @@ export function RaceDashboard({ races, allUpData, allRaceData }: RaceDashboardPr
   }, [selectedRaceId, loadRaceData])
 
   const selectedRace = races.find(r => r.race_id === selectedRaceId)
-  const topPicks = useMemo(() => getTopPicks(rows, 4), [rows])
   const topPickId = useMemo(() => {
-    if (topPicks.length === 0) return null
-    const best = topPicks[0]
-    const ev = best.prediction?.expected_value ?? 0
-    return ev > 0 ? best.runner_id : null
-  }, [topPicks])
+    const best = getTopPicks(rows, 1)[0]
+    if (!best) return null
+    return (best.prediction?.expected_value ?? 0) > 0 ? best.runner_id : null
+  }, [rows])
   const hasPositiveEV = useMemo(() => rows.some(r => (r.prediction?.expected_value ?? 0) > 0), [rows])
-  const paceInfo = useMemo(() => predictPace(rows), [rows])
 
   const handleHorseClick = useCallback((horseId: string, horseName: string) => {
     setDrawerHorseId(horseId)
@@ -261,29 +253,16 @@ export function RaceDashboard({ races, allUpData, allRaceData }: RaceDashboardPr
       {/* Section 2: AI Race Analysis (NEW) */}
       <AIRaceAnalysis race={selectedRace} rows={rows} />
 
-      {/* Section 3: AI Top 4 Picks */}
-      <TopPicksCards picks={topPicks} totalRunners={rows.length} paceLabel={paceInfo.label} onHorseClick={handleHorseClick} />
+      {/* Section 3: 投注建議（穩選 / 值博 / 爆冷 + 進階數據 + 跨場組合） */}
+      <BetRecommendation
+        rows={rows}
+        race={selectedRace ?? null}
+        raceTime={selectedRaceTime}
+        allUpData={allUpData}
+        onHorseClick={handleHorseClick}
+      />
 
-      {/* Section 4: Betting Strategy */}
-      <BettingStrategy rows={rows} />
-
-      {/* Section 4b: Dual Betting View (Max Probability + Longshot Overlay) */}
-      <DualBettingView rows={rows} onHorseClick={handleHorseClick} />
-
-      {/* Section 4c: All Up Optimization Engine */}
-      {allUpData && <AllUpCard result={allUpData} />}
-
-      {/* Section 4d: Multi-Pool Optimal Bet Strategy */}
-      {selectedRace && allRaceData && allRaceData.size > 0 && (
-        <OptimalBetStrategy
-          rows={rows}
-          raceData={allRaceData}
-          races={races}
-          currentRace={selectedRace}
-        />
-      )}
-
-      {/* Section 5: Full Analysis Table */}
+      {/* Section 4: Full Analysis Table */}
       <div className="full-table-section animate-fade-in">
         <div className="full-table-header">
           <span className="full-table-title">
