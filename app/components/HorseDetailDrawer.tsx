@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import type { HorseDetail, RaceRow } from '@/lib/types'
+import type { HorseDetail, Race, RaceRow } from '@/lib/types'
+import type { HorseRaceRecord } from '@/lib/supabase-client'
 import { getFormColor, generateHorseComprehensiveInsight, computeBenterBreakdown } from '@/lib/race-utils'
 import { FACTOR_COLORS, STAT_COLORS } from '@/lib/color-utils'
 
@@ -10,6 +11,10 @@ interface HorseDetailDrawerProps {
   horseName: string
   raceRow?: RaceRow | null
   venue?: string
+  race?: Race | null
+  horseHistory?: Map<string, HorseRaceRecord[]> | null
+  paceLabel?: string
+  totalRunners?: number
   onClose: () => void
 }
 
@@ -22,7 +27,7 @@ function fmtTime(seconds: number | null): string {
   return min > 0 ? `${min}:${sec.padStart(5, '0')}` : `${sec}s`
 }
 
-export function HorseDetailDrawer({ horseId, horseName, raceRow, venue, onClose }: HorseDetailDrawerProps) {
+export function HorseDetailDrawer({ horseId, horseName, raceRow, venue, race, horseHistory, paceLabel, totalRunners, onClose }: HorseDetailDrawerProps) {
   const [detail, setDetail] = useState<HorseDetail | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -121,7 +126,12 @@ export function HorseDetailDrawer({ horseId, horseName, raceRow, venue, onClose 
 
               {/* Benter Factor Breakdown */}
               {raceRow && (() => {
-                const bd = computeBenterBreakdown(raceRow, venue)
+                const bd = computeBenterBreakdown(raceRow, venue, {
+                  race: race ?? undefined,
+                  horseHistory: horseHistory ?? undefined,
+                  paceLabel,
+                  totalRunners,
+                })
                 const wPct = (v: number) => (v > 0 ? `${Math.round(v * 100)}%` : '未納入')
                 const factors = [
                   {
@@ -153,10 +163,10 @@ export function HorseDetailDrawer({ horseId, horseName, raceRow, venue, onClose 
                   {
                     label: '途程場地分', sublabel: 'Course/Distance', score: bd.courseDistanceScore, weight: wPct(bd.weights.courseDistance), color: FACTOR_COLORS.courseDistance,
                     subs: [
-                      { label: '負磅影響', value: bd.cdSub.weightEffect > 0 ? `+${bd.cdSub.weightEffect}` : `${bd.cdSub.weightEffect}` },
-                      { label: '班次估算', value: bd.cdSub.classEstimate },
-                      { label: '場地適應度', value: bd.cdSub.goingAdaptability },
-                      { label: '場地狀況', value: bd.cdSub.goingLabel },
+                      { label: '同程往績（近5戰）', value: `${bd.cdSub.starts} 次` },
+                      { label: '同程勝出', value: `${bd.cdSub.wins} 次` },
+                      { label: '同程前三', value: `${bd.cdSub.top3} 次` },
+                      { label: '同程平均名次', value: bd.cdSub.avgFinish != null ? bd.cdSub.avgFinish.toFixed(1) : '-' },
                     ],
                   },
                   {
@@ -175,12 +185,14 @@ export function HorseDetailDrawer({ horseId, horseName, raceRow, venue, onClose 
                     label: '配備變動', sublabel: 'Gear', score: bd.gearScore, weight: wPct(bd.weights.gear), color: FACTOR_COLORS.gear,
                     subs: [
                       { label: '配備', value: raceRow.gear ?? '無' },
+                      { label: '首次配戴', value: bd.gearScore > 50 ? '有（加分）' : '無變動' },
                     ],
                   },
                   {
                     label: '步速形勢', sublabel: 'Pace', score: bd.paceScore, weight: wPct(bd.weights.pace), color: FACTOR_COLORS.pace,
                     subs: [
-                      { label: '預計步速', value: '中等步速' },
+                      { label: '預計步速', value: paceLabel ?? '中等步速' },
+                      { label: '檔位', value: raceRow.draw != null ? `${raceRow.draw} 檔` : '-' },
                     ],
                   },
                   {
@@ -195,7 +207,7 @@ export function HorseDetailDrawer({ horseId, horseName, raceRow, venue, onClose 
                     <div className="drawer-benter-header">
                       <span className="drawer-benter-icon">&#x1F9EE;</span>
                       <span className="drawer-benter-title">Benter 演算法評分拆解</span>
-                      <span className="drawer-benter-venue-tag">{bd.venueLabel}專用權重</span>
+                      <span className="drawer-benter-venue-tag">{bd.venueLabel}專用權重（9 維度合計 100%）</span>
                     </div>
                     <div className="benter-factors-grid">
                       {factors.map(f => (

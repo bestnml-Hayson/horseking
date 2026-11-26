@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { fetchRaceRunners, fetchPredictions, fetchHorses, fetchRecentForm, fetchHorseRaceHistory } from '@/lib/supabase-client'
+import type { HorseRaceRecord } from '@/lib/supabase-client'
 import type { Race, RaceRunner, ModelPrediction, Horse, RaceRow } from '@/lib/types'
 import { getTopPicks, estimateRaceTime, predictPace, isOddsPending, computeClientPredictions, MODEL_WEIGHT, MARKET_WEIGHT } from '@/lib/race-utils'
 import { PacingBriefing } from './PacingBriefing'
@@ -30,6 +31,7 @@ export function RaceDashboard({ races, allUpData }: RaceDashboardProps) {
   const [drawerHorseId, setDrawerHorseId] = useState<string | null>(null)
   const [drawerHorseName, setDrawerHorseName] = useState<string>('')
   const [drawerRaceRow, setDrawerRaceRow] = useState<RaceRow | null>(null)
+  const [horseHistory, setHorseHistory] = useState<Map<string, HorseRaceRecord[]> | null>(null)
 
   const loadRaceData = useCallback(async (raceId: string) => {
     setLoading(true)
@@ -72,9 +74,10 @@ export function RaceDashboard({ races, allUpData }: RaceDashboardProps) {
       if (raceRows.length > 0) {
         const raceForVenue = races.find(r => r.race_id === raceId)
         const venue = raceForVenue?.venue
-        const horseHistory = await fetchHorseRaceHistory(horseIds)
+        const historyMap = await fetchHorseRaceHistory(horseIds)
+        setHorseHistory(historyMap)
         console.log(`[RaceDashboard] Computing client-side predictions (dynamic weights: ${venue === 'HV' ? 'Happy Valley' : 'Sha Tin'})`)
-        raceRows = computeClientPredictions(raceRows, venue, raceForVenue, horseHistory)
+        raceRows = computeClientPredictions(raceRows, venue, raceForVenue, historyMap)
       }
 
       setRows(raceRows)
@@ -291,6 +294,10 @@ export function RaceDashboard({ races, allUpData }: RaceDashboardProps) {
         horseName={drawerHorseName}
         raceRow={drawerRaceRow}
         venue={selectedRace?.venue}
+        race={selectedRace ?? null}
+        horseHistory={horseHistory}
+        paceLabel={paceInfo.label}
+        totalRunners={rows.length}
         onClose={handleCloseDrawer}
       />
     </div>

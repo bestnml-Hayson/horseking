@@ -20,13 +20,9 @@ const MARKET_GAMMA = 1.3
 // T=8 was the best on the validation slice; T=15 flattened P_model too much.
 const SOFTMAX_TEMPERATURE = 8
 
-// Factors that carry no information on today's inputs — measured mean rank correlation
-// against the real finish order, and the share of races where every runner scores alike:
-//   weight -0.09 (direction is backwards), pace +0.01 (86% constant), gear n/a (100% constant)
-// They stay in the table so the breakdown UI can show them as excluded.
-const DEAD_FACTORS: (keyof RacecourseWeights)[] = ['weight', 'gear', 'pace']
-
-// Dynamic weighting by racecourse — 9 factors total
+// Dynamic weighting by racecourse — all 9 factors are live and each venue's table
+// sums to exactly 1.0. 跑馬地 is draw-dominant (tight circuit), 沙田 is form-dominant
+// (long straights, more ground covered).
 export interface RacecourseWeights {
   form: number
   draw: number
@@ -41,27 +37,17 @@ export interface RacecourseWeights {
 
 const RAW_WEIGHTS: Record<'HV' | 'ST', RacecourseWeights> = {
   HV: {
-    form: 0.18, draw: 0.14, jockeyTrainer: 0.12, weight: 0.08,
-    courseDistance: 0.16, restDays: 0.10, gear: 0.06, pace: 0.08, classMov: 0.08,
+    form: 0.20, draw: 0.18, pace: 0.14, courseDistance: 0.14,
+    jockeyTrainer: 0.12, weight: 0.08, restDays: 0.06, classMov: 0.05, gear: 0.03,
   },
   ST: {
-    form: 0.16, draw: 0.08, jockeyTrainer: 0.14, weight: 0.08,
-    courseDistance: 0.18, restDays: 0.10, gear: 0.06, pace: 0.10, classMov: 0.10,
+    form: 0.22, courseDistance: 0.16, jockeyTrainer: 0.13, draw: 0.12,
+    pace: 0.12, weight: 0.10, restDays: 0.06, classMov: 0.06, gear: 0.03,
   },
 }
 
 export function getWeightsByVenue(venue: string | undefined): RacecourseWeights {
-  const raw = { ...(venue === 'HV' ? RAW_WEIGHTS.HV : RAW_WEIGHTS.ST) }
-  let live = 0
-  for (const k of DEAD_FACTORS) {
-    live += raw[k]
-    raw[k] = 0
-  }
-  const scale = 1 / (1 - live)
-  for (const k of Object.keys(raw) as (keyof RacecourseWeights)[]) {
-    raw[k] = Math.round(raw[k] * scale * 10000) / 10000
-  }
-  return raw
+  return { ...(venue === 'HV' ? RAW_WEIGHTS.HV : RAW_WEIGHTS.ST) }
 }
 
 /** P_MARKET = (1/odds)^GAMMA normalised — takeout and favourite/longshot bias removed. */
@@ -1105,10 +1091,10 @@ export interface JockeyTrainerSubIndices {
 }
 
 export interface CourseDistanceSubIndices {
-  weightEffect: number
-  classEstimate: string
-  goingAdaptability: number
-  goingLabel: string
+  starts: number
+  wins: number
+  top3: number
+  avgFinish: number | null
 }
 
 export interface BenterBreakdown {
@@ -1133,9 +1119,22 @@ export interface BenterBreakdown {
   venueLabel: string
 }
 
-export function computeBenterBreakdown(row: RaceRow, venue?: string): BenterBreakdown {
+export interface BenterBreakdownContext {
+  race?: Race
+  horseHistory?: Map<string, HorseRaceRecord[]>
+  paceLabel?: string
+  totalRunners?: number
+}
+
+export function computeBenterBreakdown(
+  row: RaceRow,
+  venue?: string,
+  ctx: BenterBreakdownContext = {},
+): BenterBreakdown {
   const w = getWeightsByVenue(venue)
-  const form = parseFormHistory(row.form_history)
+  const totalRunners = ctx.totalRunners && ctx.totalRunners > 0 ? ctx.totalRunners : 14
+  const prior = priorStarts(ctx.horseHistory?.get(row.horse_id), ctx.race?.race_date)
+  const form = recentFormPositions(row, prior)
   const draw = row.draw
   const jockeyWr = row.jockey_win_rate ?? 0.1
   const trainerWr = row.trainer_win_rate ?? 0.1
@@ -1143,42 +1142,52 @@ export function computeBenterBreakdown(row: RaceRow, venue?: string): BenterBrea
   const pFinal = row.prediction?.final_prob
 
   const formAvg = form.length > 0 ? form.reduce((s, p) => s + p, 0) / form.length : 10
-  const formScore = Math.round(computeFormScore(row, form))
-  const drawMax = 14
-  const drawScore = draw != null
-    ? Math.max(0, Math.min(100, Math.round((1 - (draw - 1) / drawMax) * 100)))
+  const formScoreRaw = computeFormScore(row, form)
+  const drawMax = Math.max(14, totalRunners)
+  const drawScoreRaw = draw != null
+    ? Math.max(0, Math.min(100, (1 - (draw - 1) / drawMax) * 100))
     : 50
 
-  const jockeyScore = Math.max(0, Math.min(100, Math.round(jockeyWr * 500)))
-  const trainerScore = Math.max(0, Math.min(100, Math.round(trainerWr * 500)))
-  const jockeyTrainerScore = Math.round(jockeyScore * 0.6 + trainerScore * 0.4)
+  const jockeyScore = Math.max(0, Math.min(100, jockeyWr * 500))
+  const trainerScore = Math.max(0, Math.min(100, trainerWr * 500))
+  const jockeyTrainerScoreRaw = jockeyScore * 0.6 + trainerScore * 0.4
 
-  let weightScore = 60
+  let weightScoreRaw = 60
   if (weight != null) {
-    if (weight <= 118) weightScore += 20
-    else if (weight <= 124) weightScore += 10
-    else if (weight >= 132) weightScore -= 15
-    else if (weight >= 128) weightScore -= 5
+    if (weight <= 118) weightScoreRaw += 20
+    else if (weight <= 124) weightScoreRaw += 10
+    else if (weight >= 132) weightScoreRaw -= 15
+    else if (weight >= 128) weightScoreRaw -= 5
   }
-  weightScore = Math.max(0, Math.min(100, weightScore))
+  weightScoreRaw = Math.max(0, Math.min(100, weightScoreRaw))
 
-  const courseDistanceScore = 50
-  const restDaysScore = computeRestDaysScore(row)
-  const gearScore = computeGearScore(row)
-  const paceScore = 50
-  const classMovScore = 50
+  const courseDistanceScoreRaw = computeCourseDistanceScore(row, ctx.race, ctx.horseHistory)
+  const restDaysScoreRaw = computeRestDaysScore(row)
+  const gearScoreRaw = computeGearScore(row)
+  const paceScoreRaw = computePaceScore(row, ctx.paceLabel ?? '中等步速', totalRunners)
+  const classMovScoreRaw = computeClassMovementScore(row, ctx.race, ctx.horseHistory)
 
   const totalScore = Math.round(
-    formScore * w.form +
-    drawScore * w.draw +
-    jockeyTrainerScore * w.jockeyTrainer +
-    weightScore * w.weight +
-    courseDistanceScore * w.courseDistance +
-    restDaysScore * w.restDays +
-    gearScore * w.gear +
-    paceScore * w.pace +
-    classMovScore * w.classMov
+    formScoreRaw * w.form +
+    drawScoreRaw * w.draw +
+    jockeyTrainerScoreRaw * w.jockeyTrainer +
+    weightScoreRaw * w.weight +
+    courseDistanceScoreRaw * w.courseDistance +
+    restDaysScoreRaw * w.restDays +
+    gearScoreRaw * w.gear +
+    paceScoreRaw * w.pace +
+    classMovScoreRaw * w.classMov
   )
+
+  const formScore = Math.round(formScoreRaw)
+  const drawScore = Math.round(drawScoreRaw)
+  const jockeyTrainerScore = Math.round(jockeyTrainerScoreRaw)
+  const weightScore = Math.round(weightScoreRaw)
+  const courseDistanceScore = Math.round(courseDistanceScoreRaw)
+  const restDaysScore = Math.round(restDaysScoreRaw)
+  const gearScore = Math.round(gearScoreRaw)
+  const paceScore = Math.round(paceScoreRaw)
+  const classMovScore = Math.round(classMovScoreRaw)
 
   const venueKey = venue === 'HV' ? 'HV' : 'ST'
   const venueLabel = venue === 'HV' ? '跑馬地' : '沙田'
@@ -1199,8 +1208,7 @@ export function computeBenterBreakdown(row: RaceRow, venue?: string): BenterBrea
 
   // Draw sub-indices
   const drawBiasCoeff = draw != null ? Math.round((1 - (draw - 1) / drawMax) * 100) / 100 : 0.5
-  const totalRunnersEst = 12
-  const innerRatio = draw != null ? (draw - 1) / Math.min(totalRunnersEst - 1, drawMax - 1) : 0.5
+  const innerRatio = draw != null ? (draw - 1) / Math.max(1, Math.min(totalRunners - 1, drawMax - 1)) : 0.5
   const trackBiasIndex = draw != null ? Math.round((1 - innerRatio * 0.6) * 100) / 100 : 0.7
   const drawAdvantage: '內檔有利' | '中檔中性' | '外檔不利' =
     draw != null && draw <= 5 ? '內檔有利' : draw != null && draw >= 10 ? '外檔不利' : '中檔中性'
@@ -1220,25 +1228,17 @@ export function computeBenterBreakdown(row: RaceRow, venue?: string): BenterBrea
     trainerLabel: row.trainer ?? '-',
   }
 
-  // Course/Distance sub-indices
-  let weightEffect = 0
-  if (weight != null) {
-    if (weight <= 118) weightEffect = 20
-    else if (weight <= 124) weightEffect = 10
-    else if (weight <= 128) weightEffect = 0
-    else if (weight <= 132) weightEffect = -10
-    else weightEffect = -20
-  }
-  const goingAdaptability = 70
-  const goingLabel = '好地 (標準)'
-  const classEstimate = weight != null
-    ? weight >= 130 ? '高班' : weight >= 122 ? '中班' : '低班'
-    : '未知'
+  // Course/Distance sub-indices — same recent-5 same-course window the score uses
+  const sameCourse = ctx.race?.venue && ctx.race?.distance
+    ? prior.filter(h => h.venue === ctx.race!.venue && h.distance === ctx.race!.distance).slice(0, 5)
+    : []
   const cdSub: CourseDistanceSubIndices = {
-    weightEffect,
-    classEstimate,
-    goingAdaptability,
-    goingLabel,
+    starts: sameCourse.length,
+    wins: sameCourse.filter(h => h.finish_position === 1).length,
+    top3: sameCourse.filter(h => h.finish_position <= 3).length,
+    avgFinish: sameCourse.length > 0
+      ? Math.round((sameCourse.reduce((s, h) => s + h.finish_position, 0) / sameCourse.length) * 10) / 10
+      : null,
   }
 
   const summary = generateBenterSummary(row, formScore, drawScore, jockeyTrainerScore, courseDistanceScore, totalScore)

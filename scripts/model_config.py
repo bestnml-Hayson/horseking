@@ -6,8 +6,7 @@ copy, which is how the client and the post-race review drifted apart.
 
 Calibrated on 2026-02..2026-11 results (fit Feb-Aug, validate Sep-Nov): P_model alone
 ranks worse than the price (NLL 2.34 vs 2.11), so the market anchors and the model is a
-value tilt. weight/pace/gear carry no information on today's inputs (rank corr -0.09 /
-+0.01 / n-a, and 86-100% of races score every runner identically) so they are excluded.
+value tilt. All 9 factors are live; each venue's weight table sums to exactly 1.0.
 """
 
 MODEL_WEIGHT = 0.2
@@ -15,26 +14,21 @@ MARKET_WEIGHT = 0.8
 SOFTMAX_TEMPERATURE = 8
 MARKET_GAMMA = 1.3
 
-DEAD_FACTORS = ('weight', 'gear', 'pace')
-
+# 跑馬地 draw-dominant (tight circuit), 沙田 form-dominant (long straights).
 RAW_WEIGHTS_ST = {
-    'form': 0.16, 'draw': 0.08, 'jockeyTrainer': 0.14, 'weight': 0.08,
-    'courseDistance': 0.18, 'restDays': 0.10, 'gear': 0.06, 'pace': 0.10, 'classMov': 0.10,
+    'form': 0.22, 'courseDistance': 0.16, 'jockeyTrainer': 0.13, 'draw': 0.12,
+    'pace': 0.12, 'weight': 0.10, 'restDays': 0.06, 'classMov': 0.06, 'gear': 0.03,
 }
 RAW_WEIGHTS_HV = {
-    'form': 0.18, 'draw': 0.14, 'jockeyTrainer': 0.12, 'weight': 0.08,
-    'courseDistance': 0.16, 'restDays': 0.10, 'gear': 0.06, 'pace': 0.08, 'classMov': 0.08,
+    'form': 0.20, 'draw': 0.18, 'pace': 0.14, 'courseDistance': 0.14,
+    'jockeyTrainer': 0.12, 'weight': 0.08, 'restDays': 0.06, 'classMov': 0.05, 'gear': 0.03,
 }
 
 
 def weights_for(venue):
-    """Venue weights with the dead factors removed and the rest re-normalised to 1."""
+    """Venue weights — all 9 factors live, each table sums to exactly 1.0."""
     raw = dict(RAW_WEIGHTS_HV if venue == 'HV' else RAW_WEIGHTS_ST)
-    dead = sum(raw[k] for k in DEAD_FACTORS)
-    scale = 1.0 / (1.0 - dead)
-    for k in DEAD_FACTORS:
-        raw[k] = 0.0
-    return {k: round(v * scale, 4) for k, v in raw.items()}
+    return {k: round(v, 4) for k, v in raw.items()}
 
 
 def market_probabilities(odds):
