@@ -155,6 +155,27 @@ def _compute_pace_score(row: Dict, pace_label: str, total_runners: int) -> float
     return max(0, min(100, score))
 
 
+_CN_CLASS = {'一': 1, '二': 2, '三': 3, '四': 4, '五': 5, '六': 6, '七': 7}
+
+
+def class_level_order(value: Optional[str]) -> Optional[int]:
+    """第四班 / Class 4 / 4班 → 4. 新馬賽 and 級稱賽 have no class number → None,
+    which must never fall back to a numeric class (it used to, silently poisoning
+    the class-movement factor for every Chinese-labelled race)."""
+    s = value or ''
+    m = re.search(r'第([一二三四五六七])班', s)
+    if m:
+        return _CN_CLASS[m.group(1)]
+    m = re.search(r'(?:Class|class)\s*([1-7])', s) or re.search(r'([1-7])\s*班', s)
+    if m:
+        return int(m.group(1))
+    if '新馬' in s:
+        return None
+    if re.search(r'[一二三四五]級', s):
+        return 1
+    return None
+
+
 def _compute_class_movement_score(row: Dict, race_class: Optional[str],
                                   horse_history: Dict[str, List[Dict]]) -> float:
     if not race_class or not horse_history:
@@ -166,12 +187,10 @@ def _compute_class_movement_score(row: Dict, race_class: Optional[str],
     if not recent_class:
         return 50
 
-    def class_order(c: str) -> int:
-        m = re.search(r'(\d+)', c)
-        return int(m.group(1)) if m else 5
-
-    current = class_order(race_class)
-    prev = class_order(recent_class)
+    current = class_level_order(race_class)
+    prev = class_level_order(recent_class)
+    if current is None or prev is None:
+        return 50
     diff = prev - current
     if diff > 0:
         return min(100, 65 + diff * 10)
@@ -188,8 +207,14 @@ def _compute_total_score(row: Dict, total_runners: int, venue: Optional[str],
     w = weights_for(venue)
 
     form = _parse_form_history(row.get('form_history'))
-    form_avg = sum(form) / len(form) if form else 10
-    form_score = max(0, min(100, (1 - (form_avg - 1) / 13) * 100))
+    if form:
+        form_avg = sum(form) / len(form)
+        form_score = max(0, min(100, (1 - (form_avg - 1) / 13) * 100))
+    else:
+        # No recorded finishes for this horse: use the scraped index rather than
+        # collapsing every such horse onto the same constant score.
+        form_score = row.get('recent_form_score')
+        form_score = 50 if form_score is None else max(0, min(100, form_score))
 
     draw = row.get('draw')
     draw_max = max(14, total_runners)

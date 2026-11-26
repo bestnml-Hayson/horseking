@@ -128,15 +128,14 @@ def scrape_results_page(page, date_str: str, venue: str, race_no: int) -> Option
 
 
 def extract_race_class(title_text: str, page_text: str = "") -> Optional[str]:
-    """Extract race class from title or page text."""
-    class_map = {
-        '第一班': 'Class 1', '第二班': 'Class 2', '第三班': 'Class 3',
-        '第四班': 'Class 4', '第五班': 'Class 5',
-        '國際一級賽': 'Group 1', '國際二級賽': 'Group 2', '國際三級賽': 'Group 3',
-    }
-    for cn, en in class_map.items():
-        if cn in title_text or cn in page_text:
-            return en
+    """Extract race class. Keep HKJC's own 第N班 wording — the racecard scraper
+    writes that form, and mixing 'Class 4' rows into the same column used to make
+    the class-movement factor unreadable."""
+    labels = ('第一班', '第二班', '第三班', '第四班', '第五班',
+              '國際一級賽', '國際二級賽', '國際三級賽', '新馬賽')
+    for label in labels:
+        if label in title_text or label in page_text:
+            return label
     return None
 
 

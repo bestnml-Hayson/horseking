@@ -187,8 +187,38 @@ function computePaceScore(
 }
 
 /**
- * Compute class movement score (0-100).
- * Dropping in class = bonus, rising in class = penalty.
+ * Form sub-score (0-100). Parsed form_history first; when a horse has no recent
+ * finishes recorded (23% of meetings) fall back to the scraped recent_form_score
+ * instead of collapsing the whole field onto the same constant.
+ */
+export function computeFormScore(row: RaceRow, form: number[]): number {
+  if (form.length > 0) {
+    const avg = form.reduce((s, p) => s + p, 0) / form.length
+    return Math.max(0, Math.min(100, (1 - (avg - 1) / 13) * 100))
+  }
+  return row.recent_form_score ?? 50
+}
+
+/**
+ * HKJC class_level appears as 第四班 (scraper) or Class 4 (older backfill rows),
+ * and Group/新馬 races carry no class number at all. 1 = top class … 5 = lowest;
+ * null means "not a numbered class", which must NOT be silently treated as 5.
+ */
+export function classLevelOrder(value: string | null | undefined): number | null {
+  const s = value ?? ''
+  const cn = s.match(/第([一二三四五六七])班/)
+  if (cn) return '一二三四五六七'.indexOf(cn[1]) + 1
+  const en = s.match(/(?:Class|class)\s*([1-7])/) || s.match(/([1-7])\s*班/)
+  if (en) return parseInt(en[1], 10)
+  if (/新馬/.test(s)) return null
+  if (/[一二三四五]級/.test(s)) return 1
+  return null
+}
+
+/**
+ * Compute class movement score (0-100). Class numbering runs 1=top … 5=lowest, so
+ * `prev - current > 0` means the horse last ran in a harder race. That direction is
+ * what the ablation measured as useful (ρ +0.10 out-of-sample), so it stays as is.
  */
 function computeClassMovementScore(
   row: RaceRow,
@@ -203,13 +233,9 @@ function computeClassMovementScore(
   const recentClass = history[0]?.class_level
   if (!recentClass) return 50
 
-  const classOrder = (c: string): number => {
-    const m = c.match(/(\d+)/)
-    return m ? parseInt(m[1], 10) : 5
-  }
-
-  const currentClass = classOrder(race.class_level)
-  const prevClass = classOrder(recentClass)
+  const currentClass = classLevelOrder(race.class_level)
+  const prevClass = classLevelOrder(recentClass)
+  if (currentClass == null || prevClass == null) return 50
   const diff = prevClass - currentClass
 
   if (diff > 0) return Math.min(100, 65 + diff * 10)
@@ -236,9 +262,7 @@ function computeTotalScore(
   const trainerWr = row.trainer_win_rate ?? 0.1
   const weight = row.actual_weight
 
-  const formAvg = form.length > 0 ? form.reduce((s, p) => s + p, 0) / form.length : 10
-  const formScore = Math.max(0, Math.min(100, (1 - (formAvg - 1) / 13) * 100))
-
+  const formScore = computeFormScore(row, form)
   const drawMax = Math.max(14, totalRunners)
   const drawScore = draw != null
     ? Math.max(0, Math.min(100, (1 - (draw - 1) / drawMax) * 100))
@@ -1093,8 +1117,7 @@ export function computeBenterBreakdown(row: RaceRow, venue?: string): BenterBrea
   const pFinal = row.prediction?.final_prob
 
   const formAvg = form.length > 0 ? form.reduce((s, p) => s + p, 0) / form.length : 10
-  const formScore = Math.max(0, Math.min(100, Math.round((1 - (formAvg - 1) / 13) * 100)))
-
+  const formScore = Math.round(computeFormScore(row, form))
   const drawMax = 14
   const drawScore = draw != null
     ? Math.max(0, Math.min(100, Math.round((1 - (draw - 1) / drawMax) * 100)))
