@@ -35,5 +35,10 @@
 | 項目 | 設定 | 說明 | Commit |
 |---|---|---|---|
 | `odds_snapshots` 收集 | 每個 tick 寫入，`source='pre-race'` | 表未建立時寫 `pipeline_status.odds_snapshots`，保留 120 日 | `80cc424`、`2bf3460` |
-| 完整場次門檻 | `complete_pre_race_races = X/50` | 四個 bucket（open/60m/15m/close）齊全才計；進度寫 `pipeline_status.odds_snapshot_progress` | `2bf3460` |
+| 完整場次門檻 | `complete_pre_race_races = X/50` | 四個 bucket（open/60m/15m/close）齊＋odds > 1＋available_at 可解析才計；進度寫 `pipeline_status.odds_snapshot_progress` | `2bf3460` |
+| 每日進度 log | tick＋每日 cleanup | `[Snapshot] complete_pre_race_races = X/50 ...`；格式見 `docs/MONITORING.md` | — |
+| 每日完整度報表 | 每日 05:00 HKT（daily cleanup） | `reports/odds_snapshot_completeness_<date>.md`；摘要寫 `pipeline_status.odds_snapshot_report` | — |
+| 每週完整度週報 | `odds_snapshot_report.py --weekly` | 缺 bucket 頻率、`bucket_offset_sec`、HV/ST 差異；長期缺 → 放寬定義（需記錄）或修 scraper | — |
+| 每月數據審計 | `monthly_data_audit.py` | fallback raw/gzip 體積、shadow sparse 次數、3 個月 escalation 時鐘 | — |
+| 報表欄位（凍結） | 9 欄 | `race_id, race_date, venue, n_runners, n_horses_with_4_buckets, odds_nonnull_rate, available_at_complete_rate, bucket_offset_sec, missing_reason` | — |
 | 時間加權融合 | 未開啟 | ≥50 場完整快照後才討論 | — |

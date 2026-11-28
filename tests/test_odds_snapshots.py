@@ -178,9 +178,17 @@ def test_table_writer_is_idempotent_for_same_capture():
     O.reset_table_cache()
 
 
-def _state_with_buckets(buckets):
-    rows = {f"h1|{b}|2026-12-02T15:00:00+08:00": {'snapshot_type': b}
-            for b in buckets}
+def _state_with_buckets(buckets, odds=3.0, available_at='2026-12-02T15:00:00+08:00'):
+    rows = {}
+    for b in buckets:
+        rows[f"h1|{b}|{available_at}"] = {
+            'race_id': 'ST-20261202-01',
+            'horse_id': 'h1',
+            'odds': odds,
+            'available_at': available_at,
+            'source': 'pre-race',
+            'snapshot_type': b,
+        }
     return {'races': {'ST-20261202-01': {'race_date': '2026-12-02', 'rows': rows}}}
 
 
@@ -194,6 +202,24 @@ def test_progress_counts_only_four_bucket_races():
     progress = O.snapshot_progress(sb)
     assert progress['complete_pre_race_races'] == 0
     assert progress['total_races'] == 1
+    assert progress['partial_races'] == 1
+    assert progress['missing_reason_counts'] == {'缺 close': 1}
+
+
+def test_progress_ignores_rows_without_usable_price_or_capture_time():
+    O.reset_table_cache()
+    sb = _SB(fail_table=True)
+    sb.state = _state_with_buckets(['open', '60m', '15m'], odds=2.0)
+    late = _state_with_buckets(['close'], odds=0.0)
+    sb.state['races']['ST-20261202-01']['rows'].update(late['races']['ST-20261202-01']['rows'])
+    progress = O.snapshot_progress(sb)
+    assert progress['complete_pre_race_races'] == 0
+    assert progress['missing_reason_counts'] == {'缺 close': 1}
+
+    sb.state = _state_with_buckets(['open', '60m', '15m', 'close'], available_at='')
+    progress = O.snapshot_progress(sb)
+    assert progress['complete_pre_race_races'] == 0
+    assert progress['missing_reason_counts'] == {'缺 open/60m/15m/close': 1}
 
 
 def test_log_progress_prints_and_persists():

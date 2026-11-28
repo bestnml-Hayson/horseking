@@ -17,6 +17,7 @@ reached before the migration lands.
 import json
 import os
 import sys
+from collections import Counter
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
@@ -193,27 +194,63 @@ def fetch_snapshot_rows(supabase):
     return rows, 'pipeline_status'
 
 
+def _valid_row(row):
+    """A price counts only when odds > 1 and the capture time is recorded."""
+    try:
+        odds = float(row.get('odds') or 0)
+    except (TypeError, ValueError):
+        return False
+    return odds > 1.0 and bool(row.get('available_at'))
+
+
 def snapshot_progress(supabase):
-    """Count races with all four buckets present (the 50-race gate)."""
+    """Count races with all four buckets of valid prices (the 50-race gate)."""
     rows, store = fetch_snapshot_rows(supabase)
     by_race = {}
     for row in rows:
-        by_race.setdefault(row.get('race_id'), set()).add(row.get('snapshot_type'))
-    complete = sum(1 for buckets in by_race.values() if set(BUCKETS) <= buckets)
-    return {
+        entry = by_race.setdefault(row.get('race_id'), {'valid': set()})
+        bucket = row.get('snapshot_type')
+        if bucket in BUCKETS and _valid_row(row):
+            entry['valid'].add(bucket)
+
+    complete = 0
+    missing_counts = Counter()
+    for entry in by_race.values():
+        missing = [b for b in BUCKETS if b not in entry['valid']]
+        if missing:
+            missing_counts['缺 ' + '/'.join(missing)] += 1
+        else:
+            complete += 1
+
+    progress = {
         'complete_pre_race_races': complete,
+        'partial_races': len(by_race) - complete,
         'total_races': len(by_race),
+        'missing_reason_counts': dict(missing_counts),
         'target': TARGET_COMPLETE_RACES,
         'store': store,
     }
+    if store == 'pipeline_status':
+        try:
+            progress['fallback_json_bytes'] = len(
+                json.dumps(_load_state(supabase)).encode('utf-8'))
+        except Exception:
+            progress['fallback_json_bytes'] = None
+    return progress
 
 
 def log_progress(supabase, out=print):
     """Print and persist the daily X/50 progress line."""
     progress = snapshot_progress(supabase)
+    missing = ', '.join(f"{k}: {v}"
+                        for k, v in sorted(progress['missing_reason_counts'].items()))
+    size = progress.get('fallback_json_bytes')
+    size_txt = 'n/a' if size is None else f'{size / 1024:.1f} KB'
     out(f"[Snapshot] complete_pre_race_races = "
         f"{progress['complete_pre_race_races']}/{TARGET_COMPLETE_RACES} "
-        f"(tracked races: {progress['total_races']}, store: {progress['store']})")
+        f"| partial={progress['partial_races']} "
+        f"| missing={{{missing or 'none'}}} "
+        f"| store={progress['store']} | fallback={size_txt}")
     now = datetime.now(HKT)
     try:
         retry_supabase(lambda: supabase.table('pipeline_status').upsert({

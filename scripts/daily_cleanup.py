@@ -221,9 +221,24 @@ def main():
         integrity = verify_data_integrity(supabase)
         try:
             from odds_snapshots import log_progress
-            log_progress(supabase)
+            progress = log_progress(supabase)
         except Exception as e:
+            progress = None
             print(f"  [WARN] odds snapshot progress failed: {e}")
+        try:
+            from odds_snapshot_report import generate_report
+            path, _, _ = generate_report(supabase)
+            print(f"  [OK] Snapshot completeness report -> {path}")
+            summary_path = os.environ.get('GITHUB_STEP_SUMMARY')
+            if progress and summary_path:
+                with open(summary_path, 'a', encoding='utf-8') as fh:
+                    fh.write(
+                        f"- Snapshot gate: {progress['complete_pre_race_races']}"
+                        f"/{progress['target']} complete, "
+                        f"{progress['partial_races']} partial, "
+                        f"store={progress['store']}\n")
+        except Exception as e:
+            print(f"  [WARN] snapshot completeness report failed: {e}")
     except Exception as e:
         print(f"\n[SAFE EXIT] Cleanup error caught: {e}")
         print("[SAFE EXIT] Exiting gracefully (code 0)")
