@@ -284,6 +284,11 @@ def inject_odds_for_upcoming_races(supabase, dry_run: bool = False):
                             'win_odds': float(price),
                         } for no, price in spread.items() if price and price > 1.0]
                         record_drift(supabase, race['race_id'], date_str, snapshot)
+                    try:
+                        from shadow_predictions import record_shadow_predictions
+                        record_shadow_predictions(supabase, date_str, venue, race_nos)
+                    except Exception as e:
+                        print(f"    [WARN] shadow record failed: {e}")
                 else:
                     print(f"  [WARN] {date_str} {venue}: no odds written")
             else:

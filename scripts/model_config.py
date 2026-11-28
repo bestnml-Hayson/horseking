@@ -21,8 +21,8 @@ CONFIG_PATH = os.path.join(os.path.dirname(__file__), '..', 'config', 'model_pro
 
 _FEATURE_KEYS = ('form_shrink', 'rating_blend', 'draw_field_size', 'run_style_pace',
                  'extreme_odds_alpha', 'calibration')
-_EXPERIMENT_KEYS = ('segmented_gamma', 'platt', 'availability_renorm',
-                    'timing_fusion', 'extreme_favourite_guard', 'dual_probability',
+_EXPERIMENT_KEYS = ('segmented_gamma', 'platt', 'avail_aware', 'availability_gate',
+                    'draw_v2', 'timing_fusion', 'extreme_favourite_guard', 'dual_probability',
                     'st1000_draw_reversal', 'speed_engine', 'finish_time_margin')
 _CALIBRATION_METHODS = ('none', 'temperature', 'platt', 'isotonic')
 _ODDS_SOURCES = ('sp', 'labeled', 'pre_race')
@@ -274,9 +274,15 @@ def _validate_profile(profile):
                 errors.append('experiments.extreme_favourite_guard.threshold must be in [1, 10]')
             if not isinstance(value.get('max_model_weight'), (int, float)) or not 0 <= value['max_model_weight'] <= 1:
                 errors.append('experiments.extreme_favourite_guard.max_model_weight must be in [0, 1]')
-        if key == 'availability_renorm':
+        if key == 'avail_aware':
             if not isinstance(value.get('min_coverage'), (int, float)) or not 0 <= value['min_coverage'] <= 1:
-                errors.append('experiments.availability_renorm.min_coverage must be in [0, 1]')
+                errors.append('experiments.avail_aware.min_coverage must be in [0, 1]')
+        if key == 'availability_gate':
+            if not isinstance(value.get('min_coverage'), (int, float)) or not 0 <= value['min_coverage'] <= 1:
+                errors.append('experiments.availability_gate.min_coverage must be in [0, 1]')
+            if (not isinstance(value.get('sparse_market_weight'), (int, float))
+                    or not 0 <= value['sparse_market_weight'] <= 1):
+                errors.append('experiments.availability_gate.sparse_market_weight must be in [0, 1]')
         if key == 'st1000_draw_reversal':
             if not isinstance(value.get('draw_k'), (int, float)) or not -1 <= value['draw_k'] <= 1:
                 errors.append('experiments.st1000_draw_reversal.draw_k must be in [-1, 1]')

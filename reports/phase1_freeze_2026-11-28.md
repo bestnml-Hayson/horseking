@@ -45,7 +45,9 @@
 |---|---|---|---|
 | `segmented_gamma` | 賠率分段 γ | Phase 1 凍結診斷 | off，不排 A/B |
 | `platt` | window 150–300 | Phase 1 凍結診斷 | off，不排 A/B |
-| `availability_renorm` | min_coverage 0.8 | Phase 2 avail_aware（因子權重按可用性 renormalise）→ P1 改名 `avail_aware` | off，shadow（P1） |
+| `avail_aware` | min_coverage 0.8 | Phase 2：缺值因子權重剔除後 renormalise；隔離回測未通過（見下節） | off，shadow（P1） |
+| `availability_gate` | min_coverage 0.8、sparse_market_weight 0.0 | Phase 1：有效賠率覆蓋 <80% → 市場權重 0（P_final=P_model） | off，shadow（P1） |
+| `draw_v2` | — | Phase 2：draw v2 已上線（factors.draw_k + features.draw_field_size），shadow 係身份檢查 | off，shadow（P1） |
 | `timing_fusion` | no-odds wm=0、min_coverage 0.8、far/near wm | 時間加權融合（今次**唔開**，等真實 pre-race 賠率） | off，等 ≥50 場 |
 | `extreme_favourite_guard` | 1.6 / cap 0.5 | 極端熱門保護 | off |
 | `dual_probability` | — | 主/值博雙概率 | off |
@@ -57,22 +59,48 @@ P1/P2 新增 flag（同為 default off，獨立 commit 落地）：
 
 - `availability_gate`：今場有效賠率覆蓋 <80% → 市場權重 = 0（P_final=P_model）；shadow 只記錄，不動 live。
 - `draw_v2`：現行 draw_v2 已是 live 預設，Phase 2 的 shadow 係一致性檢查（預期 Δ≈0），會如實記錄。
-- `avail_aware`：由 `availability_renorm` 改名，shadow 記錄。
+- `avail_aware`：由 `availability_renorm` 改名，shadow 記錄；隔離回測未通過，只作前瞻量度。
+
+## Phase 2 隔離修正（2026-11-28）
+
+Commit B 原本的 `avail_aware` 列（ΔNLL −0.03449）係「deployed 因子＋renorm」對「pre2 因子」，基線唔對等，數字混入咗已上線的 form shrinkage／rating blend／draw v2 增益。已修正為同一因子集上只切換 renormalisation，並重跑 honest 報告：
+
+| 比較 | ΔNLL | 95% CI | 改善折 | 結論 |
+|---|---|---|---|---|
+| `avail_aware`（pre2 基線，隔離） | +0.00283 | −0.00211 ~ +0.00933 | 3/5 | **未通過**，唔當已驗證 |
+| `avail_aware_on_combined`（deployed 基線，隔離） | +0.00168 | −0.00278 ~ +0.00774 | 2/5 | **未通過** |
+| `avail_aware_stack`（舊比較，只作審計） | −0.03449 | −0.07075 ~ −0.00381 | 5/5 | 混入已上線增益，不可引用 |
+| `draw_v2` | −0.01916 | −0.02812 ~ −0.01014 | 5/5 | **通過**（已上線，shadow 為身份檢查） |
+
+因此 Phase 2 只有 `draw_v2` 達採納門檻；`avail_aware` 維持 default off 的 shadow flag，用嚟喺未來真實賽前賠率場次累積證據。
 
 ## Shadow 輸出格式（P1 實作規格，凍結）
 
-寫入 `pipeline_status` 嘅 JSON key `shadow_predictions`（沿用現有 no-DDL 後備方案），每場一筆：
+由 tick 的賠率注入步驟自動寫入（`auto_pilot.inject_missing_odds`），亦可手動執行 `python scripts/shadow_predictions.py --date YYYY-MM-DD --venue ST`。寫入 `pipeline_status`（id=`shadow_predictions`）嘅 JSON，每場一筆、每 tick 覆寫最新版本，保留 7 日：
 
 ```json
 {
-  "race_id": "2026-12-02-ST-1",
+  "race_no": 1,
+  "race_date": "2026-12-02",
   "generated_at": "2026-12-02T18:05:00+08:00",
   "profile": "current_v586",
-  "live":    {"<runner_id>": {"p_final": 0.1234}},
-  "shadow":  {"availability_gate": {"<runner_id>": {"p_final": 0.1301, "gate": "covered"}},
-              "draw_v2":          {"<runner_id>": {"p_final": 0.1234}},
-              "avail_aware":      {"<runner_id>": {"p_final": 0.1250, "coverage": 0.875}}},
-  "meta": {"odds_coverage": 1.0, "runners": 14}
+  "meta": {"runners": 14, "covered": 14, "total": 14, "odds_coverage": 1.0},
+  "flags": {"availability_gate": false, "draw_v2": false, "avail_aware": false},
+  "live": {"<runner_id>": {"p_model": 0.1123, "p_final": 0.1234}},
+  "shadow": {
+    "availability_gate": {
+      "meta": {"gate": "covered", "coverage": 1.0, "min_coverage": 0.8, "market_weight": null},
+      "runners": {"<runner_id>": {"p_final": 0.1234}}
+    },
+    "draw_v2": {
+      "meta": {"status": "already_live"},
+      "runners": {"<runner_id>": {"p_final": 0.1234}}
+    },
+    "avail_aware": {
+      "meta": {"gate": "always", "min_coverage": 0.8},
+      "runners": {"<runner_id>": {"p_final": 0.1250, "used_weight": 0.8333, "missing": ["pace"]}}
+    }
+  }
 }
 ```
 
@@ -81,6 +109,7 @@ P1/P2 新增 flag（同為 default off，獨立 commit 落地）：
 - shadow 只寫 `pipeline_status`，**唔會**寫入 `model_predictions.final_prob`，live P_final 不變。
 - 前端/投注引擎唔讀 shadow key；回滾 = 刪 flag 或刪 key，即時生效。
 - 歷史賽事 SP 覆蓋 ≈100%，所以 availability gate 嘅 shadow 變異數接近 0；真正評估要等未來出現缺賠率／賽前快照嘅場次。
+- `draw_v2` shadow 同 live 完全相同（已上線），屬身份檢查；`avail_aware` 一律套用重正規化（同回測變體一致），`min_coverage` 只記錄、暫不設門檻。
 
 ## odds_snapshots 遷移（P2 規格，凍結）
 

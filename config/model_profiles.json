@@ -85,7 +85,9 @@
       "experiments": {
         "segmented_gamma": { "enabled": false },
         "platt": { "enabled": false, "window_min": 0, "window_max": 0 },
-        "availability_renorm": { "enabled": false, "min_coverage": 0.8 },
+        "avail_aware": { "enabled": false, "min_coverage": 0.8 },
+        "availability_gate": { "enabled": false, "min_coverage": 0.8, "sparse_market_weight": 0.0 },
+        "draw_v2": { "enabled": false },
         "timing_fusion": {
           "enabled": false,
           "no_odds_market_weight": 0.0,
@@ -176,7 +178,9 @@
       "experiments": {
         "segmented_gamma": { "enabled": false },
         "platt": { "enabled": false, "window_min": 150, "window_max": 300 },
-        "availability_renorm": { "enabled": false, "min_coverage": 0.8 },
+        "avail_aware": { "enabled": false, "min_coverage": 0.8 },
+        "availability_gate": { "enabled": false, "min_coverage": 0.8, "sparse_market_weight": 0.0 },
+        "draw_v2": { "enabled": false },
         "timing_fusion": {
           "enabled": false,
           "no_odds_market_weight": 0.0,
@@ -225,11 +229,25 @@
         "platt": { "enabled": true }
       }
     },
-    "exp_availability_renorm": {
-      "description": "Phase 1 flag (off by default): drop the weights of factors whose inputs are missing and renormalise. Measured worse OOS (+0.022 NLL) as availability_renorm in the Phase-2 ablation; kept behind a flag so it can be re-tested.",
+    "exp_avail_aware": {
+      "description": "Phase 2 shadow flag (off by default): drop the weights of factors whose inputs are missing and renormalise. Isolated honest re-test on the pre-Phase-2 baseline: +0.0028 NLL (CI -0.0021..+0.0093, 3/5 folds), so NOT validated; kept for forward shadow measurement only.",
       "extends": "current_v586",
       "experiments": {
-        "availability_renorm": { "enabled": true }
+        "avail_aware": { "enabled": true }
+      }
+    },
+    "exp_availability_gate": {
+      "description": "Phase 1 shadow flag (off by default): when valid win-odds coverage for the race is below 80%, set the market weight to 0 so P_final = P_model. Historical data is ~100% SP coverage, so the rule has no historical variance; shadow records accumulate on future races with missing odds or genuine pre-race snapshots.",
+      "extends": "current_v586",
+      "experiments": {
+        "availability_gate": { "enabled": true }
+      }
+    },
+    "exp_draw_v2": {
+      "description": "Phase 2 shadow flag (off by default): draw score v2 is already deployed via factors.draw_k and features.draw_field_size, so enabling this flag is an identity check that the live formula still matches the validated one; the shadow column should equal live.",
+      "extends": "current_v586",
+      "experiments": {
+        "draw_v2": { "enabled": true }
       }
     },
     "exp_timing_fusion": {
