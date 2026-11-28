@@ -283,7 +283,8 @@ def factor_availability(row: Dict, total_runners: int,
                         race_date: Optional[str] = None) -> Dict[str, bool]:
     """Which factor inputs actually exist for this runner. Used to report data
     coverage and to show 待定 in the UI; scoring keeps its neutral-50 fallback
-    because dropping and renormalising the weights measured worse OOS (+0.022 NLL)."""
+    because dropping and renormalising the weights is not validated (honest
+    isolated re-test: +0.0028 NLL, 95% CI -0.0021..+0.0093, 3/5 folds)."""
     prior = _prior_starts(horse_history.get(row.get('horse_id', ''), []), race_date)
     return {
         'form': bool(_recent_form_positions(row, prior)) or row.get('recent_form_score') is not None,

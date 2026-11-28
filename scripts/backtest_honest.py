@@ -757,24 +757,36 @@ def phase2(full_samples, subset_samples, active_tables):
             'folds': fold_improvements(blocks, sample_by_id, base_probs, var_probs),
         }
 
-    avail_covered, avail_base, avail_var = [], {}, {}
+    # availability-aware renormalisation must be compared on identical factors:
+    # 'avail_aware' toggles only the renormalisation on the pre-Phase-2 baseline,
+    # 'avail_aware_on_combined' toggles it on the deployed factor set, and the
+    # '_stack' row (deployed+renorm vs pre2) is an audit trail only - it mixes in
+    # the already-deployed form/rating/draw gains and must not be read as renorm value.
+    avail_covered = []
+    avail_bases = {'avail_aware': {}, 'avail_aware_on_combined': {}, 'avail_aware_stack': {}}
+    avail_vars = {'avail_aware': {}, 'avail_aware_on_combined': {}, 'avail_aware_stack': {}}
     for s in test_ids:
-        s = dict(s)
-        s['weights'] = table_for(s)
-        base_probs = pre2[s['race_id']]
-        var = B.avail_p_model(s)
-        avail_covered.append(s)
-        avail_base[s['race_id']] = base_probs
-        avail_var[s['race_id']] = var
-    avail_base_rows = race_rows(avail_covered, avail_base)
-    avail_var_rows = race_rows(avail_covered, avail_var)
-    avail_delta, avail_ci = paired_delta(avail_var_rows, avail_base_rows)
-    out['ablations']['avail_aware'] = {
-        'races': len(avail_covered), 'baseline': summarize(avail_base_rows),
-        'variant': summarize(avail_var_rows),
-        'delta_nll': avail_delta, 'delta_ci': avail_ci,
-        'folds': fold_improvements(blocks, sample_by_id, avail_base, avail_var),
-    }
+        ss = dict(s)
+        ss['weights'] = table_for(s)
+        pre2_factors = B.pre_phase2_factors(ss)
+        avail_covered.append(ss)
+        avail_bases['avail_aware'][ss['race_id']] = pre2[ss['race_id']]
+        avail_vars['avail_aware'][ss['race_id']] = B.avail_p_model(ss, pre2_factors)
+        avail_bases['avail_aware_on_combined'][ss['race_id']] = combined[ss['race_id']]
+        avail_vars['avail_aware_on_combined'][ss['race_id']] = B.avail_p_model(ss, ss['factors'])
+        avail_bases['avail_aware_stack'][ss['race_id']] = pre2[ss['race_id']]
+        avail_vars['avail_aware_stack'][ss['race_id']] = B.avail_p_model(ss, ss['factors'])
+    for name in avail_bases:
+        avail_base_rows = race_rows(avail_covered, avail_bases[name])
+        avail_var_rows = race_rows(avail_covered, avail_vars[name])
+        avail_delta, avail_ci = paired_delta(avail_var_rows, avail_base_rows)
+        out['ablations'][name] = {
+            'races': len(avail_covered), 'baseline': summarize(avail_base_rows),
+            'variant': summarize(avail_var_rows),
+            'delta_nll': avail_delta, 'delta_ci': avail_ci,
+            'folds': fold_improvements(blocks, sample_by_id,
+                                       avail_bases[name], avail_vars[name]),
+        }
 
     combined_rows = race_rows(test_ids, combined)
     pre2_rows = race_rows(test_ids, pre2)
@@ -1044,6 +1056,11 @@ def build_report(payload):
                 f'{pct(d["baseline"]["top1"])} | {pct(d["variant"]["top1"])} | '
                 f'{fo.get("improved", "-")}/{fo.get("folds", "-")} |')
         add('')
+        add('- `avail_aware` 為隔離比較（pre2 因子 ± 缺值權重重正規化）；'
+            '`avail_aware_on_combined` 係在已部署因子組合上再加 renormalisation；'
+            '`avail_aware_stack`（deployed+renorm vs pre2）只作審計對照，'
+            '數字會混入已上線的 form/rating/draw 增益，不可當成 renormalisation 的成效。')
+        add('')
         st = p2.get('st1000') or {}
         add(f'- ST 1000m OOS：{st.get("races")} 場'
             '（<30 場，反轉 flag 維持關閉）')
@@ -1077,6 +1094,8 @@ def build_report(payload):
     if p2 and not p2.get('skipped'):
         passed = []
         for name, d in p2['ablations'].items():
+            if name.endswith('_stack'):
+                continue
             ci = d.get('delta_ci')
             fo = d.get('folds') or {}
             if (d['delta_nll'] is not None and d['delta_nll'] < 0 and ci and ci[1] < 0

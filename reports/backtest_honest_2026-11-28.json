@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-28T11:02:19.244198+08:00",
+  "generated_at": "2026-11-28T11:24:22.855583+08:00",
   "since": "2025-09-07",
   "meta": {
     "since": "2025-09-07",
@@ -7159,6 +7159,78 @@
         }
       },
       "avail_aware": {
+        "races": 138,
+        "baseline": {
+          "races": 138,
+          "nll": 2.41873,
+          "brier": 0.07351,
+          "top1": 0.2101,
+          "top1q": 0.3188,
+          "top3": 0.4348,
+          "place": 0.4638,
+          "roi_ev": -19.3,
+          "roi_top1": -21.4,
+          "bets": 722
+        },
+        "variant": {
+          "races": 138,
+          "nll": 2.42156,
+          "brier": 0.07354,
+          "top1": 0.2101,
+          "top1q": 0.3261,
+          "top3": 0.4348,
+          "place": 0.471,
+          "roi_ev": -24.0,
+          "roi_top1": -21.4,
+          "bets": 717
+        },
+        "delta_nll": 0.00283,
+        "delta_ci": [
+          -0.00211,
+          0.00933
+        ],
+        "folds": {
+          "improved": 3,
+          "folds": 5
+        }
+      },
+      "avail_aware_on_combined": {
+        "races": 138,
+        "baseline": {
+          "races": 138,
+          "nll": 2.38256,
+          "brier": 0.0727,
+          "top1": 0.2101,
+          "top1q": 0.3188,
+          "top3": 0.4275,
+          "place": 0.4638,
+          "roi_ev": -15.9,
+          "roi_top1": -13.8,
+          "bets": 823
+        },
+        "variant": {
+          "races": 138,
+          "nll": 2.38424,
+          "brier": 0.07273,
+          "top1": 0.2101,
+          "top1q": 0.3261,
+          "top3": 0.4275,
+          "place": 0.471,
+          "roi_ev": -16.6,
+          "roi_top1": -13.8,
+          "bets": 817
+        },
+        "delta_nll": 0.00168,
+        "delta_ci": [
+          -0.00278,
+          0.00774
+        ],
+        "folds": {
+          "improved": 2,
+          "folds": 5
+        }
+      },
+      "avail_aware_stack": {
         "races": 138,
         "baseline": {
           "races": 138,

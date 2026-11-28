@@ -902,8 +902,8 @@ def main():
 
     def phase2_p_model(s):
         # Deployed path: the accepted Phase-2 feature formulas only. The
-        # availability-aware renormalisation measured +0.021 NLL and ships as
-        # UI 待定 flags, not as weight changes.
+        # availability-aware renormalisation is not validated (honest isolated
+        # +0.0028 NLL) and ships as UI 待定 flags, not as weight changes.
         return p_model_from_factors(s, combined_features(s))
 
     def calibrated(pm):
@@ -1055,7 +1055,7 @@ def main():
               'draw_v2（實際場人數 × 場地/途程係數）')
     md.append('- 僅展示、不入 P_model：速度排名（best_time 同場同程 Z/排名，'
               '消融 +0.011/+0.032 NLL）、負磅變動（-0.001 NLL）')
-    md.append('- 否決：缺值權重重正規化（avail_aware +0.021 NLL）；改為 UI 顯示「待定」缺值旗標')
+    md.append('- 否決：缺值權重重正規化（honest 隔離 +0.003 NLL，CI 含 0）；改為 UI 顯示「待定」缺值旗標')
     if weights_source.get('fitted_at'):
         md.append(f"- 9 維度權重：{weights_source['fitted_at']} 以 {weights_source['sample_races']} 場"
                   f"重新擬合（見 scripts/weights_active.json；修復 history 查詢前的 v5.84 表已作廢）")

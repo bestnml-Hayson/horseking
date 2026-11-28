@@ -118,7 +118,11 @@
 | weight_full | 138 | 2.41873 | 2.41864 | -0.00009 | -0.00490 ~ 0.00540 | 21.0% | 20.3% | 3/5 |
 | draw_v2 | 138 | 2.41873 | 2.39958 | -0.01916 | -0.02812 ~ -0.01014 | 21.0% | 21.0% | 5/5 |
 | form_shrink | 138 | 2.41873 | 2.40653 | -0.01220 | -0.03661 ~ 0.01074 | 21.0% | 19.6% | 3/5 |
-| avail_aware | 138 | 2.41873 | 2.38424 | -0.03449 | -0.07075 ~ -0.00381 | 21.0% | 21.0% | 5/5 |
+| avail_aware | 138 | 2.41873 | 2.42156 | 0.00283 | -0.00211 ~ 0.00933 | 21.0% | 21.0% | 3/5 |
+| avail_aware_on_combined | 138 | 2.38256 | 2.38424 | 0.00168 | -0.00278 ~ 0.00774 | 21.0% | 21.0% | 2/5 |
+| avail_aware_stack | 138 | 2.41873 | 2.38424 | -0.03449 | -0.07075 ~ -0.00381 | 21.0% | 21.0% | 5/5 |
+
+- `avail_aware` 為隔離比較（pre2 因子 ± 缺值權重重正規化）；`avail_aware_on_combined` 係在已部署因子組合上再加 renormalisation；`avail_aware_stack`（deployed+renorm vs pre2）只作審計對照，數字會混入已上線的 form/rating/draw 增益，不可當成 renormalisation 的成效。
 
 - ST 1000m OOS：5 場（<30 場，反轉 flag 維持關閉）
 - Phase 2b 覆蓋：finish_time 0.0%，margin 0.0%（維持 display-only flag 關閉）
@@ -188,7 +192,7 @@
 - γ、校準、α 的逐折選擇只作診斷；Phase 1 flag 仍全部關閉，等 Commit B 確認後再逐項 A/B。
 - 診斷傾向：γ 維持 1.0（逐折 1.1 反而較差、分段幾乎全選 1.0）；temperature/Platt 的 OOS NLL 改善 <0.01；α=0 是 SP 循環假象，維持 0.2。以上全部未改預設。
 - Phase 2 的 combined 已包含三個現行已部署公式（form shrinkage、rating blend、draw k），本表是 honest 協議下的重新驗證，不是新改動。
-- Phase 2 達採納門檻（ΔNLL<0、95% CI 全負、≥4/5 折改善）的變體：draw_v2, avail_aware；即使達標亦只會以 flag 開 A/B，不會直接改預設。
+- Phase 2 達採納門檻（ΔNLL<0、95% CI 全負、≥4/5 折改善）的變體：draw_v2；即使達標亦只會以 flag 開 A/B，不會直接改預設。
 - Phase 2 消融只在 2026-06-01+ 子集跑；所有新特徵維持 flag/display-only，未改預設。
 - ROI 全部以 SP 計，屬上限值；真實賽前價只有 9 場，不足以支撐時間加權融合。
 
