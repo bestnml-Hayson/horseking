@@ -21,7 +21,7 @@ CONFIG_PATH = os.path.join(os.path.dirname(__file__), '..', 'config', 'model_pro
 
 _FEATURE_KEYS = ('form_shrink', 'rating_blend', 'draw_field_size', 'run_style_pace',
                  'extreme_odds_alpha', 'calibration')
-_EXPERIMENT_KEYS = ('banded_gamma', 'platt_calibration', 'availability_renorm',
+_EXPERIMENT_KEYS = ('segmented_gamma', 'platt', 'availability_renorm',
                     'timing_fusion', 'extreme_favourite_guard', 'dual_probability',
                     'st1000_draw_reversal', 'speed_engine', 'finish_time_margin')
 _CALIBRATION_METHODS = ('none', 'temperature', 'platt', 'isotonic')
@@ -259,10 +259,10 @@ def _validate_profile(profile):
         if not isinstance(value, dict) or not isinstance(value.get('enabled'), bool):
             errors.append(f'experiments.{key} must be an object with boolean enabled')
             continue
-        if key == 'platt_calibration':
+        if key == 'platt':
             lo, hi = value.get('window_min'), value.get('window_max')
             if not isinstance(lo, int) or not isinstance(hi, int) or hi < lo:
-                errors.append('experiments.platt_calibration needs integer window_min <= window_max')
+                errors.append('experiments.platt needs integer window_min <= window_max')
         if key == 'timing_fusion':
             for k in ('no_odds_market_weight', 'min_coverage', 'far_market_weight', 'near_market_weight'):
                 if not isinstance(value.get(k), (int, float)) or not 0 <= value[k] <= 1:

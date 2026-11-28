@@ -1,6 +1,20 @@
 {
   "version": 1,
   "default_profile": "current_v586",
+  "frozen_diagnostics": {
+    "as_of": "2026-11-28",
+    "baseline_report": "reports/backtest_honest_2026-11-28.md",
+    "baseline_profile": "honest_v586",
+    "market_gamma": { "value": 1.0, "decision": "freeze" },
+    "segmented_gamma": { "profile": "exp_segmented_gamma", "enabled": false, "decision": "flag_only_no_ab" },
+    "platt_calibration": { "profile": "exp_platt", "enabled": false, "decision": "flag_only_no_ab" },
+    "fusion_alpha": {
+      "value": 0.2,
+      "extreme_odds_alpha": 0.35,
+      "note": "SP circularity: fold alpha selects 0.0 only because P_market is derived from the same SP. Do not change the default until >=50 races carry genuine pre-race odds."
+    },
+    "roi_label": "SP upper bound"
+  },
   "profiles": {
     "legacy_v576": {
       "description": "v5.76 production baseline. Market anchor gamma=1.3, pre-Phase-2 factors (no form shrinkage, no rating blend, plain draw normalisation) and the dead weight/gear/pace factors zeroed then renormalised. Kept for historical comparison only.",
@@ -69,8 +83,8 @@
         "calibration": false
       },
       "experiments": {
-        "banded_gamma": { "enabled": false },
-        "platt_calibration": { "enabled": false, "window_min": 0, "window_max": 0 },
+        "segmented_gamma": { "enabled": false },
+        "platt": { "enabled": false, "window_min": 0, "window_max": 0 },
         "availability_renorm": { "enabled": false, "min_coverage": 0.8 },
         "timing_fusion": {
           "enabled": false,
@@ -160,8 +174,8 @@
         "calibration": true
       },
       "experiments": {
-        "banded_gamma": { "enabled": false },
-        "platt_calibration": { "enabled": false, "window_min": 150, "window_max": 300 },
+        "segmented_gamma": { "enabled": false },
+        "platt": { "enabled": false, "window_min": 150, "window_max": 300 },
         "availability_renorm": { "enabled": false, "min_coverage": 0.8 },
         "timing_fusion": {
           "enabled": false,
@@ -194,21 +208,21 @@
         "roi_label": "SP upper bound; ROI on genuinely pre-race prices only"
       }
     },
-    "exp_banded_gamma": {
-      "description": "Phase 1 flag (off by default): fit a separate market exponent per odds band, walk-forward, train-only. Adoption requires >=4/5 folds improving and a 95% CI excluding zero.",
+    "exp_segmented_gamma": {
+      "description": "Phase 1 flag (off by default, no A/B scheduled): fit a separate market exponent per odds band, walk-forward, train-only. Commit B found most folds pick 1.0 and OOS NLL is no better than gamma=1.0, so this stays a frozen diagnostic only.",
       "extends": "current_v586",
       "experiments": {
-        "banded_gamma": { "enabled": true }
+        "segmented_gamma": { "enabled": true }
       }
     },
-    "exp_platt_calibration": {
-      "description": "Phase 1 flag (off by default): rolling Platt scaling fitted on the previous 150-300 races only. The deployed identity calibration stays the baseline.",
+    "exp_platt": {
+      "description": "Phase 1 flag (off by default, no A/B scheduled): rolling Platt scaling fitted on the previous 150-300 races only. Commit B measured <0.01 NLL improvement, so the deployed identity calibration stays.",
       "extends": "current_v586",
       "model": {
         "calibration_method": "platt"
       },
       "experiments": {
-        "platt_calibration": { "enabled": true }
+        "platt": { "enabled": true }
       }
     },
     "exp_availability_renorm": {
