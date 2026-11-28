@@ -22,6 +22,7 @@ HKT = ZoneInfo('Asia/Hong_Kong')
 from common import get_supabase, batch_upsert, retry_supabase
 from run_style import encode_running_positions
 from results_fields import parse_finish_time, parse_margin
+from track_meta import normalize_going, normalize_track_course
 
 
 def scrape_results_page(page, date_str: str, venue: str, race_no: int) -> Optional[Dict]:
@@ -106,8 +107,11 @@ def scrape_results_page(page, date_str: str, venue: str, race_no: int) -> Option
             const distMatch = allText.match(/(\d+)\s*米/);
             if (distMatch) result.race_info.distance = parseInt(distMatch[1]);
 
-            const goingMatch = allText.match(/(好地|好快地|好黏地|黏地|濕慢地|大爛地)/);
+            const goingMatch = allText.match(/場地狀況\s*[:：]\s*([^\s]+)/);
             if (goingMatch) result.race_info.going = goingMatch[1];
+
+            const trackMatch = allText.match(/賽道\s*[:：]\s*(全天候跑道|草地|泥地)/);
+            if (trackMatch) result.race_info.track_course = trackMatch[1];
 
             // Check for race course indicator (ST/HV)
             const isST = allText.includes("沙田");
@@ -242,7 +246,8 @@ def build_meeting_records(date_str: str, venue: str, races_data: List[tuple]):
             'race_no': race_no,
             'class_level': race_class or race_info.get('class'),
             'distance': race_info.get('distance'),
-            'going': race_info.get('going'),
+            'going': normalize_going(race_info.get('going')),
+            'track_course': normalize_track_course(race_info.get('track_course')),
             'is_finished': True,
         })
 

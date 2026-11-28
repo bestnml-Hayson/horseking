@@ -14,6 +14,7 @@
 | R8 | **CI 未經實跑**：新增 `.github/workflows/ci.yml` 只在 push 後才首次執行 | 低 | 開放 | 首次 push 可能因環境差異失敗 | 本地已跑同一組 pytest／tsx／validate；CI 失敗不影響 runtime | 首次 push 後 CI 綠燈 |
 | R9 | **前端 profile 切換風險**：`NEXT_PUBLIC_MODEL_PROFILE` 可改前端行為 | 低 | 監控 | 若誤設 exp profile 會出 shadow 邏輯 | 預設 `current_v586`；exp profile 只存在於 config，未部署 | 保持預設直至 honest A/B 達標 |
 | R10 | **歷史賽果欄位不齊**：`finish_time` 2026-10/11 為 0%，`margin` 2025-09～2026-03 為 0%；班次命名新舊並存 | 中 | 開放 | 任何 speed figure／馬位特徵只能覆蓋部分歷史，跨期比較會偏 | parser 已修（三個 importer 共用）；報表逐月標低覆蓋原因；未重抓前只用 2026-04 後且兩欄齊的場次做 speed 研究 | 重抓 2025-09～2026-11 缺欄場次並把覆蓋率寫入 `pipeline_status.results_quality_report` |
+| R11 | **going／track_course 歷史缺值與詞彙漂移**：補全前 18 場為空／英文 `Good`／舊值；舊 scraper 只認 9 種 going，官方「封地」被誤判無效 | 低 | 已緩解 | going 覆蓋不足會令未來跑道偏差研究樣本偏，且舊 whitelist 會靜靜丟值 | 4 個寫入點共用 `scripts/track_meta.py`（canonical＋英文／別名、拒絕多值猜測、加入封地）；`backfill_track_meta.py` httpx 補全（date/race_no 校驗、不覆蓋有效值）；實測 1,088 場 going 99.9%、track_course 100%；唯一缺口為官方取消的 ST-20261114-06 | 每場非取消賽事 going 非空；跑道偏差模型另需每個 going×賽道桶 ≥30 場 |
 
 ## 收集進度（2026-11-28 實測）
 
@@ -34,6 +35,11 @@
   （HV 80.5%、ST 85.7%），margin 27.6%；16 行 margin >30L 屬尾隨馬（保留）；
   頭馬非最快 1 場（ST-20260308-05，94.64 vs 94.62s）。締速基準 28 組（距離未知不進組）。
   報表：`reports/results_quality_2026-11-28.md`、`reports/speed_baseline_2026-11-28.json`。
+- 線 2-B 實測（2026-11-28，唯讀）：補全後 1,088 場 going 99.9%（唯一缺口＝官方取消
+  ST-20261114-06）、track_course 100%；9 種 going，非好地 25.2%（274 場）。
+  分桶：好地 813、好地至快地 229、草地黏地 11、好地至黏地 9、軟地 8、濕慢地 7、
+  封地 6、慢地 2、快地 2 → 除好地／好地至快地外全部 <30 場，維持不建跑道偏差模型、flags off。
+  報表：`reports/track_meta_2026-11-28.md`、`reports/track_meta_2026-11-28.json`。
 
 ## 變更紀錄
 
@@ -41,4 +47,6 @@
 - 2026-11-28：加入等待期監控（每日 log／每日完整度報表／每週／每月審計）與收集進度實測。
 - 2026-11-28：線 2-A results parser（finish_time／margin）＋品質／覆蓋率報表＋締速基準；
   只 display，flags 全部維持 off。
+- 2026-11-28：線 2-B going／track_course 共用 normalizer（含封地）＋4 個寫入點＋
+  httpx 補全＋描述性變異報表；跑道偏差模型維持 off（分桶樣本不足）。
 - 相關文件：`reports/phase1_freeze_2026-11-28.md`、`FLAGS.md`、`reports/honest_vs_current_v586.md`。

@@ -26,6 +26,7 @@ HKT = ZoneInfo('Asia/Hong_Kong')
 sys.path.insert(0, os.path.dirname(__file__))
 from common import get_supabase, retry_supabase
 from results_fields import parse_finish_time, parse_margin
+from track_meta import normalize_going, normalize_track_course
 
 
 def _horse_key(name_raw: str) -> str:
@@ -64,10 +65,12 @@ def scrape_race_results(page, date_str: str, venue: str, race_no: int) -> dict:
         race_meta = page.evaluate('''() => {
             const text = document.body.innerText;
             const timeMatch = text.match(/時間\\s*[:：]\\s*(\\d{2}:\\d{2}:\\d{2})/);
-            const goingMatch = text.match(/好至黏快|好至快地|好至黏地|好地|快地|慢地|軟地|黏地/);
+            const goingMatch = text.match(/場地狀況\\s*[:：]\\s*([^\\s]+)/);
+            const courseMatch = text.match(/賽道\\s*[:：]\\s*(全天候跑道|草地|泥地)/);
             return {
                 winning_time: timeMatch ? timeMatch[1] : null,
-                going: goingMatch ? goingMatch[0] : null
+                going: goingMatch ? goingMatch[1] : null,
+                track_course: courseMatch ? courseMatch[1] : null
             };
         }''')
 
@@ -250,10 +253,16 @@ def import_results(supabase, date_str: str, venue: str, race_nos: list = None):
                     .update(p).eq('runner_id', rid).execute())
                 total_updated += 1
 
-            # Update race with is_finished = true
-            retry_supabase(lambda rid=race_id: supabase.table('races').update({
-                'is_finished': True
-            }).eq('race_id', rid).execute())
+            # Update race with is_finished = true plus going/course when the page has them
+            race_patch = {'is_finished': True}
+            going = normalize_going(race_results.get('going'))
+            if going:
+                race_patch['going'] = going
+            course = normalize_track_course(race_results.get('track_course'))
+            if course:
+                race_patch['track_course'] = course
+            retry_supabase(lambda rid=race_id, p=race_patch: supabase.table('races').update(
+                p).eq('race_id', rid).execute())
 
             # Per-horse dividend/finish ledger (race_results has no time/margin columns).
             ledger = [{

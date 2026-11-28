@@ -42,6 +42,7 @@ from zoneinfo import ZoneInfo
 from common import get_supabase, retry_supabase
 from run_style import encode_running_positions
 from results_fields import parse_finish_time, parse_margin
+from track_meta import normalize_going, normalize_track_course
 
 HKT = ZoneInfo('Asia/Hong_Kong')
 
@@ -445,13 +446,14 @@ def archive_past_races(supabase, races: List[Dict], dry_run: bool = False):
                 for race in date_races:
                     race_id = race['race_id']
                     race_no = race['race_no']
-                    results = scrape_results_for_race(page, date_str, venue, race_no)
+                    scraped = scrape_results_for_race(page, date_str, venue, race_no)
 
-                    if not results:
+                    if not scraped.get('results'):
                         print(f"    R{race_no}: no results scraped")
                         continue
 
-                    updated = apply_results(supabase, race_id, results)
+                    updated = apply_results(supabase, race_id, scraped['results'],
+                                            race_meta=scraped)
                     retry_supabase(
                         lambda rid=race_id: supabase.table('races').update({'is_finished': True}).eq('race_id', rid).execute()
                     )
@@ -476,8 +478,8 @@ def archive_past_races(supabase, races: List[Dict], dry_run: bool = False):
     return archived, ai_reviewed
 
 
-def scrape_results_for_race(page, date_str: str, venue: str, race_no: int) -> List[Dict]:
-    """Scrape official results from HKJC for a single race."""
+def scrape_results_for_race(page, date_str: str, venue: str, race_no: int) -> Dict:
+    """Scrape official results plus the race's going/course from HKJC."""
     date_slash = date_str.replace('-', '/')
     url = f"https://racing.hkjc.com/racing/information/Chinese/Racing/LocalResults.aspx?RaceDate={date_slash}&Racecourse={venue}&RaceNo={race_no}"
 
@@ -489,9 +491,9 @@ def scrape_results_for_race(page, date_str: str, venue: str, race_no: int) -> Li
         date_path = date_str.replace('-', '')
         if date_path not in actual_url and date_slash not in actual_url:
             print(f"    [SKIP] R{race_no}: HKJC redirected (date mismatch)")
-            return []
+            return {}
 
-        results = page.evaluate(r'''() => {
+        scraped = page.evaluate(r'''() => {
             const results = [];
             const tables = document.querySelectorAll('table');
             for (const table of tables) {
@@ -527,16 +529,28 @@ def scrape_results_for_race(page, date_str: str, venue: str, race_no: int) -> Li
                 }
                 break;
             }
-            return results;
+            const bodyText = document.body.innerText;
+            const goingMatch = bodyText.match(/場地狀況\s*[:：]\s*([^\s]+)/);
+            const courseMatch = bodyText.match(/賽道\s*[:：]\s*(全天候跑道|草地|泥地)/);
+            return {
+                results: results,
+                going: goingMatch ? goingMatch[1] : '',
+                track_course: courseMatch ? courseMatch[1] : ''
+            };
         }''')
 
-        return results
+        return {
+            'results': scraped.get('results') or [],
+            'going': normalize_going(scraped.get('going')),
+            'track_course': normalize_track_course(scraped.get('track_course')),
+        }
     except Exception as e:
         print(f"    [FAIL] R{race_no}: {e}")
-        return []
+        return {'results': [], 'going': None, 'track_course': None}
 
 
-def apply_results(supabase, race_id: str, results: List[Dict]) -> int:
+def apply_results(supabase, race_id: str, results: List[Dict],
+                  race_meta: Optional[Dict] = None) -> int:
     """Record the finishing order and the official SP dividend.
 
     `race_runners.win_odds` holds the price the app showed *before* the race, and
@@ -553,6 +567,18 @@ def apply_results(supabase, race_id: str, results: List[Dict]) -> int:
         print(f"    [WARN] {race_id}: no race meta, results skipped")
         return 0
     race = races[0]
+
+    if race_meta:
+        track_patch = {}
+        going = normalize_going(race_meta.get('going'))
+        if going:
+            track_patch['going'] = going
+        course = normalize_track_course(race_meta.get('track_course'))
+        if course:
+            track_patch['track_course'] = course
+        if track_patch:
+            retry_supabase(lambda tp=track_patch, rid=race_id: supabase.table('races')
+                           .update(tp).eq('race_id', rid).execute())
 
     resp = retry_supabase(
         lambda: supabase.table('race_runners').select(

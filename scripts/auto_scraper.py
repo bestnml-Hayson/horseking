@@ -40,6 +40,7 @@ except ImportError:
 
 sys.path.insert(0, os.path.dirname(__file__))
 from common import get_supabase, batch_upsert, truncate, has_column, retry_supabase
+from track_meta import normalize_going, normalize_track_course
 
 # Re-export for live_high_frequency_pacing.py compatibility
 get_supabase_client = get_supabase
@@ -67,21 +68,7 @@ def compute_form_score(form_history: str) -> float:
             score += rank_score * weights[i]
     return round(score, 2)
 
-# Valid going values for HKJC races
-VALID_GOING_VALUES = {'好至黏快', '好至快地', '好至黏地', '好地', '快地', '慢地', '軟地', '黏地', '好至軟地'}
-
-def validate_going(going: Optional[str]) -> Optional[str]:
-    """Validate going value. Returns the going if valid, None otherwise."""
-    if not going:
-        return None
-    going_stripped = going.strip()
-    if going_stripped in VALID_GOING_VALUES:
-        return going_stripped
-    # Check if it contains a valid going value
-    for valid in VALID_GOING_VALUES:
-        if valid in going_stripped:
-            return valid
-    return None
+# Valid going values live in track_meta (shared with the results importers).
 
 
 def clear_old_data(supabase: Client, race_date: str, venue: str):
@@ -415,9 +402,9 @@ def scrape_hkjc_races(date_str: str, venue: str, skip_odds: bool = False) -> Lis
                     const block = lines.slice(startIdx, endIdx).join('\n');
 
                     const distMatch = block.match(/(\d{3,4})米/);
-                    const goingMatch = block.match(/好至黏快|好至快地|好至黏地|好地|快地|慢地|軟地|黏地/);
+                    const goingMatch = block.match(/好地至黏快地|好地至快地|好地至黏地|好地至軟地|濕快地|濕慢地|大爛地|好地|快地|慢地|軟地|黏地|爛地/);
                     const classMatch = block.match(/第[一二三四五六七八九十]+班/);
-                    const trackMatch = block.match(/(草地|全天候跑道)/);
+                    const trackMatch = block.match(/(全天候跑道|草地|泥地)/);
                     const timeMatch = block.match(/,\s*(\d{1,2}:\d{2})\s*\n/) || block.match(/,\s*(\d{1,2}:\d{2})\s*$/) || block.match(/(\d{1,2}:\d{2})/);
 
                     return {
@@ -679,8 +666,8 @@ def write_to_supabase(supabase: Client, races: List[Dict], dry_run: bool = False
             'venue': truncate(race['venue'], 4),
             'distance': race.get('distance'),
             'class_level': truncate(race.get('class_level'), 32) if race.get('class_level') else None,
-            'going': truncate(validate_going(race.get('going')), 32) if validate_going(race.get('going')) else None,
-            'track_course': truncate(race.get('track_course'), 16) if race.get('track_course') else None,
+            'going': truncate(normalize_going(race.get('going')), 32) if normalize_going(race.get('going')) else None,
+            'track_course': truncate(normalize_track_course(race.get('track_course')), 16) if normalize_track_course(race.get('track_course')) else None,
             'race_time': race.get('race_time'),
         }
         retry_supabase(lambda: supabase.table('races').upsert(race_row, on_conflict='race_id').execute())

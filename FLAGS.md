@@ -51,3 +51,5 @@
 | 品質／覆蓋率報表 | `python scripts/results_quality_report.py` | `reports/results_quality_<date>.md`；場地／途程／班次／月份覆蓋＋異常值＋低覆蓋原因；摘要寫 `pipeline_status.results_quality_report` | L2-A |
 | 締速基準 | 同上 | `reports/speed_baseline_<date>.json`；同場同程同場地、≥4 名完成者、≥5 場才標足夠；距離未知不進組 | L2-A |
 | 入權重 | 未開啟 | `finish_time_margin`、`speed_engine` 維持 off；歷史月份需重抓才有數 | L2-A |
+| going／track_course | 逐場讀 `場地狀況`＋`賽道` | 4 個寫入點共用 `scripts/track_meta.py`（canonical＋英文／別名、拒絕多值猜測）；一次性補全 `backfill_track_meta.py`（httpx、date/race_no 校驗、不覆蓋有效值）；描述報表 `track_meta_report.py` | L2-B |
+| 跑道偏差模型 | 未開啟 | 等 going 有變異且每個 going×賽道桶 ≥30 場才考慮；現時無任何 going／track_course 權重 | L2-B |
