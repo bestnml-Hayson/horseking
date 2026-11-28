@@ -25,6 +25,12 @@ HKT = ZoneInfo('Asia/Hong_Kong')
 
 sys.path.insert(0, os.path.dirname(__file__))
 from common import get_supabase, retry_supabase
+from results_fields import parse_finish_time, parse_margin
+
+
+def _horse_key(name_raw: str) -> str:
+    match = re.search(r'\(([A-Z]{1,2}\d{1,4})\)', name_raw or '')
+    return match.group(1) if match else (name_raw or '').strip()
 
 
 def scrape_race_results(page, date_str: str, venue: str, race_no: int) -> dict:
@@ -65,7 +71,7 @@ def scrape_race_results(page, date_str: str, venue: str, race_no: int) -> dict:
             };
         }''')
 
-        # Extract results table
+        # Extract results table by header labels so column order can never drift.
         results = page.evaluate('''() => {
             const results = [];
             const tables = document.querySelectorAll('table');
@@ -74,48 +80,55 @@ def scrape_race_results(page, date_str: str, venue: str, race_no: int) -> dict:
                 const rows = t.querySelectorAll('tr');
                 if (rows.length < 3) continue;
 
-                // Find the results table by looking for "名次" header
-                const firstRow = rows[0].querySelectorAll('td, th');
-                let hasPositionCol = false;
-                let hasHorseCol = false;
-
-                for (let i = 0; i < firstRow.length; i++) {
-                    const txt = firstRow[i].textContent.trim();
-                    if (txt === '名次' || txt === '排名') hasPositionCol = true;
-                    if (txt === '馬名') hasHorseCol = true;
+                let headerRow = null;
+                for (let ri = 0; ri < Math.min(rows.length, 4); ri++) {
+                    const labels = Array.from(rows[ri].querySelectorAll('td, th'))
+                        .map(c => c.textContent.trim());
+                    if (labels.includes('名次') && labels.includes('馬名')) {
+                        headerRow = {ri, labels};
+                        break;
+                    }
                 }
+                if (!headerRow) continue;
 
-                if (hasPositionCol && hasHorseCol) {
-                    for (let ri = 1; ri < rows.length; ri++) {
-                        const cells = rows[ri].querySelectorAll('td');
-                        if (cells.length < 5) continue;
+                const col = (name) => headerRow.labels.indexOf(name);
+                const posIdx = col('名次') >= 0 ? col('名次') : col('排名');
+                const horseNoIdx = col('馬號');
+                const nameIdx = col('馬名');
+                const jockeyIdx = col('騎師');
+                const timeIdx = col('完成時間');
+                const marginIdx = col('頭馬距離');
 
-                        const posText = cells[0].textContent.trim();
-                        const pos = parseInt(posText);
-                        if (isNaN(pos) || pos <= 0) continue;
+                for (let ri = headerRow.ri + 1; ri < rows.length; ri++) {
+                    const cells = rows[ri].querySelectorAll('td');
+                    if (cells.length < 3) continue;
+                    const get = (i) => (i >= 0 && i < cells.length)
+                        ? cells[i].textContent.trim() : '';
 
-                        const horseName = cells[2].textContent.trim();
-                        const jockey = cells[4].textContent.trim();
+                    const pos = parseInt(get(posIdx));
+                    if (isNaN(pos) || pos <= 0) continue;
 
-                        // Horse number is usually in a specific column
-                        let horseNo = 0;
-                        for (let ci = 0; ci < cells.length; ci++) {
-                            const num = parseInt(cells[ci].textContent.trim());
+                    let horseNo = parseInt(get(horseNoIdx));
+                    if (isNaN(horseNo) || horseNo <= 0) {
+                        for (const cell of cells) {
+                            const num = parseInt(cell.textContent.trim());
                             if (!isNaN(num) && num > 0 && num <= 20) {
                                 horseNo = num;
                                 break;
                             }
                         }
-
-                        results.push({
-                            horse_no: horseNo,
-                            horse_name: horseName,
-                            jockey: jockey,
-                            finish_position: pos
-                        });
                     }
-                    break;
+
+                    results.push({
+                        horse_no: horseNo,
+                        horse_name: get(nameIdx),
+                        jockey: get(jockeyIdx),
+                        finish_position: pos,
+                        finish_time: get(timeIdx),
+                        margin: get(marginIdx)
+                    });
                 }
+                break;
             }
             return results;
         }''')
@@ -170,7 +183,7 @@ def import_results(supabase, date_str: str, venue: str, race_nos: list = None):
     date_path = date_str.replace('-', '')
 
     # Fetch races for this date/venue
-    query = supabase.table('races').select('race_id,race_no').eq('race_date', date_str).eq('venue', venue)
+    query = supabase.table('races').select('race_id,race_no,race_date,venue').eq('race_date', date_str).eq('venue', venue)
     resp = query.execute()
     races = resp.data or []
 
@@ -209,53 +222,59 @@ def import_results(supabase, date_str: str, venue: str, race_nos: list = None):
             results = race_results['results']
             print(f"    [OK] {len(results)} finishers")
 
-            # Update race_runners with finish_position
+            runners_resp = retry_supabase(
+                lambda rid=race_id: supabase.table('race_runners')
+                .select('runner_id,horse_no').eq('race_id', rid).execute())
+            runner_by_no = {r['horse_no']: r['runner_id'] for r in (runners_resp.data or [])}
+
+            times_written = margins_written = 0
             for finisher in results:
                 horse_no = finisher['horse_no']
                 finish_pos = finisher['finish_position']
+                runner_id = runner_by_no.get(horse_no)
+                if not runner_id:
+                    continue
 
-                if horse_no > 0:
-                    # Find runner by race_id and horse_no
-                    resp = supabase.table('race_runners').select('runner_id').eq('race_id', race_id).eq('horse_no', horse_no).execute()
-                    runners = resp.data or []
+                patch = {'finish_position': finish_pos}
+                finish_time = parse_finish_time(finisher.get('finish_time'))
+                if finish_time is not None:
+                    patch['finish_time'] = finish_time
+                    times_written += 1
+                margin = parse_margin(finisher.get('margin'), finish_pos)
+                if margin is not None:
+                    patch['margin'] = margin
+                    margins_written += 1
 
-                    if runners:
-                        runner_id = runners[0]['runner_id']
-                        retry_supabase(lambda: supabase.table('race_runners').update({
-                            'finish_position': finish_pos
-                        }).eq('runner_id', runner_id).execute())
-                        total_updated += 1
+                retry_supabase(
+                    lambda p=patch, rid=runner_id: supabase.table('race_runners')
+                    .update(p).eq('runner_id', rid).execute())
+                total_updated += 1
 
             # Update race with is_finished = true
-            retry_supabase(lambda: supabase.table('races').update({
+            retry_supabase(lambda rid=race_id: supabase.table('races').update({
                 'is_finished': True
-            }).eq('race_id', race_id).execute())
+            }).eq('race_id', rid).execute())
 
-            # Write to race_results table
-            payouts = race_results.get('payouts', {})
-            race_result_row = {
+            # Per-horse dividend/finish ledger (race_results has no time/margin columns).
+            ledger = [{
                 'race_id': race_id,
-                'winning_time': race_results.get('winning_time'),
-                'winning_odds': payouts.get('win'),
-                'race_status': 'finished',
-            }
+                'race_date': race.get('race_date') or date_str,
+                'venue': race.get('venue') or venue,
+                'race_no': race_no,
+                'finish_position': finisher['finish_position'],
+                'horse_no': finisher['horse_no'],
+                'horse_name': _horse_key(finisher.get('horse_name', '')),
+                'jockey': finisher.get('jockey'),
+            } for finisher in results if finisher.get('horse_no')]
+            if ledger:
+                try:
+                    retry_supabase(lambda rows=ledger: supabase.table('race_results').upsert(
+                        rows, on_conflict='race_id,horse_no').execute())
+                    print(f"    [OK] race_results ledger: {len(ledger)} rows")
+                except Exception as e:
+                    print(f"    [WARN] race_results write failed: {e}")
 
-            # Add top finishers
-            sorted_results = sorted(results, key=lambda x: x['finish_position'])
-            if len(sorted_results) >= 1:
-                race_result_row['first_horse_no'] = sorted_results[0]['horse_no']
-            if len(sorted_results) >= 2:
-                race_result_row['second_horse_no'] = sorted_results[1]['horse_no']
-            if len(sorted_results) >= 3:
-                race_result_row['third_horse_no'] = sorted_results[2]['horse_no']
-
-            try:
-                retry_supabase(lambda: supabase.table('race_results').upsert(
-                    race_result_row, on_conflict='race_id'
-                ).execute())
-                print(f"    [OK] race_results updated")
-            except Exception as e:
-                print(f"    [WARN] race_results write failed: {e}")
+            print(f"    [OK] times={times_written} margins={margins_written}")
 
         browser.close()
 

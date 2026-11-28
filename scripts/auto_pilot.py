@@ -41,6 +41,7 @@ from typing import Optional, List, Dict
 from zoneinfo import ZoneInfo
 from common import get_supabase, retry_supabase
 from run_style import encode_running_positions
+from results_fields import parse_finish_time, parse_margin
 
 HKT = ZoneInfo('Asia/Hong_Kong')
 
@@ -506,7 +507,9 @@ def scrape_results_for_race(page, date_str: str, venue: str, race_no: int) -> Li
                     jockey: headers.indexOf('騎師'),
                     trainer: headers.indexOf('練馬師'),
                     winOdds: headers.indexOf('獨贏賠率'),
-                    running: headers.indexOf('沿途走位')
+                    running: headers.indexOf('沿途走位'),
+                    finishTime: headers.indexOf('完成時間'),
+                    margin: headers.indexOf('頭馬距離')
                 };
 
                 for (let i = 1; i < rows.length; i++) {
@@ -517,7 +520,10 @@ def scrape_results_for_race(page, date_str: str, venue: str, race_no: int) -> Li
                     const horseNo = parseInt(cells[colMap.horseNo]?.textContent.trim());
                     const winOdds = parseFloat(cells[colMap.winOdds]?.textContent.trim()) || 0;
                     const running = colMap.running >= 0 ? (cells[colMap.running]?.textContent.trim() || '') : '';
-                    results.push({ pos, horse_no: horseNo, win_odds: winOdds, running_positions: running });
+                    const finishTime = colMap.finishTime >= 0 ? (cells[colMap.finishTime]?.textContent.trim() || '') : '';
+                    const margin = colMap.margin >= 0 ? (cells[colMap.margin]?.textContent.trim() || '') : '';
+                    results.push({ pos, horse_no: horseNo, win_odds: winOdds, running_positions: running,
+                                   finish_time: finishTime, margin: margin });
                 }
                 break;
             }
@@ -564,6 +570,12 @@ def apply_results(supabase, race_id: str, results: List[Dict]) -> int:
 
         pre_race_price = runner.get('win_odds')
         patch = {'finish_position': r['pos']}
+        finish_time = parse_finish_time(r.get('finish_time'))
+        if finish_time is not None:
+            patch['finish_time'] = finish_time
+        margin = parse_margin(r.get('margin'), r['pos'])
+        if margin is not None:
+            patch['margin'] = margin
         if not pre_race_price or pre_race_price <= 1.0:
             patch['win_odds'] = r['win_odds']
         encoded_positions = encode_running_positions(len(results), r.get('running_positions'))

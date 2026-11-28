@@ -21,6 +21,7 @@ HKT = ZoneInfo('Asia/Hong_Kong')
 
 from common import get_supabase, batch_upsert, retry_supabase
 from run_style import encode_running_positions
+from results_fields import parse_finish_time, parse_margin
 
 
 def scrape_results_page(page, date_str: str, venue: str, race_no: int) -> Optional[Dict]:
@@ -249,7 +250,7 @@ def build_meeting_records(date_str: str, venue: str, races_data: List[tuple]):
             horse_name = h['horse_name']
             horse_id_str = (h.get('horse_id') or '').strip() or horse_name
 
-            all_runners.append({
+            runner = {
                 'runner_id': f"{race_id}_H{h['horse_no']:02d}",
                 'race_id': race_id,
                 'horse_no': h['horse_no'],
@@ -264,7 +265,14 @@ def build_meeting_records(date_str: str, venue: str, races_data: List[tuple]):
                 'sectional_times': encode_running_positions(
                     len(result['horses']), h.get('running_positions', '')
                 ),
-            })
+            }
+            finish_time = parse_finish_time(h.get('finish_time'))
+            if finish_time is not None:
+                runner['finish_time'] = finish_time
+            margin = parse_margin(h.get('margin'), h['pos'])
+            if margin is not None:
+                runner['margin'] = margin
+            all_runners.append(runner)
 
             horse_key = horse_id_str or horse_name
             if horse_key not in horse_set:

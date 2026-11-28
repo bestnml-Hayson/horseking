@@ -13,6 +13,7 @@
 | R7 | **avail_aware 未驗證**：隔離後 +0.0028、CI 含 0、3/5 fold | 中 | 已否決 | 若誤開會令 NLL 變差 | 維持 flag off，只留 shadow 證據；不再開 combined／stack 變體 | 未來真實缺賠率樣本重測並達標 |
 | R8 | **CI 未經實跑**：新增 `.github/workflows/ci.yml` 只在 push 後才首次執行 | 低 | 開放 | 首次 push 可能因環境差異失敗 | 本地已跑同一組 pytest／tsx／validate；CI 失敗不影響 runtime | 首次 push 後 CI 綠燈 |
 | R9 | **前端 profile 切換風險**：`NEXT_PUBLIC_MODEL_PROFILE` 可改前端行為 | 低 | 監控 | 若誤設 exp profile 會出 shadow 邏輯 | 預設 `current_v586`；exp profile 只存在於 config，未部署 | 保持預設直至 honest A/B 達標 |
+| R10 | **歷史賽果欄位不齊**：`finish_time` 2026-10/11 為 0%，`margin` 2025-09～2026-03 為 0%；班次命名新舊並存 | 中 | 開放 | 任何 speed figure／馬位特徵只能覆蓋部分歷史，跨期比較會偏 | parser 已修（三個 importer 共用）；報表逐月標低覆蓋原因；未重抓前只用 2026-04 後且兩欄齊的場次做 speed 研究 | 重抓 2025-09～2026-11 缺欄場次並把覆蓋率寫入 `pipeline_status.results_quality_report` |
 
 ## 收集進度（2026-11-28 實測）
 
@@ -29,9 +30,15 @@
   未有近開跑缺賠率樣本，不可評分。
 - 觸發：`complete_pre_race_races = 50` 後才按 `docs/PREREGISTERED_AB.md` 逐項 A/B；
   未達前時間加權融合、α 時間加權、drift 一律不准開。
+- 線 2-A 實測（2026-11-28，唯讀）：1,087 場／13,511 匹有完成名次；finish_time 83.8%
+  （HV 80.5%、ST 85.7%），margin 27.6%；16 行 margin >30L 屬尾隨馬（保留）；
+  頭馬非最快 1 場（ST-20260308-05，94.64 vs 94.62s）。締速基準 28 組（距離未知不進組）。
+  報表：`reports/results_quality_2026-11-28.md`、`reports/speed_baseline_2026-11-28.json`。
 
 ## 變更紀錄
 
 - 2026-11-28：建立；涵蓋 P0 凍結、P1 shadow、P2 fallback 升級與 DDL 中斷。
 - 2026-11-28：加入等待期監控（每日 log／每日完整度報表／每週／每月審計）與收集進度實測。
+- 2026-11-28：線 2-A results parser（finish_time／margin）＋品質／覆蓋率報表＋締速基準；
+  只 display，flags 全部維持 off。
 - 相關文件：`reports/phase1_freeze_2026-11-28.md`、`FLAGS.md`、`reports/honest_vs_current_v586.md`。

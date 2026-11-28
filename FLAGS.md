@@ -26,7 +26,7 @@
 | `dual_probability` | off | 同時輸出 main / value 機率 | 未評估，無 A/B | 同上 | `ee60004` | flag off |
 | `st1000_draw_reversal` | off（draw_k −0.2） | ST 1000m 檔位反轉 | OOS 只有 5 場，維持預設 0 | 同上 | `ee60004` | flag off |
 | `speed_engine` | off（display_only） | best_time 速度評分展示 | 混入 P_model 量得 +0.011~+0.032 NLL，只可展示 | 同上 | `ee60004` | flag off |
-| `finish_time_margin` | off（display_only） | 完成時間／勝距展示 | 覆蓋率不足，只可展示 | 同上 | `ee60004` | flag off |
+| `finish_time_margin` | off（display_only） | 完成時間（秒）／勝距（馬位）展示；v5.86 後三個 importer 開始寫入 | 只展示、不入權重；覆蓋率 finish_time 83.8%、margin 27.6%（2026-10/11 及 2025-09～2026-03 margin 需重抓） | `scripts/results_fields.py`、`auto_pilot.py`、`backfill_results.py`、`post_race_import.py`、`config/model_profiles.json` | `ee60004` | flag off |
 | `segmented_gamma` | off | 按賠率分段擬合 γ | 多數 fold 選 1.0，OOS 無改善；凍結診斷 | `scripts/model_config.py` 已讀取 | `ee60004` | flag off |
 | `platt` | off（window 150–300） | rolling Platt 校準 | NLL 改善 <0.01，未部署 | 同上 | `ee60004` | flag off |
 
@@ -42,3 +42,12 @@
 | 每月數據審計 | `monthly_data_audit.py` | fallback raw/gzip 體積、shadow sparse 次數、3 個月 escalation 時鐘 | — |
 | 報表欄位（凍結） | 9 欄 | `race_id, race_date, venue, n_runners, n_horses_with_4_buckets, odds_nonnull_rate, available_at_complete_rate, bucket_offset_sec, missing_reason` | — |
 | 時間加權融合 | 未開啟 | ≥50 場完整快照後才討論 | — |
+
+## 線 2 賽後數據管線（display only，非模型 flag）
+
+| 項目 | 設定 | 說明 | Commit |
+|---|---|---|---|
+| results parser | `finish_time`（秒）、`margin`（馬位） | 三個 importer 共用 `scripts/results_fields.py`；只寫非 None、不覆蓋舊值；中文／英文馬位詞彙＋分數折算 | L2-A |
+| 品質／覆蓋率報表 | `python scripts/results_quality_report.py` | `reports/results_quality_<date>.md`；場地／途程／班次／月份覆蓋＋異常值＋低覆蓋原因；摘要寫 `pipeline_status.results_quality_report` | L2-A |
+| 締速基準 | 同上 | `reports/speed_baseline_<date>.json`；同場同程同場地、≥4 名完成者、≥5 場才標足夠；距離未知不進組 | L2-A |
+| 入權重 | 未開啟 | `finish_time_margin`、`speed_engine` 維持 off；歷史月份需重抓才有數 | L2-A |
