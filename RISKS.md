@@ -14,6 +14,7 @@
 | R8 | **CI 未經實跑**：新增 `.github/workflows/ci.yml` 只在 push 後才首次執行 | 低 | 開放 | 首次 push 可能因環境差異失敗 | 本地已跑同一組 pytest／tsx／validate；CI 失敗不影響 runtime | 首次 push 後 CI 綠燈 |
 | R9 | **前端 profile 切換風險**：`NEXT_PUBLIC_MODEL_PROFILE` 可改前端行為 | 低 | 監控 | 若誤設 exp profile 會出 shadow 邏輯 | 預設 `current_v586`；exp profile 只存在於 config，未部署 | 保持預設直至 honest A/B 達標 |
 | R10 | **歷史賽果欄位不齊**：`finish_time` 2026-10/11 為 0%，`margin` 2025-09～2026-03 為 0%；班次命名新舊並存 | 中 | 開放 | 任何 speed figure／馬位特徵只能覆蓋部分歷史，跨期比較會偏 | parser 已修（三個 importer 共用）；報表逐月標低覆蓋原因；未重抓前只用 2026-04 後且兩欄齊的場次做 speed 研究 | 重抓 2025-09～2026-11 缺欄場次並把覆蓋率寫入 `pipeline_status.results_quality_report` |
+| R12 | **jockey_upgrade 早達標假象**：blend 0.15 首次回測即 ΔNLL<0、CI 全負、4/5 折，但屬多重測試下的單次命中，且覆蓋率僅 87.8%（首月 2025-09 只有 17%） | 中 | 監控 | 若因一次達標就開 live，可能重犯 SP 循環性／樣本不足錯誤 | flag 維持 off；只寫 shadow；正式上線需 ≥50 場真實 pre-race 賠率後獨立 A/B；與 jockeyTrainer 相關 r=0.57（差分）／0.85（水平）→ 只准 blend 合併 | 獨立 A/B 在真實賠率樣本重現 ΔNLL<0 且 CI 全負、≥4/5 折 |
 | R11 | **going／track_course 歷史缺值與詞彙漂移**：補全前 18 場為空／英文 `Good`／舊值；舊 scraper 只認 9 種 going，官方「封地」被誤判無效 | 低 | 已緩解 | going 覆蓋不足會令未來跑道偏差研究樣本偏，且舊 whitelist 會靜靜丟值 | 4 個寫入點共用 `scripts/track_meta.py`（canonical＋英文／別名、拒絕多值猜測、加入封地）；`backfill_track_meta.py` httpx 補全（date/race_no 校驗、不覆蓋有效值）；實測 1,088 場 going 99.9%、track_course 100%；唯一缺口為官方取消的 ST-20261114-06 | 每場非取消賽事 going 非空；跑道偏差模型另需每個 going×賽道桶 ≥30 場 |
 
 ## 收集進度（2026-11-28 實測）
@@ -40,6 +41,12 @@
   分桶：好地 813、好地至快地 229、草地黏地 11、好地至黏地 9、軟地 8、濕慢地 7、
   封地 6、慢地 2、快地 2 → 除好地／好地至快地外全部 <30 場，維持不建跑道偏差模型、flags off。
   報表：`reports/track_meta_2026-11-28.md`、`reports/track_meta_2026-11-28.json`。
+- 線 2-C 實測（2026-11-28，離線 honest）：騎師欄位 100% 非空；特徵覆蓋 11,584/13,200
+  （87.8%，2025-09 首月只有 17.0%，HV 90.9%／ST 85.9%）；r(score, jockeyTrainer)=0.5738、
+  r(current_rate, jockeyTrainer)=0.8458 → 只 blend 合併、不另立因子。honest OOS 423 場：
+  blend 0.15 ΔNLL −0.00376（CI −0.00721~−0.00034、4/5 折）達標；blend 0.30 CI 含 0 不達標。
+  flag `jockey_upgrade` 維持 off，只寫 shadow。
+  報表：`reports/jockey_upgrade_2026-11-28.md`、`reports/jockey_upgrade_2026-11-28.json`。
 
 ## 變更紀錄
 
@@ -49,4 +56,6 @@
   只 display，flags 全部維持 off。
 - 2026-11-28：線 2-B going／track_course 共用 normalizer（含封地）＋4 個寫入點＋
   httpx 補全＋描述性變異報表；跑道偏差模型維持 off（分桶樣本不足）。
+- 2026-11-28：線 2-C 騎師升級差特徵（as-of，防洩漏單測）＋shadow＋honest 回測；
+  blend 0.15 達標但 flag 維持 off，只准 blend 入 jockeyTrainer，不得另立第 10 因子。
 - 相關文件：`reports/phase1_freeze_2026-11-28.md`、`FLAGS.md`、`reports/honest_vs_current_v586.md`。

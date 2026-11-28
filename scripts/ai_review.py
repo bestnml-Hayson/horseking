@@ -454,7 +454,8 @@ def _fetch_horse_history(supabase, horse_ids: List[str]) -> Dict[str, List[Dict]
                 # max-rows=1000 clamps limit() on this server, so page by offset
                 # or most of a batch's history silently disappears.
                 resp = supabase.table('race_runners').select(
-                    'horse_id,finish_position,actual_weight,sectional_times,races!inner(race_date,venue,distance,class_level)'
+                    'horse_id,jockey,jockey_win_rate,finish_position,actual_weight,'
+                    'sectional_times,races!inner(race_date,venue,distance,class_level)'
                 ).in_('horse_id', batch).not_.is_('finish_position', 'null').order('runner_id') \
                     .range(frm, frm + 999).execute()
                 rows = resp.data or []
@@ -475,6 +476,8 @@ def _fetch_horse_history(supabase, horse_ids: List[str]) -> Dict[str, List[Dict]
                         'class_level': race.get('class_level', ''),
                         'running_positions': row.get('sectional_times'),
                         'actual_weight': row.get('actual_weight'),
+                        'jockey': row.get('jockey'),
+                        'jockey_win_rate': row.get('jockey_win_rate'),
                     }
                     hid = row['horse_id']
                     history_map.setdefault(hid, []).append(entry)

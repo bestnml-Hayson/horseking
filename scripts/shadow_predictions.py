@@ -13,6 +13,9 @@ Shadow columns:
   avail_aware       - weights of factors with missing inputs dropped and renormalised
                       (mirrors the backtested variant, which had no coverage gate;
                       min_coverage is carried for future gating only)
+  jockey_upgrade    - current jockey's as-of win rate minus the mean as-of win rate
+                      of the horse's last six riders, blended into jockeyTrainer;
+                      feature columns are recorded even while the flag is off
 
 CLI:
   python scripts/shadow_predictions.py --date 2026-12-02 --venue ST
@@ -33,6 +36,7 @@ from model_config import (
     market_probabilities, weights_for,
 )
 import ai_review as A
+import jockey_upgrade as JU
 
 SHADOW_ID = 'shadow_predictions'
 SHADOW_KEEP_DAYS = 7
@@ -128,12 +132,32 @@ def race_shadow(runners, venue, distance, class_level, race_date, history,
     aware_finals, aware_info, aware_meta = avail_aware(
         experiments.get('avail_aware'), factor_scores, availability, weights, p_models, odds)
 
-    live_map, gate_map, aware_map = {}, {}, {}
+    upgrade_cfg = experiments.get('jockey_upgrade') or {}
+    blend = float(upgrade_cfg.get('blend', 0.15))
+    prior_window = int(upgrade_cfg.get('prior_window', 6))
+    upgrade_rows = [
+        JU.feature_from_stored(runner.get('jockey'), runner.get('jockey_win_rate'),
+                               history.get(runner.get('horse_id'), []), race_date,
+                               prior_window)
+        for runner in runners
+    ]
+    variant_scores = list(base_scores)
+    for i, fv in enumerate(upgrade_rows):
+        if fv['score'] is None:
+            continue
+        jt = factor_scores[i]['jockeyTrainer']
+        variant_scores[i] += weights['jockeyTrainer'] * blend * (fv['score'] - jt)
+    variant_models = A._softmax(variant_scores)
+    variant_finals = fuse_race(variant_models, _masked_markets(odds), odds)
+
+    live_map, gate_map, aware_map, upgrade_map = {}, {}, {}, {}
     for i, runner in enumerate(runners):
         rid = runner['runner_id']
         live_map[rid] = {'p_model': round(p_models[i], 5), 'p_final': round(live[i], 5)}
         gate_map[rid] = {'p_final': round(gate_finals[i], 5)}
         aware_map[rid] = {'p_final': round(aware_finals[i], 5), **aware_meta[i]}
+        upgrade_map[rid] = {'p_model': round(variant_models[i], 5),
+                            'p_final': round(variant_finals[i], 5), **upgrade_rows[i]}
 
     covered, total, coverage = odds_coverage(odds)
     return {
@@ -146,6 +170,7 @@ def race_shadow(runners, venue, distance, class_level, race_date, history,
             'availability_gate': bool((experiments.get('availability_gate') or {}).get('enabled')),
             'draw_v2': bool((experiments.get('draw_v2') or {}).get('enabled')),
             'avail_aware': bool((experiments.get('avail_aware') or {}).get('enabled')),
+            'jockey_upgrade': bool(upgrade_cfg.get('enabled')),
         },
         'live': live_map,
         'shadow': {
@@ -154,6 +179,14 @@ def race_shadow(runners, venue, distance, class_level, race_date, history,
                         'runners': {rid: {'p_final': row['p_final']}
                                     for rid, row in live_map.items()}},
             'avail_aware': {'meta': aware_info, 'runners': aware_map},
+            'jockey_upgrade': {
+                'meta': {'enabled': bool(upgrade_cfg.get('enabled')),
+                         'blend': blend, 'prior_window': prior_window,
+                         'covered': sum(1 for fv in upgrade_rows
+                                        if fv['score'] is not None),
+                         'runners': n},
+                'runners': upgrade_map,
+            },
         },
     }
 

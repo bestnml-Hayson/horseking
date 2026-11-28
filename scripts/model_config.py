@@ -23,7 +23,8 @@ _FEATURE_KEYS = ('form_shrink', 'rating_blend', 'draw_field_size', 'run_style_pa
                  'extreme_odds_alpha', 'calibration')
 _EXPERIMENT_KEYS = ('segmented_gamma', 'platt', 'avail_aware', 'availability_gate',
                     'draw_v2', 'timing_fusion', 'extreme_favourite_guard', 'dual_probability',
-                    'st1000_draw_reversal', 'speed_engine', 'finish_time_margin')
+                    'st1000_draw_reversal', 'speed_engine', 'finish_time_margin',
+                    'jockey_upgrade')
 _CALIBRATION_METHODS = ('none', 'temperature', 'platt', 'isotonic')
 _ODDS_SOURCES = ('sp', 'labeled', 'pre_race')
 

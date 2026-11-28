@@ -85,6 +85,7 @@
       "experiments": {
         "segmented_gamma": { "enabled": false },
         "platt": { "enabled": false, "window_min": 0, "window_max": 0 },
+        "jockey_upgrade": { "enabled": false, "blend": 0.15, "min_starts": 3, "prior_window": 6 },
         "avail_aware": { "enabled": false, "min_coverage": 0.8 },
         "availability_gate": { "enabled": false, "min_coverage": 0.8, "sparse_market_weight": 0.0 },
         "draw_v2": { "enabled": false },
@@ -178,6 +179,7 @@
       "experiments": {
         "segmented_gamma": { "enabled": false },
         "platt": { "enabled": false, "window_min": 150, "window_max": 300 },
+        "jockey_upgrade": { "enabled": false, "blend": 0.15, "min_starts": 3, "prior_window": 6 },
         "avail_aware": { "enabled": false, "min_coverage": 0.8 },
         "availability_gate": { "enabled": false, "min_coverage": 0.8, "sparse_market_weight": 0.0 },
         "draw_v2": { "enabled": false },

@@ -95,10 +95,34 @@ def test_race_shadow_records_both_columns_and_identity_draw():
         assert record['shadow']['draw_v2']['runners'][rid]['p_final'] == live['p_final']
         assert rid in record['shadow']['availability_gate']['runners']
         assert rid in record['shadow']['avail_aware']['runners']
+        assert rid in record['shadow']['jockey_upgrade']['runners']
     assert record['flags'] == {'availability_gate': False, 'draw_v2': False,
-                               'avail_aware': False}
+                               'avail_aware': False, 'jockey_upgrade': False}
     gate = record['shadow']['availability_gate']['runners']['r0']['p_final']
     assert gate == pytest.approx(record['live']['r0']['p_model'], abs=5e-5)
+
+
+def test_race_shadow_jockey_upgrade_records_feature():
+    runners = [_runner('r0', 'h0', 2.0), _runner('r1', 'h1', 4.0)]
+    runners[0]['jockey'] = 'A'
+    runners[0]['jockey_win_rate'] = 0.2
+    runners[1]['jockey'] = 'B'
+    runners[1]['jockey_win_rate'] = 0.05
+    history = {
+        'h0': [{'jockey': 'C', 'race_date': '2026-01-01', 'jockey_win_rate': 0.1}],
+        'h1': [{'jockey': 'D', 'race_date': '2026-01-01', 'jockey_win_rate': 0.1}],
+    }
+    experiments = {'jockey_upgrade': {'enabled': False, 'blend': 0.15,
+                                      'prior_window': 6}}
+    record = S.race_shadow(runners, 'ST', 1200, 'Class 4', '2026-12-02', history,
+                           race_no=1, experiments=experiments)
+    ju = record['shadow']['jockey_upgrade']
+    assert ju['meta']['covered'] == 2
+    assert ju['runners']['r0']['score'] == pytest.approx(100.0)
+    assert ju['runners']['r1']['score'] == pytest.approx(25.0)
+    assert record['flags']['jockey_upgrade'] is False
+    # the live column must not consume the shadow feature
+    assert record['live']['r0']['p_final'] != ju['runners']['r0']['p_final']
 
 
 def test_race_shadow_handles_empty_field():

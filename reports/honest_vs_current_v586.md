@@ -35,3 +35,14 @@
 2. `current_v586` 只可重現部署與除錯，不可宣稱改善。
 3. ROI 必須標明 `SP upper bound`；真實賽前 ROI 要等 ≥50 場完整快照賽事。
 4. 切換 profile：`MODEL_PROFILE=honest_v586`（Python）／`NEXT_PUBLIC_MODEL_PROFILE`（前端），預設仍是 `current_v586`。
+
+## 線 2 shadow 變體對照（全部 default off，不影響上表）
+
+| 變體 | 對比基線 | 結果（423 場 OOS） | 狀態 |
+|---|---|---|---|
+| `jockey_upgrade` blend 0.15 | honest_v586 | ΔNLL −0.00376（CI −0.00721~−0.00034、4/5 折） | 達標但 keep off；只 blend 入 jockeyTrainer |
+| `jockey_upgrade` blend 0.30 | honest_v586 | ΔNLL −0.00601（CI −0.01284~+0.00073） | 不達標 |
+| `avail_aware` 隔離 | honest_v586 | +0.00283（CI 含 0、3/5） | 不採納 |
+
+- jockey_upgrade 明細：`reports/jockey_upgrade_2026-11-28.md`；因覆蓋率 87.8% 且屬多重測試，
+  需在 ≥50 場真實 pre-race 賠率樣本上獨立 A/B 後才可談上線。

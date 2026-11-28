@@ -1,0 +1,531 @@
+{
+  "generated_at": "2026-11-28T12:52:02.341387+08:00",
+  "jockey_completeness": {
+    "runners": 13511,
+    "jockey_nonempty": 1.0,
+    "races_missing_jockey": 0,
+    "races_checked": 1057
+  },
+  "coverage": {
+    "runners": 13200,
+    "covered": 11584,
+    "coverage": 0.8776,
+    "missing_current_rate": 233,
+    "no_prior_runs": 1383,
+    "prior_runs_without_rate": 0,
+    "by_month": {
+      "2025-09": {
+        "covered": 103,
+        "runners": 606,
+        "coverage": 0.17
+      },
+      "2025-10": {
+        "covered": 713,
+        "runners": 1009,
+        "coverage": 0.7066
+      },
+      "2025-11": {
+        "covered": 850,
+        "runners": 998,
+        "coverage": 0.8517
+      },
+      "2025-12": {
+        "covered": 794,
+        "runners": 933,
+        "coverage": 0.851
+      },
+      "2026-01": {
+        "covered": 1062,
+        "runners": 1147,
+        "coverage": 0.9259
+      },
+      "2026-02": {
+        "covered": 928,
+        "runners": 983,
+        "coverage": 0.944
+      },
+      "2026-03": {
+        "covered": 988,
+        "runners": 1035,
+        "coverage": 0.9546
+      },
+      "2026-04": {
+        "covered": 1000,
+        "runners": 1072,
+        "coverage": 0.9328
+      },
+      "2026-05": {
+        "covered": 1079,
+        "runners": 1139,
+        "coverage": 0.9473
+      },
+      "2026-06": {
+        "covered": 852,
+        "runners": 889,
+        "coverage": 0.9584
+      },
+      "2026-07": {
+        "covered": 599,
+        "runners": 625,
+        "coverage": 0.9584
+      },
+      "2026-09": {
+        "covered": 659,
+        "runners": 673,
+        "coverage": 0.9792
+      },
+      "2026-10": {
+        "covered": 1076,
+        "runners": 1130,
+        "coverage": 0.9522
+      },
+      "2026-11": {
+        "covered": 881,
+        "runners": 961,
+        "coverage": 0.9168
+      }
+    },
+    "by_venue": {
+      "HV": {
+        "covered": 4387,
+        "runners": 4824,
+        "coverage": 0.9094
+      },
+      "ST": {
+        "covered": 7197,
+        "runners": 8376,
+        "coverage": 0.8592
+      }
+    },
+    "honest_cache": {
+      "usable_races": 1057,
+      "runners": 13200,
+      "asof_jockey_covered": 12967
+    }
+  },
+  "correlation": {
+    "runners": 11584,
+    "r_score_jockeyTrainer": 0.5738,
+    "r_delta_jockeyTrainer": 0.5802,
+    "r_current_rate_jockeyTrainer": 0.8458,
+    "score_mean": 49.93,
+    "score_p05": 16.19,
+    "score_p95": 94.91,
+    "delta_mean": 0.0009
+  },
+  "evaluation": {
+    "oos_races": 423,
+    "covered_races": 423,
+    "covered_runners": 5014,
+    "near_full_coverage_races": 394,
+    "baseline": {
+      "races": 423,
+      "nll": 2.29699,
+      "brier": 0.07124,
+      "top1": 0.2104,
+      "top1q": 0.3522,
+      "top3": 0.487,
+      "place": 0.4917,
+      "roi_ev": -16.9,
+      "roi_top1": -20.5,
+      "bets": 2615
+    },
+    "variants": {
+      "0.15": {
+        "blend": 0.15,
+        "variant": {
+          "races": 423,
+          "nll": 2.29323,
+          "brier": 0.07113,
+          "top1": 0.2246,
+          "top1q": 0.3522,
+          "top3": 0.4846,
+          "place": 0.4799,
+          "roi_ev": -16.9,
+          "roi_top1": -15.6,
+          "bets": 2626
+        },
+        "delta_nll": -0.00376,
+        "delta_ci": [
+          -0.00721,
+          -0.00034
+        ],
+        "folds": {
+          "improved": 4,
+          "folds": 5
+        },
+        "near_full": {
+          "races": 394,
+          "baseline": {
+            "races": 394,
+            "nll": 2.28535,
+            "brier": 0.07134,
+            "top1": 0.2107,
+            "top1q": 0.3528,
+            "top3": 0.4873,
+            "place": 0.4949,
+            "roi_ev": -16.7,
+            "roi_top1": -22.5,
+            "bets": 2404
+          },
+          "variant": {
+            "races": 394,
+            "nll": 2.28138,
+            "brier": 0.07121,
+            "top1": 0.2259,
+            "top1q": 0.3528,
+            "top3": 0.4822,
+            "place": 0.4822,
+            "roi_ev": -16.7,
+            "roi_top1": -17.2,
+            "bets": 2416
+          },
+          "delta_nll": -0.00397,
+          "delta_ci": [
+            -0.00759,
+            -0.00031
+          ]
+        },
+        "strata_venue": {
+          "ST": {
+            "races": 253,
+            "nll": 2.33361,
+            "brier": 0.06929,
+            "top1": 0.1976,
+            "top1q": 0.3083,
+            "top3": 0.4901,
+            "place": 0.4466,
+            "roi_ev": -3.9,
+            "roi_top1": -23.6,
+            "bets": 1719
+          },
+          "HV": {
+            "races": 170,
+            "nll": 2.23313,
+            "brier": 0.07386,
+            "top1": 0.2647,
+            "top1q": 0.4176,
+            "top3": 0.4765,
+            "place": 0.5294,
+            "roi_ev": -41.5,
+            "roi_top1": -3.6,
+            "bets": 907
+          }
+        }
+      },
+      "0.3": {
+        "blend": 0.3,
+        "variant": {
+          "races": 423,
+          "nll": 2.29098,
+          "brier": 0.07105,
+          "top1": 0.2199,
+          "top1q": 0.3475,
+          "top3": 0.4799,
+          "place": 0.4752,
+          "roi_ev": -15.2,
+          "roi_top1": -19.8,
+          "bets": 2640
+        },
+        "delta_nll": -0.00601,
+        "delta_ci": [
+          -0.01284,
+          0.00073
+        ],
+        "folds": {
+          "improved": 4,
+          "folds": 5
+        },
+        "near_full": {
+          "races": 394,
+          "baseline": {
+            "races": 394,
+            "nll": 2.28535,
+            "brier": 0.07134,
+            "top1": 0.2107,
+            "top1q": 0.3528,
+            "top3": 0.4873,
+            "place": 0.4949,
+            "roi_ev": -16.7,
+            "roi_top1": -22.5,
+            "bets": 2404
+          },
+          "variant": {
+            "races": 394,
+            "nll": 2.27895,
+            "brier": 0.07112,
+            "top1": 0.2234,
+            "top1q": 0.3553,
+            "top3": 0.4772,
+            "place": 0.4848,
+            "roi_ev": -15.0,
+            "roi_top1": -20.3,
+            "bets": 2434
+          },
+          "delta_nll": -0.0064,
+          "delta_ci": [
+            -0.0137,
+            0.00088
+          ]
+        },
+        "strata_venue": {
+          "ST": {
+            "races": 253,
+            "nll": 2.33391,
+            "brier": 0.06928,
+            "top1": 0.1858,
+            "top1q": 0.2925,
+            "top3": 0.4822,
+            "place": 0.4308,
+            "roi_ev": -2.1,
+            "roi_top1": -32.6,
+            "bets": 1726
+          },
+          "HV": {
+            "races": 170,
+            "nll": 2.2271,
+            "brier": 0.07367,
+            "top1": 0.2706,
+            "top1q": 0.4294,
+            "top3": 0.4765,
+            "place": 0.5412,
+            "roi_ev": -39.9,
+            "roi_top1": -0.6,
+            "bets": 914
+          }
+        }
+      }
+    },
+    "fold_weights": [
+      {
+        "fold": 1,
+        "venue": "HV",
+        "cutoff": "2026-05-06",
+        "table": {
+          "form": 0.262,
+          "draw": 0.121,
+          "jockeyTrainer": 0.1628,
+          "weight": 0.0406,
+          "courseDistance": 0.0807,
+          "restDays": 0.0202,
+          "gear": 0.0908,
+          "pace": 0.2017,
+          "classMov": 0.0202
+        },
+        "races": 241,
+        "fallback": false,
+        "baseline_train_nll": 2.41253,
+        "train_nll": 2.33897,
+        "train_gain": 0.07357
+      },
+      {
+        "fold": 1,
+        "venue": "ST",
+        "cutoff": "2026-05-06",
+        "table": {
+          "form": 0.2838,
+          "draw": 0.0608,
+          "jockeyTrainer": 0.108,
+          "weight": 0.1027,
+          "courseDistance": 0.1303,
+          "restDays": 0.0203,
+          "gear": 0.0913,
+          "pace": 0.1825,
+          "classMov": 0.0203
+        },
+        "races": 393,
+        "fallback": false,
+        "baseline_train_nll": 2.42199,
+        "train_nll": 2.38658,
+        "train_gain": 0.03541
+      },
+      {
+        "fold": 2,
+        "venue": "HV",
+        "cutoff": "2026-06-03",
+        "table": {
+          "form": 0.2622,
+          "draw": 0.121,
+          "jockeyTrainer": 0.1487,
+          "weight": 0.0391,
+          "courseDistance": 0.0807,
+          "restDays": 0.0202,
+          "gear": 0.0908,
+          "pace": 0.2017,
+          "classMov": 0.0356
+        },
+        "races": 268,
+        "fallback": false,
+        "baseline_train_nll": 2.37974,
+        "train_nll": 2.31689,
+        "train_gain": 0.06285
+      },
+      {
+        "fold": 2,
+        "venue": "ST",
+        "cutoff": "2026-06-03",
+        "table": {
+          "form": 0.2824,
+          "draw": 0.0605,
+          "jockeyTrainer": 0.1217,
+          "weight": 0.1035,
+          "courseDistance": 0.132,
+          "restDays": 0.0202,
+          "gear": 0.0908,
+          "pace": 0.1687,
+          "classMov": 0.0202
+        },
+        "races": 446,
+        "fallback": false,
+        "baseline_train_nll": 2.40584,
+        "train_nll": 2.37368,
+        "train_gain": 0.03217
+      },
+      {
+        "fold": 3,
+        "venue": "HV",
+        "cutoff": "2026-07-04",
+        "table": {
+          "form": 0.2628,
+          "draw": 0.1213,
+          "jockeyTrainer": 0.154,
+          "weight": 0.0249,
+          "courseDistance": 0.0808,
+          "restDays": 0.0202,
+          "gear": 0.0908,
+          "pace": 0.2021,
+          "classMov": 0.0431
+        },
+        "races": 295,
+        "fallback": false,
+        "baseline_train_nll": 2.37253,
+        "train_nll": 2.30362,
+        "train_gain": 0.06891
+      },
+      {
+        "fold": 3,
+        "venue": "ST",
+        "cutoff": "2026-07-04",
+        "table": {
+          "form": 0.2839,
+          "draw": 0.064,
+          "jockeyTrainer": 0.1398,
+          "weight": 0.0932,
+          "courseDistance": 0.1236,
+          "restDays": 0.0203,
+          "gear": 0.0913,
+          "pace": 0.1636,
+          "classMov": 0.0203
+        },
+        "races": 501,
+        "fallback": false,
+        "baseline_train_nll": 2.38995,
+        "train_nll": 2.36301,
+        "train_gain": 0.02694
+      },
+      {
+        "fold": 4,
+        "venue": "HV",
+        "cutoff": "2026-09-27",
+        "table": {
+          "form": 0.262,
+          "draw": 0.121,
+          "jockeyTrainer": 0.1647,
+          "weight": 0.039,
+          "courseDistance": 0.0806,
+          "restDays": 0.0202,
+          "gear": 0.0907,
+          "pace": 0.2016,
+          "classMov": 0.0202
+        },
+        "races": 338,
+        "fallback": false,
+        "baseline_train_nll": 2.35571,
+        "train_nll": 2.29395,
+        "train_gain": 0.06175
+      },
+      {
+        "fold": 4,
+        "venue": "ST",
+        "cutoff": "2026-09-27",
+        "table": {
+          "form": 0.2839,
+          "draw": 0.0681,
+          "jockeyTrainer": 0.1403,
+          "weight": 0.0797,
+          "courseDistance": 0.1211,
+          "restDays": 0.0203,
+          "gear": 0.0912,
+          "pace": 0.1751,
+          "classMov": 0.0203
+        },
+        "races": 541,
+        "fallback": false,
+        "baseline_train_nll": 2.38552,
+        "train_nll": 2.36114,
+        "train_gain": 0.02438
+      },
+      {
+        "fold": 5,
+        "venue": "HV",
+        "cutoff": "2026-10-25",
+        "table": {
+          "form": 0.2619,
+          "draw": 0.1209,
+          "jockeyTrainer": 0.1785,
+          "weight": 0.0215,
+          "courseDistance": 0.0806,
+          "restDays": 0.0201,
+          "gear": 0.0905,
+          "pace": 0.2015,
+          "classMov": 0.0245
+        },
+        "races": 365,
+        "fallback": false,
+        "baseline_train_nll": 2.34843,
+        "train_nll": 2.28073,
+        "train_gain": 0.0677
+      },
+      {
+        "fold": 5,
+        "venue": "ST",
+        "cutoff": "2026-10-25",
+        "table": {
+          "form": 0.2847,
+          "draw": 0.0756,
+          "jockeyTrainer": 0.1471,
+          "weight": 0.0599,
+          "courseDistance": 0.1176,
+          "restDays": 0.0203,
+          "gear": 0.0915,
+          "pace": 0.183,
+          "classMov": 0.0203
+        },
+        "races": 595,
+        "fallback": false,
+        "baseline_train_nll": 2.39019,
+        "train_nll": 2.3651,
+        "train_gain": 0.0251
+      }
+    ]
+  },
+  "cache_meta": {
+    "since": "2025-09-07",
+    "built_at": "2026-11-28T11:00:06.090668+08:00",
+    "races_loaded": 1088,
+    "usable": 1057,
+    "runners": 13200,
+    "drops": {
+      "odds coverage": 10,
+      "missing distance": 15,
+      "no unique winner": 5,
+      "fewer than 4 finishers": 1
+    },
+    "pre_race_races": 9,
+    "asof_jockey_covered": 12967,
+    "asof_trainer_covered": 13045
+  },
+  "flags": {
+    "jockey_upgrade": false
+  }
+}
