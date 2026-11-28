@@ -298,6 +298,11 @@ def inject_odds_for_upcoming_races(supabase, dry_run: bool = False):
                         record_shadow_predictions(supabase, date_str, venue, race_nos)
                     except Exception as e:
                         print(f"    [WARN] shadow record failed: {e}")
+                    try:
+                        from odds_snapshots import log_progress
+                        log_progress(supabase)
+                    except Exception as e:
+                        print(f"    [WARN] snapshot progress failed: {e}")
                 else:
                     print(f"  [WARN] {date_str} {venue}: no odds written")
             else:

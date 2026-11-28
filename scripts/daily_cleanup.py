@@ -219,6 +219,11 @@ def main():
         orphaned_deleted = cleanup_orphaned_runners(supabase, args.dry_run)
         old_predictions_deleted = cleanup_old_predictions(supabase, args.days, args.dry_run)
         integrity = verify_data_integrity(supabase)
+        try:
+            from odds_snapshots import log_progress
+            log_progress(supabase)
+        except Exception as e:
+            print(f"  [WARN] odds snapshot progress failed: {e}")
     except Exception as e:
         print(f"\n[SAFE EXIT] Cleanup error caught: {e}")
         print("[SAFE EXIT] Exiting gracefully (code 0)")

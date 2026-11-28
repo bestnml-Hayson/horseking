@@ -70,9 +70,9 @@ Commit B 原本的 `avail_aware` 列（ΔNLL −0.03449）係「deployed 因子�
 | `avail_aware`（pre2 基線，隔離） | +0.00283 | −0.00211 ~ +0.00933 | 3/5 | **未通過**，唔當已驗證 |
 | `avail_aware_on_combined`（deployed 基線，隔離） | +0.00168 | −0.00278 ~ +0.00774 | 2/5 | **未通過** |
 | `avail_aware_stack`（舊比較，只作審計） | −0.03449 | −0.07075 ~ −0.00381 | 5/5 | 混入已上線增益，不可引用 |
-| `draw_v2` | −0.01916 | −0.02812 ~ −0.01014 | 5/5 | **通過**（已上線，shadow 為身份檢查） |
+| `draw_v2` | −0.01916 | −0.02812 ~ −0.01014 | 5/5 | **通過**——但 draw_v2 **本來已係 live 預設**，本次 shadow 只作身份檢查（預期 Δ≈0），**不算新改善** |
 
-因此 Phase 2 只有 `draw_v2` 達採納門檻；`avail_aware` 維持 default off 的 shadow flag，用嚟喺未來真實賽前賠率場次累積證據。
+因此 Phase 2 只有 `draw_v2` 達採納門檻，而佢唔係新改善；`avail_aware` 隔離後 +0.0028（CI 含 0、3/5 fold）**不採納**，維持 default off 的 shadow flag，只作未來真實賽前賠率場次的證據累積，**不會再開 combined／stack 等新變體**（該兩個只存在於回測審計輸出，不設 flag）。
 
 ## Shadow 輸出格式（P1 實作規格，凍結）
 
@@ -126,18 +126,18 @@ Commit B 原本的 `avail_aware` 列（ΔNLL −0.03449）係「deployed 因子�
 | `snapshot_type` | TEXT CHECK ('open','60m','15m','close') | 距開跑時點分類 |
 | `captured_at` | TIMESTAMPTZ DEFAULT now() | 寫入時間 |
 
-- 索引：`UNIQUE (race_id, horse_id, snapshot_type)`（每個 bucket 只留第一口價）＋`(race_id, available_at DESC)`；RLS 只讀 policy。
-- Bucket 邊界（距開跑分鐘）：`>60` → `open`、`16–60` → `60m`、`6–15` → `15m`、`≤5` → `close`。
+- 索引：`UNIQUE (race_id, horse_id, snapshot_type, available_at)`（每個實際抓取時刻一列，只去掉完全相同時間的重複）＋`(race_id, available_at DESC)`；RLS 只讀 policy。
+- Bucket 邊界（距開跑分鐘）：`>60` → `open`、`16–60` → `60m`、`6–15` → `15m`、`≤5` → `close`。同一 bucket 可有多個時點，完整度以「四個 bucket 都最少有一口價」計。
 - 使用規則：`available_at IS NULL` 或 `source='SP'` 嘅行只可用於賽後評估，**永不**進入 pre-race fusion backtest；writer 只寫 `source='pre-race'`，SP 永不經此路徑。
-- 觸發條件：累積 ≥50 場「完整快照」賽事（open/60m/15m/close 齊全）後，才討論時間加權融合、α 時間加權 A/B、drift 特徵。
-- 由今日（2026-11-28）起 forward 收集。**DDL 狀態（2026-11-28）**：本環境 `db.<ref>.supabase.co` 只解析到 IPv6（DNS 失敗），且 DB 冇 `exec_sql`／`run_sql` RPC，`apply_migrations.py` 套用失敗；表未建立前 writer 自動退回 `pipeline_status.id='odds_snapshots'`（同形狀：`races.<race_id>.rows.<horse_id|type>`，保留 7 日、逐 bucket 去重），pipeline 不中斷。migration 檔已備好，日後有可連 DB URL 時直接套用即可回填/轉寫。
+- 觸發條件：累積 ≥50 場「完整快照」賽事（open/60m/15m/close 齊全）後，才討論時間加權融合、α 時間加權 A/B、drift 特徵。進度行 `complete_pre_race_races = X/50` 由 tick 及每日 `daily_cleanup.py`／`python scripts/odds_snapshots.py` 輸出，並寫入 `pipeline_status.id='odds_snapshot_progress'`。
+- 由今日（2026-11-28）起 forward 收集。**DDL 狀態（2026-11-28）**：`db.<ref>.supabase.co` 由本機 DNS 完全解析失敗（A/AAAA 皆無）、env 無 `SUPABASE_DB_URL`／`DATABASE_URL`，而 service_role key 係 JWT 唔係 DB 密碼；DB 亦冇 `exec_sql`／`run_sql` RPC，`apply_migrations.py` 套用失敗。表未建立前 writer 自動退回 `pipeline_status.id='odds_snapshots'`（同形狀：`races.<race_id>.rows.<horse_id|type|available_at>`），**保留 120 日**，每 tick 並更新 `buckets` 索引供完整度計算；pipeline 不中斷。migration 檔已備好，日後有可連 DB 憑證時直接套用，再將 fallback 資料轉寫入表。
 
 ## 風險
 
 1. **SP 循環性**：9 場真實賽前賠率，任何 α/ROI/γ 結論都只係 SP 上限；凍結期間唔可以引用 SP 回測去改預設。
 2. **Shadow 無變異**：歷史 SP 覆蓋接近 100%，availability gate 嘅 shadow 喺歷史數據上睇唔出分別；必須等真實缺賠率場次。
 3. **draw_v2 已上線**：佢嘅 shadow 係事後一致性檢查（預期 Δ≈0），唔係新改善；報告會照實寫，避免誤導。
-4. **遷移暫時套用唔到**：本環境冇可連 PG（host 只解析 IPv6）亦冇 SQL RPC；`odds_snapshots` 表未建立，資料暫存喺 `pipeline_status`（同形狀、7 日保留）。呢段期間快照不能用於 SQL 查詢／跨場 join，只可經 script 讀取；≥50 場門檻照樣按實際完整度計算。
+4. **遷移暫時套用唔到**：本環境 DNS 完全解析不到 DB host、無 DB 連線字串／密碼、亦無 SQL RPC；`odds_snapshots` 表未建立，資料暫存喺 `pipeline_status`（同形狀、120 日保留）。快照只可經 script 讀取，不能 SQL join；≥50 場門檻按實際四-bucket 完整度計算。fallback JSON 會隨場次增長（120 日估算 ≈數萬行），每次寫入係 read-modify-write，延遲會升，屬已知代價。
 5. **每個 item 獨立 commit、default off**：任何一步都可以單獨 revert，唔影響 live 預設。
 
 ## 回滾

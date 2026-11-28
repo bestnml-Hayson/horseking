@@ -1,6 +1,6 @@
 -- P2: forward-collected pre-race odds snapshots.
--- One row per horse per bucket; available_at is the only admissible proof that a
--- price existed before the race. Rows with source='SP' are post-race only.
+-- One row per distinct capture time; available_at is the only admissible proof
+-- that a price existed before the race. Rows with source='SP' are post-race only.
 CREATE TABLE IF NOT EXISTS odds_snapshots (
     id BIGSERIAL PRIMARY KEY,
     race_id TEXT NOT NULL,
@@ -12,8 +12,8 @@ CREATE TABLE IF NOT EXISTS odds_snapshots (
     captured_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS ux_odds_snapshots_bucket
-    ON odds_snapshots (race_id, horse_id, snapshot_type);
+CREATE UNIQUE INDEX IF NOT EXISTS ux_odds_snapshots_capture
+    ON odds_snapshots (race_id, horse_id, snapshot_type, available_at);
 CREATE INDEX IF NOT EXISTS idx_odds_snapshots_race_time
     ON odds_snapshots (race_id, available_at DESC);
 

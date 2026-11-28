@@ -8,10 +8,13 @@ and semantics are identical, so a later migration can copy them across.
 
 Bucket edges, measured to post time:
   > 60m -> open, 16-60m -> 60m, 6-15m -> 15m, <= 5m -> close
-The unique (race_id, horse_id, snapshot_type) key keeps the first price per
-bucket, so 'open' is the earliest morning price and 'close' the last one inside
-five minutes. Historical SP rows are never written as pre-race.
+The unique (race_id, horse_id, snapshot_type, available_at) key keeps every
+distinct capture and drops only exact repeats, so a race is "complete" once all
+four buckets carry at least one price. Historical SP rows are never written as
+pre-race. The fallback store keeps 120 days so the 50-race gate can actually be
+reached before the migration lands.
 """
+import json
 import os
 import sys
 from datetime import datetime, timedelta
@@ -24,7 +27,10 @@ from common import retry_supabase
 
 TABLE = 'odds_snapshots'
 STATE_ID = 'odds_snapshots'
-KEEP_DAYS = 7
+PROGRESS_ID = 'odds_snapshot_progress'
+KEEP_DAYS = 120
+TARGET_COMPLETE_RACES = 50
+BUCKETS = ('open', '60m', '15m', 'close')
 _table_available = None
 
 
@@ -94,13 +100,16 @@ def _write_fallback(supabase, race_id, race_date, rows, now):
     entry = races.get(race_id) or {'race_date': race_date, 'rows': {}}
     entry['race_date'] = race_date
     bucket_rows = entry.setdefault('rows', {})
+    seen = set(entry.get('buckets') or [])
     added = 0
     for row in rows:
-        key = f"{row['horse_id']}|{row['snapshot_type']}"
+        key = f"{row['horse_id']}|{row['snapshot_type']}|{row['available_at']}"
         if key in bucket_rows:
             continue
         bucket_rows[key] = row
+        seen.add(row['snapshot_type'])
         added += 1
+    entry['buckets'] = [b for b in BUCKETS if b in seen]
     races[race_id] = entry
     cutoff = (now - timedelta(days=KEEP_DAYS)).strftime('%Y-%m-%d')
     races = {rid: v for rid, v in races.items()
@@ -136,7 +145,7 @@ def record_pre_race_snapshots(supabase, race, odds_by_no, runner_horse_ids=None,
     if _table_available is not False:
         try:
             retry_supabase(lambda: supabase.table(TABLE).upsert(
-                rows, on_conflict='race_id,horse_id,snapshot_type',
+                rows, on_conflict='race_id,horse_id,snapshot_type,available_at',
                 ignore_duplicates=True).execute())
             _table_available = True
             return len(rows), 'table'
@@ -149,7 +158,85 @@ def record_pre_race_snapshots(supabase, race, odds_by_no, runner_horse_ids=None,
     return added, 'pipeline_status'
 
 
+def _table_ready(supabase):
+    global _table_available
+    if _table_available is None:
+        try:
+            retry_supabase(lambda: supabase.table(TABLE).select('race_id').limit(1).execute())
+            _table_available = True
+        except Exception:
+            _table_available = False
+    return bool(_table_available)
+
+
+def fetch_snapshot_rows(supabase):
+    """Every captured row plus the store it came from."""
+    if _table_ready(supabase):
+        rows, start = [], 0
+        while True:
+            resp = retry_supabase(lambda: supabase.table(TABLE).select(
+                'race_id,horse_id,odds,available_at,source,snapshot_type'
+            ).range(start, start + 999).execute())
+            batch = resp.data or []
+            rows.extend(batch)
+            if len(batch) < 1000:
+                break
+            start += 1000
+        return rows, 'table'
+
+    state = _load_state(supabase)
+    rows = []
+    for race_id, entry in (state.get('races') or {}).items():
+        for row in (entry.get('rows') or {}).values():
+            if isinstance(row, dict):
+                rows.append(dict(row, race_id=row.get('race_id') or race_id))
+    return rows, 'pipeline_status'
+
+
+def snapshot_progress(supabase):
+    """Count races with all four buckets present (the 50-race gate)."""
+    rows, store = fetch_snapshot_rows(supabase)
+    by_race = {}
+    for row in rows:
+        by_race.setdefault(row.get('race_id'), set()).add(row.get('snapshot_type'))
+    complete = sum(1 for buckets in by_race.values() if set(BUCKETS) <= buckets)
+    return {
+        'complete_pre_race_races': complete,
+        'total_races': len(by_race),
+        'target': TARGET_COMPLETE_RACES,
+        'store': store,
+    }
+
+
+def log_progress(supabase, out=print):
+    """Print and persist the daily X/50 progress line."""
+    progress = snapshot_progress(supabase)
+    out(f"[Snapshot] complete_pre_race_races = "
+        f"{progress['complete_pre_race_races']}/{TARGET_COMPLETE_RACES} "
+        f"(tracked races: {progress['total_races']}, store: {progress['store']})")
+    now = datetime.now(HKT)
+    try:
+        retry_supabase(lambda: supabase.table('pipeline_status').upsert({
+            'id': PROGRESS_ID,
+            'last_run': now.isoformat(),
+            'status_json': {**progress, 'updated_at': now.isoformat()},
+        }, on_conflict='id').execute())
+    except Exception as e:
+        out(f"    [WARN] snapshot progress not persisted: {e}")
+    return progress
+
+
 def reset_table_cache():
     """Tests: force the next call to probe the table again."""
     global _table_available
     _table_available = None
+
+
+def main():
+    from common import get_supabase
+    log_progress(get_supabase())
+    print(json.dumps(snapshot_progress(get_supabase()), ensure_ascii=False))
+
+
+if __name__ == '__main__':
+    main()
