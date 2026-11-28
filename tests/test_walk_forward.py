@@ -26,6 +26,31 @@ def test_split_blocks_never_leaks_future_into_train():
         assert not (train_ids & {s['race_id'] for s in test})
 
 
+def test_fit_blocks_uses_only_data_strictly_before_each_test_fold(monkeypatch):
+    import backtest_honest as H
+
+    seen = []
+
+    def fake_fit(train, base, venue, steps=None):
+        seen.append((venue, [s['date'] for s in train]))
+        return dict(base), {'races': len(train), 'fallback': True}
+
+    monkeypatch.setattr(H, 'fit_weights', fake_fit)
+    samples = [dict(s, venue='ST') for s in _samples(20)]
+    blocks = split_blocks(samples, test_frac=0.4, folds=5)
+    H.fit_blocks(samples, blocks, {'HV': {'form': 0.1}, 'ST': {'form': 0.1}})
+
+    assert len(seen) == 2 * len(blocks)
+    idx = 0
+    for _, test in blocks:
+        test_min = min(s['date'] for s in test)
+        for _venue in ('HV', 'ST'):
+            _venue_name, dates = seen[idx]
+            idx += 1
+            assert dates, 'training fold must not be empty'
+            assert max(dates) < test_min
+
+
 def test_prior_starts_excludes_same_day_result():
     history = [
         {'race_date': '2026-02-01', 'finish_position': 1},
