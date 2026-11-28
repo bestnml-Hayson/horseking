@@ -126,21 +126,22 @@ Commit B 原本的 `avail_aware` 列（ΔNLL −0.03449）係「deployed 因子�
 | `snapshot_type` | TEXT CHECK ('open','60m','15m','close') | 距開跑時點分類 |
 | `captured_at` | TIMESTAMPTZ DEFAULT now() | 寫入時間 |
 
-- 索引：`(race_id, snapshot_type)`、`(race_id, available_at DESC)`；RLS 只讀 policy。
-- 使用規則：`available_at IS NULL` 或 `source='SP'` 嘅行只可用於賽後評估，**永不**進入 pre-race fusion backtest。
+- 索引：`UNIQUE (race_id, horse_id, snapshot_type)`（每個 bucket 只留第一口價）＋`(race_id, available_at DESC)`；RLS 只讀 policy。
+- Bucket 邊界（距開跑分鐘）：`>60` → `open`、`16–60` → `60m`、`6–15` → `15m`、`≤5` → `close`。
+- 使用規則：`available_at IS NULL` 或 `source='SP'` 嘅行只可用於賽後評估，**永不**進入 pre-race fusion backtest；writer 只寫 `source='pre-race'`，SP 永不經此路徑。
 - 觸發條件：累積 ≥50 場「完整快照」賽事（open/60m/15m/close 齊全）後，才討論時間加權融合、α 時間加權 A/B、drift 特徵。
-- 由今日（2026-11-28）起 forward 收集；若表未建立，writer 退回 `pipeline_status.odds_drift` 並記錄原因，唔會中斷 pipeline。
+- 由今日（2026-11-28）起 forward 收集。**DDL 狀態（2026-11-28）**：本環境 `db.<ref>.supabase.co` 只解析到 IPv6（DNS 失敗），且 DB 冇 `exec_sql`／`run_sql` RPC，`apply_migrations.py` 套用失敗；表未建立前 writer 自動退回 `pipeline_status.id='odds_snapshots'`（同形狀：`races.<race_id>.rows.<horse_id|type>`，保留 7 日、逐 bucket 去重），pipeline 不中斷。migration 檔已備好，日後有可連 DB URL 時直接套用即可回填/轉寫。
 
 ## 風險
 
 1. **SP 循環性**：9 場真實賽前賠率，任何 α/ROI/γ 結論都只係 SP 上限；凍結期間唔可以引用 SP 回測去改預設。
 2. **Shadow 無變異**：歷史 SP 覆蓋接近 100%，availability gate 嘅 shadow 喺歷史數據上睇唔出分別；必須等真實缺賠率場次。
 3. **draw_v2 已上線**：佢嘅 shadow 係事後一致性檢查（預期 Δ≈0），唔係新改善；報告會照實寫，避免誤導。
-4. **遷移需要 service_role**：P2 用 `scripts/apply_migrations.py` 直連 PG／RPC 套用，唔會要求手動 SQL；套用失敗時 writer 有 fallback。
+4. **遷移暫時套用唔到**：本環境冇可連 PG（host 只解析 IPv6）亦冇 SQL RPC；`odds_snapshots` 表未建立，資料暫存喺 `pipeline_status`（同形狀、7 日保留）。呢段期間快照不能用於 SQL 查詢／跨場 join，只可經 script 讀取；≥50 場門檻照樣按實際完整度計算。
 5. **每個 item 獨立 commit、default off**：任何一步都可以單獨 revert，唔影響 live 預設。
 
 ## 回滾
 
 - P0：revert 本 commit（只改 config/metadata 命名＋報告），預設常數冇變。
 - P1：將三個 shadow flag 保持 `enabled=false` 或 revert commit；shadow key 冇 consumer。
-- P2：表係新增，唔影響現有讀取路徑；writer 有 `odds_drift` fallback。
+- P2：表係新增，唔影響現有讀取路徑；writer 有 `pipeline_status.odds_snapshots` fallback。回滾 = 移除兩個 hook 呼叫或 revert commit；已收集快照可按 race_id 刪除。

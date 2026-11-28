@@ -169,7 +169,7 @@ def inject_odds(supabase, date_str: str, venue: str, race_nos: list = None):
     date_path = date_str.replace('-', '')
 
     # Fetch races for this date/venue
-    query = supabase.table('races').select('race_id,race_no').eq('race_date', date_str).eq('venue', venue)
+    query = supabase.table('races').select('race_id,race_no,race_date,race_time').eq('race_date', date_str).eq('venue', venue)
     resp = query.execute()
     races = resp.data or []
 
@@ -199,7 +199,7 @@ def inject_odds(supabase, date_str: str, venue: str, race_nos: list = None):
             print(f"\n  Processing R{race_no} ({race_id})...")
 
             # Fetch runners with current P_model
-            resp = supabase.table('race_runners').select('runner_id,horse_no,win_odds').eq('race_id', race_id).execute()
+            resp = supabase.table('race_runners').select('runner_id,horse_no,horse_id,win_odds').eq('race_id', race_id).execute()
             runners = resp.data or []
 
             if not runners:
@@ -267,6 +267,15 @@ def inject_odds(supabase, date_str: str, venue: str, race_nos: list = None):
                 supabase, race_id, date_str,
                 [r for r in runners if r['horse_no'] in odds_map],
             )
+            try:
+                from odds_snapshots import record_pre_race_snapshots
+                runner_horse_ids = {r['horse_no']: r.get('horse_id') for r in runners}
+                snap_rows, snap_store = record_pre_race_snapshots(
+                    supabase, race, odds_map, runner_horse_ids=runner_horse_ids)
+                if snap_rows:
+                    print(f"    [Snapshot] {snap_rows} rows -> {snap_store}")
+            except Exception as e:
+                print(f"    [WARN] odds snapshot failed: {e}")
 
         browser.close()
 

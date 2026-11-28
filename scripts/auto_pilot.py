@@ -275,6 +275,7 @@ def inject_odds_for_upcoming_races(supabase, dry_run: bool = False):
                     injected += 1
                     print(f"  [OK] {date_str} {venue}: {updated} odds injected")
                     from odds_injection import record_drift
+                    from odds_snapshots import record_pre_race_snapshots
                     for race in needed:
                         if race['race_date'] != date_str or race['venue'] != venue:
                             continue
@@ -284,6 +285,14 @@ def inject_odds_for_upcoming_races(supabase, dry_run: bool = False):
                             'win_odds': float(price),
                         } for no, price in spread.items() if price and price > 1.0]
                         record_drift(supabase, race['race_id'], date_str, snapshot)
+                        try:
+                            snap_rows, snap_store = record_pre_race_snapshots(
+                                supabase, race, spread)
+                            if snap_rows:
+                                print(f"    [Snapshot] R{race['race_no']}: "
+                                      f"{snap_rows} rows -> {snap_store}")
+                        except Exception as e:
+                            print(f"    [WARN] odds snapshot failed: {e}")
                     try:
                         from shadow_predictions import record_shadow_predictions
                         record_shadow_predictions(supabase, date_str, venue, race_nos)
