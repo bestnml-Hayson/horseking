@@ -53,7 +53,7 @@ HKT = ZoneInfo('Asia/Hong_Kong')
 RUNNER_COLS = ('runner_id,race_id,horse_id,horse_no,draw,actual_weight,'
                'jockey_win_rate,trainer_win_rate,rest_days,gear,form_history,'
                'recent_form_score,finish_position,win_odds,best_time,'
-               'official_rating,sectional_times,margin,finish_time')
+               'official_rating,sectional_times,margin,finish_time,jockey,trainer')
 
 HISTORY_COLS = ('horse_id,finish_position,actual_weight,sectional_times,'
                 'races!inner(race_date,venue,distance,class_level)')

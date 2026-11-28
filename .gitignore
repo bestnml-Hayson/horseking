@@ -61,3 +61,4 @@ __pycache__/
 
 # === Backtest sample cache (regenerable, large) ===
 reports/.samples_*.json
+reports/.honest_samples_*.json

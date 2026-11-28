@@ -1,5 +1,6 @@
 from ai_review import _prior_starts
 from backtest_models import split_blocks
+from backtest_honest import build_asof_rates, jt_score
 
 
 def _samples(n):
@@ -34,3 +35,25 @@ def test_prior_starts_excludes_same_day_result():
     assert prior == [history[1]]
     assert _prior_starts(history, '2026-03-01') == history
     assert _prior_starts(history, None) == history
+
+
+def test_asof_rates_ignore_same_day_results():
+    races = [{'race_id': 'r1', 'race_date': '2026-01-01'},
+             {'race_id': 'r2', 'race_date': '2026-01-08'}]
+    by_race = {
+        'r1': [{'runner_id': 'a', 'jockey': 'J', 'trainer': 'T', 'finish_position': 1},
+               {'runner_id': 'b', 'jockey': 'K', 'trainer': 'T', 'finish_position': 2}],
+        'r2': [{'runner_id': 'c', 'jockey': 'J', 'trainer': 'T', 'finish_position': 1}],
+    }
+    rates = build_asof_rates(races, by_race)
+    # Day 1 has no earlier history -> no rate yet.
+    assert rates[('jockey', 'a')] == (None, 0)
+    # Day 2 sees both day-1 runners: jockey J 1/1, K 0/1 (min 3 starts not met).
+    assert rates[('jockey', 'c')] == (None, 1)
+    assert rates[('trainer', 'c')] == (None, 2)
+
+
+def test_jt_score_matches_factor_formula():
+    assert jt_score(None, None) == jt_score(0.1, 0.1) == 50.0
+    assert jt_score(0.2, 0.1) == 100.0 * 0.6 + 50.0 * 0.4
+    assert jt_score(1.0, 1.0) == 100.0
