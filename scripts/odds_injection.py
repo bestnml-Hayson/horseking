@@ -23,7 +23,7 @@ HKT = ZoneInfo('Asia/Hong_Kong')
 
 sys.path.insert(0, os.path.dirname(__file__))
 from common import get_supabase, retry_supabase
-from model_config import market_probabilities, fuse
+from model_config import market_probabilities, fuse_race
 
 DRIFT_ID = 'odds_drift'
 DRIFT_MAX_POINTS = 24
@@ -131,14 +131,15 @@ def compute_market_fusion(odds_list: list, p_models: list) -> list:
         return [{'p_market': None, 'p_final': None, 'ev': None, 'kelly': None} for _ in odds_list]
 
     p_markets = market_probabilities(odds_list)
+    masked = [p_markets[i] if (odds_list[i] and odds_list[i] > 1.0) else None
+              for i in range(len(odds_list))]
+    p_finals = fuse_race(p_models, masked, odds_list)
 
     results = []
     for i, odds in enumerate(odds_list):
-        p_model = p_models[i]
-
         if odds and odds > 1.0:
             p_market = p_markets[i]
-            p_final = fuse(p_model, p_market)
+            p_final = p_finals[i]
             ev = p_final * odds - 1
             kelly = max(0, ev / (odds - 1)) * 0.25
         else:

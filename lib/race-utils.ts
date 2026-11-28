@@ -11,14 +11,37 @@ export const MODEL_WEIGHT = 0.2
 export const MARKET_WEIGHT = 0.8
 const FRACTIONAL_KELLY = 0.25
 
-// Win-pool implied probabilities are inflated by the ~22% overround AND over-bet on
-// longshots: actual/implied falls from 0.74 (favourites) to 0.45 (deep longshots).
-// Raising the reciprocal to GAMMA>1 removes the takeout and re-weights that slope.
-const MARKET_GAMMA = 1.3
+// Walk-forward 2026-10-07 → 2026-11-25 (5 folds, 138 OOS races): γ picks were
+// [1.1,1.0,1.0,1.1,1.0] and every banded fit collapsed to 1.0, so the exponent is
+// now 1.0. scripts/backtest_models.py reproduces the grid.
+const MARKET_GAMMA = 1.0
 
 // Temperature scaling for softmax (prevents extreme probability distribution)
 // T=8 was the best on the validation slice; T=15 flattened P_model too much.
 const SOFTMAX_TEMPERATURE = 8
+
+// Post-softmax calibration before fusion: p ∝ p_model^(8/8).
+// Re-measured 2026-11-28 after the weight refit: fold temperature picks were
+// [8,8,8,8,9], i.e. the raw P_model is already calibrated (ECE 0.019) and the
+// deployed power is 1.0. The constant stays so calibration can be switched on.
+const CALIBRATION_POWER = SOFTMAX_TEMPERATURE / 8
+
+// Extreme prices are where the market is least reliable — lift the model weight.
+const EXTREME_ODDS_ALPHA = 0.35
+const EXTREME_ODDS_LOW = 1.8
+const EXTREME_ODDS_HIGH = 25
+
+// Bayesian shrinkage of recent-form average toward a mid-field 6.5 finish.
+const FORM_SHRINK_K = 2.5
+const FORM_SHRINK_PRIOR = 6.5
+
+// official_rating field percentile blended into the class-movement factor.
+const RATING_BLEND = 0.35
+
+// Draw score uses the actual field size; multiplier = inside-bias strength.
+const DRAW_K_HV = 0.9
+const DRAW_K_ST_SPRINT = 0.7
+const DRAW_K_ST_ROUTE = 0.55
 
 // Dynamic weighting by racecourse — all 9 factors are live and each venue's table
 // sums to exactly 1.0. 跑馬地 is draw-dominant (tight circuit), 沙田 is form-dominant
@@ -113,11 +136,34 @@ export function getWeightsByVenue(venue: string | undefined): RacecourseWeights 
   return { ...(override ?? RAW_WEIGHTS[key]) }
 }
 
-/** P_MARKET = (1/odds)^GAMMA normalised — takeout and favourite/longshot bias removed. */
+/** P_MARKET = (1/odds)^GAMMA normalised — takeout removed, renormalised to 1. */
 export function marketProbabilities(odds: (number | null | undefined)[]): number[] {
   const raw = odds.map(o => (o != null && o > 1 ? Math.pow(1 / o, MARKET_GAMMA) : 0))
   const total = raw.reduce((a, b) => a + b, 0)
   return total > 0 ? raw.map(r => r / total) : odds.map(() => 1 / Math.max(1, odds.length))
+}
+
+/**
+ * Post-softmax temperature scaling over the whole field.
+ * softmax(s/T) equals softmax(s/8) raised to 8/T; deployed T is 8 (identity).
+ */
+export function calibratePModel(pModels: number[]): number[] {
+  const scaled = pModels.map(p => Math.pow(Math.max(p, 0), CALIBRATION_POWER))
+  const total = scaled.reduce((a, b) => a + b, 0)
+  return total > 0 ? scaled.map(p => p / total) : pModels
+}
+
+/** Fusion weight for one price: core 20%, 35% at extreme odds. */
+export function fusionAlpha(odds: number | null | undefined): number {
+  if (odds != null && (odds < EXTREME_ODDS_LOW || odds > EXTREME_ODDS_HIGH)) return EXTREME_ODDS_ALPHA
+  return MODEL_WEIGHT
+}
+
+/** P_final for one runner from an already-calibrated P_model. */
+export function fuseCalibrated(pCalibrated: number, pMarket: number | null, odds: number | null | undefined): number {
+  if (pMarket == null) return pCalibrated
+  const alpha = fusionAlpha(odds)
+  return alpha * pCalibrated + (1 - alpha) * pMarket
 }
 
 function softmax(scores: number[], temperature: number = SOFTMAX_TEMPERATURE): number[] {
@@ -373,9 +419,46 @@ function computePaceScore(
 export function computeFormScore(row: RaceRow, form: number[]): number {
   if (form.length > 0) {
     const avg = form.reduce((s, p) => s + p, 0) / form.length
-    return Math.max(0, Math.min(100, (1 - (avg - 1) / 13) * 100))
+    // Bayesian shrinkage: one lucky placing should not out-rank six solid runs.
+    const shrunk = (form.length * avg + FORM_SHRINK_K * FORM_SHRINK_PRIOR) / (form.length + FORM_SHRINK_K)
+    return Math.max(0, Math.min(100, (1 - (shrunk - 1) / 13) * 100))
   }
   return row.recent_form_score ?? 50
+}
+
+/** Inside-draw advantage from the actual field size and venue/distance bias. */
+export function drawBiasScore(
+  draw: number | null | undefined,
+  totalRunners: number,
+  venue?: string,
+  distance?: number | null,
+): number {
+  if (draw == null) return 50
+  const field = Math.max(2, totalRunners)
+  const norm = (draw - 1) / (field - 1)
+  const k = venue === 'HV'
+    ? DRAW_K_HV
+    : ((distance ?? 0) < 1600 ? DRAW_K_ST_SPRINT : DRAW_K_ST_ROUTE)
+  return Math.max(0, Math.min(100, (1 - k * norm) * 100))
+}
+
+/** Percent of the pool this value beats, ties count half (0-100). */
+export function percentileRank(pool: number[], value: number): number {
+  const below = pool.filter(x => x < value).length
+  const equal = pool.filter(x => x === value).length
+  return (below + 0.5 * equal) / Math.max(pool.length, 1) * 100
+}
+
+/** Blend the horse's official-rating percentile into the class-movement score. */
+function blendRatingIntoClass(
+  classScore: number,
+  rating: number | null | undefined,
+  fieldRatings?: (number | null)[],
+): number {
+  if (rating == null || !fieldRatings) return classScore
+  const pool = fieldRatings.filter((r): r is number => r != null)
+  if (pool.length < 4) return classScore
+  return (1 - RATING_BLEND) * classScore + RATING_BLEND * percentileRank(pool, rating)
 }
 
 /**
@@ -433,6 +516,7 @@ function computeTotalScore(
   race?: Race,
   horseHistory?: Map<string, HorseRaceRecord[]>,
   paceLabel?: string,
+  fieldRatings?: (number | null)[],
 ): number {
   const w = getWeightsByVenue(venue)
   const prior = priorStarts(horseHistory?.get(row.horse_id), race?.race_date)
@@ -443,10 +527,7 @@ function computeTotalScore(
   const weight = row.actual_weight
 
   const formScore = computeFormScore(row, form)
-  const drawMax = Math.max(14, totalRunners)
-  const drawScore = draw != null
-    ? Math.max(0, Math.min(100, (1 - (draw - 1) / drawMax) * 100))
-    : 50
+  const drawScore = drawBiasScore(draw, totalRunners, venue, race?.distance)
 
   const jockeyScore = Math.max(0, Math.min(100, jockeyWr * 500))
   const trainerScore = Math.max(0, Math.min(100, trainerWr * 500))
@@ -466,7 +547,8 @@ function computeTotalScore(
   const gearScore = computeGearScore(row)
   const styleHistory = recentRunStyles(prior, 6).map(s => s.style)
   const paceScore = computePaceScore(row, paceLabel ?? '中等步速', totalRunners, styleHistory)
-  const classScore = computeClassMovementScore(row, race, horseHistory)
+  const classScore = blendRatingIntoClass(
+    computeClassMovementScore(row, race, horseHistory), row.official_rating, fieldRatings)
 
   return (
     formScore * w.form +
@@ -489,14 +571,18 @@ export function computeClientPredictions(
 ): RaceRow[] {
   if (rows.length === 0) return rows
 
-  const pace = predictPace(rows)
+  // Python's _predict_pace uses run-style history — pass it here too so the
+  // client and the post-race review label the same race the same way.
+  const pace = predictPace(rows, horseHistory, race)
 
+  const fieldRatings = rows.map(r => r.official_rating)
   const totalScores = rows.map(r =>
-    computeTotalScore(r, rows.length, venue, race, horseHistory, pace.label),
+    computeTotalScore(r, rows.length, venue, race, horseHistory, pace.label, fieldRatings),
   )
 
-  // P_MODEL = softmax of total scores
+  // P_MODEL = softmax of total scores; calibrated before fusion (T 8 → 10).
   const pModels = softmax(totalScores)
+  const calibrated = calibratePModel(pModels)
 
   const oddsList = rows.map(r => r.win_odds)
   const hasValidOdds = oddsList.some(o => o != null && o > 1)
@@ -512,18 +598,20 @@ export function computeClientPredictions(
         runner_id: row.runner_id,
         raw_model_prob: Math.round(pModel * 10000) / 10000,
         market_implied_prob: null,
-        final_prob: Math.round(pModel * 10000) / 10000,
+        final_prob: Math.round(calibrated[i] * 10000) / 10000,
         expected_value: null,
         kelly_fraction: null,
       }
       return { ...row, prediction }
     }
 
-    // P_MARKET = (1/odds)^GAMMA normalised — see marketProbabilities()
-    const pMarket = pMarketList[i]
-    const pFinal = MODEL_WEIGHT * pModel + MARKET_WEIGHT * pMarket
+    // P_MARKET = (1/odds)^GAMMA normalised — see marketProbabilities().
+    // A runner with no price stays model-only; never borrow 1/N or a zero vector.
     const odds = row.win_odds
-    const ev = (odds != null && odds > 1) ? pFinal * odds - 1 : null
+    const runnerHasOdds = odds != null && odds > 1
+    const pMarket = runnerHasOdds ? pMarketList[i] : null
+    const pFinal = fuseCalibrated(calibrated[i], pMarket, odds)
+    const ev = (runnerHasOdds && pMarket != null) ? pFinal * odds! - 1 : null
     const fullKelly = (odds != null && odds > 1 && ev != null && ev > 0) ? ev / (odds - 1) : 0
     const kelly = Math.max(0, fullKelly * FRACTIONAL_KELLY)
 
@@ -532,66 +620,9 @@ export function computeClientPredictions(
       race_id: row.race_id,
       runner_id: row.runner_id,
       raw_model_prob: Math.round(pModel * 10000) / 10000,
-      market_implied_prob: Math.round(pMarket * 10000) / 10000,
+      market_implied_prob: pMarket != null ? Math.round(pMarket * 10000) / 10000 : null,
       final_prob: Math.max(0, Math.min(1, Math.round(pFinal * 10000) / 10000)),
       expected_value: ev != null ? Math.round(ev * 10000) / 10000 : null,
-      kelly_fraction: Math.round(kelly * 100000) / 100000,
-    }
-
-    return { ...row, prediction }
-  })
-}
-
-/**
- * Recompute P_final, EV, Kelly from existing P_model and P_market values.
- * Uses the calibrated linear fusion: P_final = MODEL_WEIGHT*P_model + MARKET_WEIGHT*P_market.
- * Preserves server-computed P_model and P_market, only updates fusion output.
- */
-export function recomputePFusion(rows: RaceRow[]): RaceRow[] {
-  return rows.map(row => {
-    const pModel = row.prediction?.raw_model_prob ?? 0
-    const pMarket = row.prediction?.market_implied_prob ?? null
-    const odds = row.win_odds
-    const hasOdds = odds != null && odds > 1
-
-    if (pMarket == null || !hasOdds) {
-      const prediction: ModelPrediction = {
-        ...(row.prediction ?? {
-          prediction_id: `client-${row.runner_id}`,
-          race_id: row.race_id,
-          runner_id: row.runner_id,
-          raw_model_prob: pModel,
-          market_implied_prob: null,
-          final_prob: pModel,
-          expected_value: null,
-          kelly_fraction: null,
-        }),
-        market_implied_prob: null,
-        final_prob: Math.round(pModel * 10000) / 10000,
-        expected_value: null,
-        kelly_fraction: null,
-      }
-      return { ...row, prediction }
-    }
-
-    const pFinal = MODEL_WEIGHT * pModel + MARKET_WEIGHT * pMarket
-    const ev = pFinal * odds! - 1
-    const fullKelly = ev > 0 ? ev / (odds! - 1) : 0
-    const kelly = Math.max(0, fullKelly * FRACTIONAL_KELLY)
-
-    const prediction: ModelPrediction = {
-      ...(row.prediction ?? {
-        prediction_id: `client-${row.runner_id}`,
-        race_id: row.race_id,
-        runner_id: row.runner_id,
-        raw_model_prob: pModel,
-        market_implied_prob: pMarket,
-        final_prob: pFinal,
-        expected_value: ev,
-        kelly_fraction: kelly,
-      }),
-      final_prob: Math.max(0, Math.min(1, Math.round(pFinal * 10000) / 10000)),
-      expected_value: Math.round(ev * 10000) / 10000,
       kelly_fraction: Math.round(kelly * 100000) / 100000,
     }
 
@@ -1215,6 +1246,10 @@ export interface BenterBreakdown {
   drawSub: DrawSubIndices
   jtSub: JockeyTrainerSubIndices
   cdSub: CourseDistanceSubIndices
+  availability: Record<keyof RacecourseWeights, boolean>
+  speed: { rank: number | null; fieldSize: number; bestTime: number | null }
+  weightChange: { lastWeight: number | null; delta: number | null }
+  rating: { value: number | null; percentile: number | null }
   weights: RacecourseWeights
   venue: string
   venueLabel: string
@@ -1225,6 +1260,27 @@ export interface BenterBreakdownContext {
   horseHistory?: Map<string, HorseRaceRecord[]>
   paceLabel?: string
   totalRunners?: number
+  fieldRows?: RaceRow[]
+}
+
+/** HKJC best_time arrives as "1.21.30" (m:ss.hh) — seconds, 40-240s sanity gate. */
+export function parseBestTime(raw: string | null | undefined): number | null {
+  if (!raw) return null
+  const m = String(raw).trim().match(/^(\d+)[.:](\d{2})[.:](\d{2})$/)
+  if (!m) return null
+  const seconds = parseInt(m[1], 10) * 60 + parseInt(m[2], 10) + parseInt(m[3], 10) / 100
+  return seconds > 40 && seconds < 240 ? seconds : null
+}
+
+/** Weight carried in the horse's most recent prior start (null when unknown/placeholder). */
+export function lastCarriedWeight(
+  history: HorseRaceRecord[] | undefined,
+  raceDate: string | undefined,
+): number | null {
+  for (const h of priorStarts(history, raceDate)) {
+    if (h.actual_weight != null && h.actual_weight > 0) return h.actual_weight
+  }
+  return null
 }
 
 export function computeBenterBreakdown(
@@ -1244,10 +1300,7 @@ export function computeBenterBreakdown(
 
   const formAvg = form.length > 0 ? form.reduce((s, p) => s + p, 0) / form.length : 10
   const formScoreRaw = computeFormScore(row, form)
-  const drawMax = Math.max(14, totalRunners)
-  const drawScoreRaw = draw != null
-    ? Math.max(0, Math.min(100, (1 - (draw - 1) / drawMax) * 100))
-    : 50
+  const drawScoreRaw = drawBiasScore(draw, totalRunners, venue, ctx.race?.distance)
 
   const jockeyScore = Math.max(0, Math.min(100, jockeyWr * 500))
   const trainerScore = Math.max(0, Math.min(100, trainerWr * 500))
@@ -1267,7 +1320,40 @@ export function computeBenterBreakdown(
   const gearScoreRaw = computeGearScore(row)
   const styleHistory = recentRunStyles(prior, 6).map(s => s.style)
   const paceScoreRaw = computePaceScore(row, ctx.paceLabel ?? '中等步速', totalRunners, styleHistory)
-  const classMovScoreRaw = computeClassMovementScore(row, ctx.race, ctx.horseHistory)
+  const fieldRatings = ctx.fieldRows?.map(r => r.official_rating)
+  const classMovScoreRaw = blendRatingIntoClass(
+    computeClassMovementScore(row, ctx.race, ctx.horseHistory), row.official_rating, fieldRatings)
+
+  const availability: Record<keyof RacecourseWeights, boolean> = {
+    form: form.length > 0 || row.recent_form_score != null,
+    draw: draw != null,
+    jockeyTrainer: row.jockey_win_rate != null || row.trainer_win_rate != null,
+    weight: weight != null,
+    courseDistance: prior.length > 0 && ctx.race?.venue != null && ctx.race?.distance != null,
+    restDays: row.rest_days != null,
+    gear: true,
+    pace: draw != null,
+    classMov: Boolean(ctx.race?.class_level && prior.length > 0 && prior[0]?.class_level),
+  }
+
+  const ratingPool = (fieldRatings ?? []).filter((r): r is number => r != null)
+  const rating = row.official_rating
+  const ratingPercentile = rating != null && ratingPool.length >= 4
+    ? Math.round(percentileRank(ratingPool, rating))
+    : null
+
+  const bestTime = parseBestTime(row.best_time)
+  const fieldTimes = (ctx.fieldRows ?? [])
+    .map(r => parseBestTime(r.best_time))
+    .filter((t): t is number => t != null)
+  const speedRank = bestTime != null && fieldTimes.length >= 4
+    ? 1 + fieldTimes.filter(t => t < bestTime).length
+    : null
+
+  const lastWeight = lastCarriedWeight(ctx.horseHistory?.get(row.horse_id), ctx.race?.race_date)
+  const weightDelta = lastWeight != null && weight != null
+    ? Math.round((weight - lastWeight) * 10) / 10
+    : null
 
   const totalScore = Math.round(
     formScoreRaw * w.form +
@@ -1309,8 +1395,8 @@ export function computeBenterBreakdown(
   }
 
   // Draw sub-indices
-  const drawBiasCoeff = draw != null ? Math.round((1 - (draw - 1) / drawMax) * 100) / 100 : 0.5
-  const innerRatio = draw != null ? (draw - 1) / Math.max(1, Math.min(totalRunners - 1, drawMax - 1)) : 0.5
+  const drawBiasCoeff = Math.round(drawScoreRaw) / 100
+  const innerRatio = draw != null ? (draw - 1) / Math.max(1, totalRunners - 1) : 0.5
   const trackBiasIndex = draw != null ? Math.round((1 - innerRatio * 0.6) * 100) / 100 : 0.7
   const drawAdvantage: '內檔有利' | '中檔中性' | '外檔不利' =
     draw != null && draw <= 5 ? '內檔有利' : draw != null && draw >= 10 ? '外檔不利' : '中檔中性'
@@ -1362,6 +1448,10 @@ export function computeBenterBreakdown(
     drawSub,
     jtSub,
     cdSub,
+    availability,
+    speed: { rank: speedRank, fieldSize: fieldTimes.length, bestTime },
+    weightChange: { lastWeight, delta: weightDelta },
+    rating: { value: rating, percentile: ratingPercentile },
     weights: w,
     venue: venueKey,
     venueLabel,

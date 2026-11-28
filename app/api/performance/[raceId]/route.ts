@@ -13,11 +13,13 @@ async function fetchHorseHistory(horseIds: string[]): Promise<Map<string, HorseR
 
   const idList = horseIds.map(id => `"${id}"`).join(',')
   const rows = await directFetchAll(
-    `race_runners?select=horse_id,finish_position,sectional_times,races!inner(race_date,venue,distance,class_level)&horse_id=in.(${idList})&finish_position=not.is.null`,
+    `race_runners?select=horse_id,finish_position,official_rating,actual_weight,sectional_times,races!inner(race_date,venue,distance,class_level)&horse_id=in.(${idList})&finish_position=not.is.null`,
     'runner_id'
   ) as Array<{
     horse_id: string
     finish_position: number | null
+    official_rating: number | null
+    actual_weight: number | null
     sectional_times: string | null
     races: { race_date: string; venue: string; distance: number | null; class_level: string | null } | null
   }>
@@ -34,6 +36,8 @@ async function fetchHorseHistory(horseIds: string[]): Promise<Map<string, HorseR
       race_date: race.race_date,
       class_level: race.class_level ?? '',
       running_positions: row.sectional_times ?? null,
+      official_rating: row.official_rating,
+      actual_weight: row.actual_weight,
     }
 
     const existing = historyMap.get(row.horse_id) ?? []

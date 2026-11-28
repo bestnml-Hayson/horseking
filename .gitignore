@@ -58,3 +58,6 @@ data/references/_debug*.html
 __pycache__/
 *.py[cod]
 *.tsbuildinfo
+
+# === Backtest sample cache (regenerable, large) ===
+reports/.samples_*.json

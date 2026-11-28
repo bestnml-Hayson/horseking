@@ -323,6 +323,8 @@ export interface HorseRaceRecord {
   race_date: string
   class_level: string
   running_positions: string | null
+  official_rating: number | null
+  actual_weight: number | null
 }
 
 export async function fetchHorseRaceHistory(horseIds: string[]): Promise<Map<string, HorseRaceRecord[]>> {
@@ -339,7 +341,7 @@ export async function fetchHorseRaceHistory(horseIds: string[]): Promise<Map<str
     for (let from = 0; ; from += 1000) {
       const { data, error } = await supabase
         .from('race_runners')
-        .select('horse_id, finish_position, official_rating, sectional_times, races!inner(race_date, venue, distance, class_level)')
+        .select('horse_id, finish_position, official_rating, actual_weight, sectional_times, races!inner(race_date, venue, distance, class_level)')
         .in('horse_id', batch)
         .not('finish_position', 'is', 'null')
         .order('runner_id')
@@ -354,6 +356,7 @@ export async function fetchHorseRaceHistory(horseIds: string[]): Promise<Map<str
         horse_id: string
         finish_position: number | null
         official_rating: number | null
+        actual_weight: number | null
         sectional_times: string | null
         races: { race_date: string; venue: string; distance: number | null; class_level: string | null }
           | Array<{ race_date: string; venue: string; distance: number | null; class_level: string | null }>
@@ -372,6 +375,8 @@ export async function fetchHorseRaceHistory(horseIds: string[]): Promise<Map<str
           race_date: race.race_date,
           class_level: race.class_level ?? '',
           running_positions: row.sectional_times ?? null,
+          official_rating: row.official_rating,
+          actual_weight: row.actual_weight,
         }
 
         const existing = historyMap.get(row.horse_id) ?? []

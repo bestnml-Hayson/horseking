@@ -89,6 +89,7 @@ export function AIRaceAnalysis({ race, rows, horseHistory, oddsDrift }: AIRaceAn
     horseHistory: horseHistory ?? undefined,
     paceLabel: pace.label,
     totalRunners: rows.length,
+    fieldRows: rows,
   }))
   const factorSpreads = contenders.length >= 2
     ? (Object.keys(FACTOR_LABELS) as FactorKey[])
@@ -131,7 +132,7 @@ export function AIRaceAnalysis({ race, rows, horseHistory, oddsDrift }: AIRaceAn
         <span className="ai-analysis-sublabel">Benter Quant Race Analysis</span>
         <span
           className="ai-analysis-info"
-          title={`Benter 兩階段模型：階段一以 9 項因素（近況、檔位、騎練、負磅、途程、休養、配備、步速、班次）計算純實力 P_model；階段二以 (1/賠率)^1.3 正規化為市場機率 P_market，P_final = ${Math.round(MODEL_WEIGHT * 100)}% P_model + ${Math.round(MARKET_WEIGHT * 100)}% P_market；賠率未開出時 P_final = P_model。`}
+          title={`Benter 兩階段模型：階段一以 9 項因素（近況、檔位、騎練、負磅、途程、休養、配備、步速、班次）計算純實力 P_model（校準經 walk-forward 檢驗後未採用，維持原始機率）；階段二以 (1/賠率) 去水正規化為 P_market，P_final = ${Math.round(MODEL_WEIGHT * 100)}% P_model + ${Math.round(MARKET_WEIGHT * 100)}% P_market；賠率 <1.8 或 >25 時模型權重升至 35%；賠率未開出時 P_final = P_model。`}
         >
           &#x24D8;
         </span>

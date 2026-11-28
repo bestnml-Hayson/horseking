@@ -15,6 +15,7 @@ interface HorseDetailDrawerProps {
   horseHistory?: Map<string, HorseRaceRecord[]> | null
   paceLabel?: string
   totalRunners?: number
+  fieldRows?: RaceRow[] | null
   oddsDrift?: Map<string, OddsDriftEntry>
   onClose: () => void
 }
@@ -28,7 +29,7 @@ function fmtTime(seconds: number | null): string {
   return min > 0 ? `${min}:${sec.padStart(5, '0')}` : `${sec}s`
 }
 
-export function HorseDetailDrawer({ horseId, horseName, raceRow, venue, race, horseHistory, paceLabel, totalRunners, oddsDrift, onClose }: HorseDetailDrawerProps) {
+export function HorseDetailDrawer({ horseId, horseName, raceRow, venue, race, horseHistory, paceLabel, totalRunners, fieldRows, oddsDrift, onClose }: HorseDetailDrawerProps) {
   const [detail, setDetail] = useState<HorseDetail | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -139,11 +140,12 @@ export function HorseDetailDrawer({ horseId, horseName, raceRow, venue, race, ho
                   horseHistory: horseHistory ?? undefined,
                   paceLabel,
                   totalRunners,
+                  fieldRows: fieldRows ?? undefined,
                 })
                 const wPct = (v: number) => (v > 0 ? `${Math.round(v * 100)}%` : '未納入')
                 const factors = [
                   {
-                    label: '近況走勢分', sublabel: 'Form Score', score: bd.formScore, weight: wPct(bd.weights.form), color: FACTOR_COLORS.form,
+                    label: '近況走勢分', sublabel: 'Form Score', score: bd.formScore, weight: wPct(bd.weights.form), color: FACTOR_COLORS.form, available: bd.availability.form,
                     subs: [
                       { label: '近 6 場平均名次', value: bd.formSub.avgFinish != null ? bd.formSub.avgFinish.toFixed(1) : '-' },
                       { label: '最佳名次', value: bd.formSub.bestFinish != null ? `第 ${bd.formSub.bestFinish} 名` : '-' },
@@ -153,7 +155,7 @@ export function HorseDetailDrawer({ horseId, horseName, raceRow, venue, race, ho
                     ],
                   },
                   {
-                    label: '檔位偏差分', sublabel: 'Draw Bias', score: bd.drawScore, weight: wPct(bd.weights.draw), color: FACTOR_COLORS.draw,
+                    label: '檔位偏差分', sublabel: 'Draw Bias', score: bd.drawScore, weight: wPct(bd.weights.draw), color: FACTOR_COLORS.draw, available: bd.availability.draw,
                     subs: [
                       { label: '檔位利弊係數', value: bd.drawSub.drawBiasCoeff.toFixed(2) },
                       { label: '場地偏差指數', value: bd.drawSub.trackBiasIndex.toFixed(2) },
@@ -161,7 +163,7 @@ export function HorseDetailDrawer({ horseId, horseName, raceRow, venue, race, ho
                     ],
                   },
                   {
-                    label: '騎練組合分', sublabel: 'Jockey/Trainer', score: bd.jockeyTrainerScore, weight: wPct(bd.weights.jockeyTrainer), color: FACTOR_COLORS.jockeyTrainer,
+                    label: '騎練組合分', sublabel: 'Jockey/Trainer', score: bd.jockeyTrainerScore, weight: wPct(bd.weights.jockeyTrainer), color: FACTOR_COLORS.jockeyTrainer, available: bd.availability.jockeyTrainer,
                     subs: [
                       { label: `騎師 ${bd.jtSub.jockeyLabel}`, value: `${bd.jtSub.jockeyWinRate.toFixed(1)}%` },
                       { label: `練馬師 ${bd.jtSub.trainerLabel}`, value: `${bd.jtSub.trainerWinRate.toFixed(1)}%` },
@@ -169,7 +171,7 @@ export function HorseDetailDrawer({ horseId, horseName, raceRow, venue, race, ho
                     ],
                   },
                   {
-                    label: '途程場地分', sublabel: 'Course/Distance', score: bd.courseDistanceScore, weight: wPct(bd.weights.courseDistance), color: FACTOR_COLORS.courseDistance,
+                    label: '途程場地分', sublabel: 'Course/Distance', score: bd.courseDistanceScore, weight: wPct(bd.weights.courseDistance), color: FACTOR_COLORS.courseDistance, available: bd.availability.courseDistance,
                     subs: [
                       { label: '同程往績（近5戰）', value: `${bd.cdSub.starts} 次` },
                       { label: '同程勝出', value: `${bd.cdSub.wins} 次` },
@@ -178,26 +180,28 @@ export function HorseDetailDrawer({ horseId, horseName, raceRow, venue, race, ho
                     ],
                   },
                   {
-                    label: '負磅評分', sublabel: 'Weight', score: bd.weightScore, weight: wPct(bd.weights.weight), color: FACTOR_COLORS.weight,
+                    label: '負磅評分', sublabel: 'Weight', score: bd.weightScore, weight: wPct(bd.weights.weight), color: FACTOR_COLORS.weight, available: bd.availability.weight,
                     subs: [
                       { label: '實際負磅', value: raceRow.actual_weight != null ? `${raceRow.actual_weight} 磅` : '-' },
+                      { label: '上仗負磅', value: bd.weightChange.lastWeight != null ? `${bd.weightChange.lastWeight} 磅` : '待定' },
+                      { label: '負磅變動', value: bd.weightChange.delta != null ? `${bd.weightChange.delta > 0 ? '+' : ''}${bd.weightChange.delta} 磅` : '待定' },
                     ],
                   },
                   {
-                    label: '休養新鮮感', sublabel: 'Rest Days', score: bd.restDaysScore, weight: wPct(bd.weights.restDays), color: FACTOR_COLORS.restDays,
+                    label: '休養新鮮感', sublabel: 'Rest Days', score: bd.restDaysScore, weight: wPct(bd.weights.restDays), color: FACTOR_COLORS.restDays, available: bd.availability.restDays,
                     subs: [
                       { label: '休養天數', value: raceRow.rest_days != null ? `${raceRow.rest_days} 天` : '-' },
                     ],
                   },
                   {
-                    label: '配備變動', sublabel: 'Gear', score: bd.gearScore, weight: wPct(bd.weights.gear), color: FACTOR_COLORS.gear,
+                    label: '配備變動', sublabel: 'Gear', score: bd.gearScore, weight: wPct(bd.weights.gear), color: FACTOR_COLORS.gear, available: bd.availability.gear,
                     subs: [
                       { label: '配備', value: raceRow.gear ?? '無' },
                       { label: '首次配戴', value: bd.gearScore > 50 ? '有（加分）' : '無變動' },
                     ],
                   },
                   {
-                    label: '步速形勢', sublabel: 'Pace', score: bd.paceScore, weight: wPct(bd.weights.pace), color: FACTOR_COLORS.pace,
+                    label: '步速形勢', sublabel: 'Pace', score: bd.paceScore, weight: wPct(bd.weights.pace), color: FACTOR_COLORS.pace, available: bd.availability.pace,
                     subs: [
                       { label: '預計步速', value: paceLabel ?? '中等步速' },
                       { label: '檔位', value: raceRow.draw != null ? `${raceRow.draw} 檔` : '-' },
@@ -205,9 +209,10 @@ export function HorseDetailDrawer({ horseId, horseName, raceRow, venue, race, ho
                     ],
                   },
                   {
-                    label: '升降班', sublabel: 'Class Movement', score: bd.classMovScore, weight: wPct(bd.weights.classMov), color: FACTOR_COLORS.classMov,
+                    label: '升降班', sublabel: 'Class Movement', score: bd.classMovScore, weight: wPct(bd.weights.classMov), color: FACTOR_COLORS.classMov, available: bd.availability.classMov,
                     subs: [
                       { label: '評分级別', value: raceRow.official_rating != null ? `${raceRow.official_rating}` : '-' },
+                      { label: '場內評分排名', value: bd.rating.percentile != null ? `勝過 ${Math.round(bd.rating.percentile)}% 同場` : '待定' },
                     ],
                   },
                 ]
@@ -228,11 +233,13 @@ export function HorseDetailDrawer({ horseId, horseName, raceRow, venue, race, ho
                           <div className="bf-bar-track">
                             <div
                               className="bf-bar-fill"
-                              style={{ width: `${f.score}%`, backgroundColor: f.color }}
+                              style={{ width: f.available === false ? '0%' : `${f.score}%`, backgroundColor: f.available === false ? '#475569' : f.color }}
                             />
                           </div>
                           <div className="bf-footer">
-                            <span className="bf-score" style={{ color: f.color }}>{f.score}</span>
+                            <span className="bf-score" style={{ color: f.available === false ? '#64748b' : f.color }}>
+                              {f.available === false ? '待定' : f.score}
+                            </span>
                             <span className="bf-weight">權重 {f.weight}</span>
                           </div>
                           <div className="bf-sub-metrics">
@@ -257,6 +264,17 @@ export function HorseDetailDrawer({ horseId, horseName, raceRow, venue, race, ho
                           <div className="bt-value" style={{ color: STAT_COLORS.wins }}>{(bd.pFinal * 100).toFixed(1)}%</div>
                         </div>
                       )}
+                      <div className="benter-total-card">
+                        <div className="bt-label">速度排名（同場同程最佳時間）</div>
+                        <div
+                          className="bt-value"
+                          style={{ fontSize: '0.95rem', color: bd.speed.rank != null ? '#e2e8f0' : '#64748b' }}
+                        >
+                          {bd.speed.rank != null && bd.speed.bestTime != null
+                            ? `第 ${bd.speed.rank} / ${bd.speed.fieldSize} · ${bd.speed.bestTime.toFixed(2)}s`
+                            : '待定'}
+                        </div>
+                      </div>
                     </div>
                     <p className="benter-summary-text">{bd.summary}</p>
                   </div>

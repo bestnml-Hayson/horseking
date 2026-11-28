@@ -302,6 +302,7 @@ export function RaceDashboard({ races, allUpData }: RaceDashboardProps) {
         horseHistory={horseHistory}
         paceLabel={paceInfo.label}
         totalRunners={rows.length}
+        fieldRows={rows}
         oddsDrift={oddsDrift}
         onClose={handleCloseDrawer}
       />

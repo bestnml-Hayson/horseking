@@ -32,8 +32,10 @@ from common import get_supabase, retry_supabase, has_column
 # =====================================================================
 # Client-side prediction formula (matches lib/race-utils.ts exactly)
 # =====================================================================
-from model_config import (MODEL_WEIGHT, MARKET_WEIGHT, SOFTMAX_TEMPERATURE,
-                          market_probabilities, weights_for)
+from model_config import (SOFTMAX_TEMPERATURE,
+                          FORM_SHRINK_K, FORM_SHRINK_PRIOR, RATING_BLEND,
+                          DRAW_K_HV, DRAW_K_ST_SPRINT, DRAW_K_ST_ROUTE,
+                          market_probabilities, weights_for, fuse_race)
 from run_style import dominant_run_style, recent_run_styles
 
 
@@ -60,6 +62,13 @@ def _recent_form_positions(row: Dict, history: List[Dict]) -> List[int]:
     if parsed:
         return parsed
     return [h['finish_position'] for h in history[:6] if h.get('finish_position')]
+
+
+def _percentile_rank(values: List[float], value: float) -> float:
+    """Percent of the field this value beats (ties count half), 0-100."""
+    below = sum(1 for x in values if x < value)
+    equal = sum(1 for x in values if x == value)
+    return (below + 0.5 * equal) / max(len(values), 1) * 100.0
 
 
 def _softmax(scores: List[float], temperature: float = SOFTMAX_TEMPERATURE) -> List[float]:
@@ -266,6 +275,29 @@ def _compute_class_movement_score(row: Dict, race_class: Optional[str],
     return 55
 
 
+def factor_availability(row: Dict, total_runners: int,
+                        race_venue: Optional[str], race_distance: Optional[int],
+                        race_class: Optional[str],
+                        horse_history: Dict[str, List[Dict]],
+                        race_date: Optional[str] = None) -> Dict[str, bool]:
+    """Which factor inputs actually exist for this runner. Used to report data
+    coverage and to show 待定 in the UI; scoring keeps its neutral-50 fallback
+    because dropping and renormalising the weights measured worse OOS (+0.022 NLL)."""
+    prior = _prior_starts(horse_history.get(row.get('horse_id', ''), []), race_date)
+    return {
+        'form': bool(_recent_form_positions(row, prior)) or row.get('recent_form_score') is not None,
+        'draw': row.get('draw') is not None,
+        'jockeyTrainer': (row.get('jockey_win_rate') is not None
+                          or row.get('trainer_win_rate') is not None),
+        'weight': row.get('actual_weight') is not None,
+        'courseDistance': bool(prior) and race_venue is not None and race_distance is not None,
+        'restDays': row.get('rest_days') is not None,
+        'gear': True,  # no declared gear is a real state, not a missing value
+        'pace': row.get('draw') is not None,
+        'classMov': bool(race_class and prior and prior[0].get('class_level')),
+    }
+
+
 FACTOR_ORDER = ('form', 'draw', 'jockeyTrainer', 'weight', 'courseDistance',
                 'restDays', 'gear', 'pace', 'classMov')
 
@@ -275,14 +307,18 @@ def compute_factor_scores(row: Dict, total_runners: int,
                           race_class: Optional[str],
                           horse_history: Dict[str, List[Dict]],
                           pace_label: str,
-                          race_date: Optional[str] = None) -> Dict[str, float]:
+                          race_date: Optional[str] = None,
+                          field_ratings: Optional[List[Optional[float]]] = None) -> Dict[str, float]:
     """Per-factor 0-100 scores. Weights are applied outside so recalibration can
     refit them without recomputing the factors."""
     prior = _prior_starts(horse_history.get(row.get('horse_id', ''), []), race_date)
     form = _recent_form_positions(row, prior)
     if form:
+        # Bayesian shrinkage toward a mid-field 6.5: a single 2nd-place run should
+        # not out-rank a horse with six solid efforts (OOS −0.016 NLL).
         form_avg = sum(form) / len(form)
-        form_score = max(0, min(100, (1 - (form_avg - 1) / 13) * 100))
+        shrunk = (len(form) * form_avg + FORM_SHRINK_K * FORM_SHRINK_PRIOR) / (len(form) + FORM_SHRINK_K)
+        form_score = max(0, min(100, (1 - (shrunk - 1) / 13) * 100))
     else:
         # No recorded finishes for this horse: use the scraped index rather than
         # collapsing every such horse onto the same constant score.
@@ -290,8 +326,16 @@ def compute_factor_scores(row: Dict, total_runners: int,
         form_score = 50 if form_score is None else max(0, min(100, form_score))
 
     draw = row.get('draw')
-    draw_max = max(14, total_runners)
-    draw_score = max(0, min(100, (1 - (draw - 1) / draw_max) * 100)) if draw is not None else 50
+    if draw is not None:
+        field = max(2, total_runners)
+        norm = (draw - 1) / (field - 1)
+        if race_venue == 'HV':
+            draw_k = DRAW_K_HV
+        else:
+            draw_k = DRAW_K_ST_SPRINT if (race_distance or 0) < 1600 else DRAW_K_ST_ROUTE
+        draw_score = max(0, min(100, (1 - draw_k * norm) * 100))
+    else:
+        draw_score = 50
 
     jockey_wr = row.get('jockey_win_rate') or 0.1
     trainer_wr = row.get('trainer_win_rate') or 0.1
@@ -320,6 +364,12 @@ def compute_factor_scores(row: Dict, total_runners: int,
         [s['style'] for s in recent_run_styles(prior, 6)],
     )
     class_score = _compute_class_movement_score(row, race_class, horse_history, race_date)
+    rating = row.get('official_rating')
+    if field_ratings and rating is not None:
+        pool = [r for r in field_ratings if r is not None]
+        if len(pool) >= 4:
+            class_score = ((1 - RATING_BLEND) * class_score
+                           + RATING_BLEND * _percentile_rank(pool, rating))
 
     return {
         'form': form_score,
@@ -339,10 +389,12 @@ def _compute_total_score(row: Dict, total_runners: int, venue: Optional[str],
                          race_class: Optional[str],
                          horse_history: Dict[str, List[Dict]],
                          pace_label: str,
-                         race_date: Optional[str] = None) -> float:
+                         race_date: Optional[str] = None,
+                         field_ratings: Optional[List[Optional[float]]] = None) -> float:
     w = weights_for(venue)
     scores = compute_factor_scores(row, total_runners, race_venue, race_distance,
-                                   race_class, horse_history, pace_label, race_date)
+                                   race_class, horse_history, pace_label, race_date,
+                                   field_ratings)
     return sum(scores[k] * w[k] for k in FACTOR_ORDER)
 
 
@@ -361,10 +413,11 @@ def compute_client_predictions_py(runners: List[Dict], venue: Optional[str],
 
     pace_label = _predict_pace(runners, horse_history, race_date)
     total = len(runners)
+    field_ratings = [r.get('official_rating') for r in runners]
 
     scores = [
         _compute_total_score(r, total, venue, race_venue, race_distance, race_class,
-                             horse_history, pace_label, race_date)
+                             horse_history, pace_label, race_date, field_ratings)
         for r in runners
     ]
     p_models = _softmax(scores)
@@ -373,18 +426,11 @@ def compute_client_predictions_py(runners: List[Dict], venue: Optional[str],
     has_valid_odds = any(o is not None and o > 1 for o in odds_list)
 
     p_markets = market_probabilities(odds_list) if has_valid_odds else [None] * len(odds_list)
+    p_finals = fuse_race(p_models, p_markets, odds_list)
 
     results = []
     for i, runner in enumerate(runners):
-        p_model = p_models[i]
-        p_market = p_markets[i] if has_valid_odds else None
-
-        if p_market is not None:
-            p_final = MODEL_WEIGHT * p_model + MARKET_WEIGHT * p_market
-        else:
-            p_final = p_model
-
-        results.append((runner['runner_id'], p_model, p_final))
+        results.append((runner['runner_id'], p_models[i], p_finals[i]))
 
     results.sort(key=lambda x: x[2], reverse=True)
     return results
@@ -405,8 +451,8 @@ def _fetch_horse_history(supabase, horse_ids: List[str]) -> Dict[str, List[Dict]
                 # max-rows=1000 clamps limit() on this server, so page by offset
                 # or most of a batch's history silently disappears.
                 resp = supabase.table('race_runners').select(
-                    'horse_id,finish_position,sectional_times,races!inner(race_date,venue,distance,class_level)'
-                ).in_('horse_id', batch).not_is_('finish_position', 'null').order('runner_id') \
+                    'horse_id,finish_position,actual_weight,sectional_times,races!inner(race_date,venue,distance,class_level)'
+                ).in_('horse_id', batch).not_.is_('finish_position', 'null').order('runner_id') \
                     .range(frm, frm + 999).execute()
                 rows = resp.data or []
                 for row in rows:
@@ -425,6 +471,7 @@ def _fetch_horse_history(supabase, horse_ids: List[str]) -> Dict[str, List[Dict]
                         'race_date': race.get('race_date', ''),
                         'class_level': race.get('class_level', ''),
                         'running_positions': row.get('sectional_times'),
+                        'actual_weight': row.get('actual_weight'),
                     }
                     hid = row['horse_id']
                     history_map.setdefault(hid, []).append(entry)

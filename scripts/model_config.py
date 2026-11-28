@@ -8,6 +8,13 @@ Calibrated on 2026-02..2026-11 results (fit Feb-Aug, validate Sep-Nov): P_model 
 ranks worse than the price (NLL 2.34 vs 2.11), so the market anchors and the model is a
 value tilt. All 9 factors are live; each venue's weight table sums to exactly 1.0.
 
+The 2026-11-28 walk-forward (5 folds, 138 OOS races 2026-10-07 → 2026-11-25) moved
+MARKET_GAMMA 1.3 → 1.0 (γ picks [1.1,1.0,1.0,1.1,1.0], NLL 2.2107 → 2.1790). After the
+same-day weight refit the temperature picks were [8,8,8,8,9], so calibration is the
+identity and none is applied. Dynamic fusion keeps α=0.2 but lifts it to 0.35 for
+extreme prices. Banded γ fitted all-1.0, so no segmentation is deployed.
+scripts/backtest_models.py reproduces every number.
+
 scripts/recalibrate_weights.py may publish a fitted table to weights_active.json; when
 that file validates, it overrides the hand-set tables below for every Python engine.
 The browser reads the same numbers from pipeline_status.model_weights_active.
@@ -18,7 +25,31 @@ import os
 MODEL_WEIGHT = 0.2
 MARKET_WEIGHT = 0.8
 SOFTMAX_TEMPERATURE = 8
-MARKET_GAMMA = 1.3
+MARKET_GAMMA = 1.0
+
+# Post-softmax temperature scaling: softmax(s/T) is softmax(s/8) raised to 8/T.
+# Re-measured after the 2026-11-28 weight refit: fold picks were [8,8,8,8,9],
+# i.e. the raw P_model is already calibrated well enough (ECE 0.019) and no
+# scaling is deployed. The parameter stays so the calibration path remains
+# switchable without code changes.
+CALIBRATION_TEMPERATURE = 8.0
+CALIBRATION_POWER = SOFTMAX_TEMPERATURE / CALIBRATION_TEMPERATURE
+
+# Extreme prices: the model adds information where the market is least reliable.
+EXTREME_ODDS_ALPHA = 0.35
+EXTREME_ODDS_BAND = (1.8, 25.0)
+
+# Bayesian shrinkage of the recent-form average toward a mid-field 6.5 finish.
+FORM_SHRINK_K = 2.5
+FORM_SHRINK_PRIOR = 6.5
+
+# official_rating percentile blended into the class-movement factor (OOS −0.014 NLL).
+RATING_BLEND = 0.35
+
+# Draw score uses the actual field size; the multiplier is the inside-bias strength.
+DRAW_K_HV = 0.9
+DRAW_K_ST_SPRINT = 0.7   # ST < 1600m
+DRAW_K_ST_ROUTE = 0.55   # ST ≥ 1600m
 
 # 跑馬地 draw-dominant (tight circuit), 沙田 form-dominant (long straights).
 RAW_WEIGHTS_ST = {
@@ -89,3 +120,37 @@ def market_probabilities(odds):
 
 def fuse(p_model, p_market):
     return MODEL_WEIGHT * p_model + MARKET_WEIGHT * p_market
+
+
+def fusion_alpha(odds):
+    """Core α=0.2, lifted when the price is extreme (OOS NLL 2.1749 → 2.1657)."""
+    if odds is not None and (odds < EXTREME_ODDS_BAND[0] or odds > EXTREME_ODDS_BAND[1]):
+        return EXTREME_ODDS_ALPHA
+    return MODEL_WEIGHT
+
+
+def calibrate_p_model(p_models):
+    """Post-softmax temperature scaling over the whole field, renormalised."""
+    scaled = [max(float(p), 0.0) ** CALIBRATION_POWER for p in p_models]
+    total = sum(scaled)
+    if total <= 0:
+        return list(p_models)
+    return [p / total for p in scaled]
+
+
+def fuse_race(p_models, p_markets, odds_list=None):
+    """Calibrate the field once, then fuse each runner (dynamic α at extreme odds).
+
+    p_markets may contain None when a runner has no price; those stay model-only.
+    """
+    calibrated = calibrate_p_model(p_models)
+    fused = []
+    for i, p_model in enumerate(calibrated):
+        p_market = p_markets[i] if p_markets else None
+        if p_market is None:
+            fused.append(p_model)
+            continue
+        odds = odds_list[i] if odds_list else None
+        alpha = fusion_alpha(odds)
+        fused.append(alpha * p_model + (1 - alpha) * p_market)
+    return fused

@@ -47,7 +47,7 @@ WEIGHT_CAP = 0.30
 MAX_DRIFT = 0.06
 RUNNER_COLS = ('runner_id,race_id,horse_id,horse_no,draw,actual_weight,jockey_win_rate,'
                'trainer_win_rate,rest_days,gear,form_history,recent_form_score,'
-               'finish_position,win_odds')
+               'finish_position,win_odds,official_rating')
 
 
 def last_fit_time(supabase) -> Optional[str]:
@@ -81,11 +81,12 @@ def fetch_samples(supabase, since: str) -> List[Dict]:
         .eq('is_finished', True)
         .gte('race_date', since)
         .in_('venue', ['ST', 'HV'])
-        .order('race_date')
+        .order('race_date', desc=True)
         .limit(400)
         .execute()
     )
     races = resp.data or []
+    races.reverse()  # newest 400 meetings, then chronological train/test split
     if not races:
         return []
 
@@ -119,11 +120,12 @@ def fetch_samples(supabase, since: str) -> List[Dict]:
             continue
         race = by_id[rid]
         pace_label = _predict_pace(rows, history, str(race['race_date'])[:10])
+        field_ratings = [r.get('official_rating') for r in rows]
         scores = []
         for r in rows:
             factors = compute_factor_scores(
                 r, len(rows), race['venue'], race['distance'], race.get('class_level'),
-                history, pace_label, str(race['race_date'])[:10],
+                history, pace_label, str(race['race_date'])[:10], field_ratings,
             )
             scores.append([factors[k] for k in FACTOR_KEYS])
         samples.append({

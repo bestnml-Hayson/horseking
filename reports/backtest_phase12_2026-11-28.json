@@ -1,0 +1,732 @@
+{
+  "generated_at": "2026-11-28T10:17:17.541859+08:00",
+  "since": "2026-06-01",
+  "races": 343,
+  "runners": 4278,
+  "test_races": 138,
+  "test_window": [
+    "2026-10-07",
+    "2026-11-25"
+  ],
+  "honesty": {
+    "races": 343,
+    "genuine_pre_race": 9
+  },
+  "gate": {
+    "draw": 1.0,
+    "actual_weight": 1.0,
+    "jockey_win_rate": 0.889,
+    "trainer_win_rate": 0.889,
+    "rest_days": 0.889,
+    "gear": 0.3429,
+    "form_history": 0.4413,
+    "best_time": 0.3081,
+    "official_rating": 0.4018,
+    "sectional_times": 0.295,
+    "last_weight (history)": 0.9528,
+    "margin": 0.4313,
+    "finish_time": 0.4869
+  },
+  "market_gamma": [
+    {
+      "races": 138,
+      "nll": 2.16494,
+      "brier": 0.06913,
+      "top1": 0.2536,
+      "top3": 0.5652,
+      "bets": 0,
+      "roi_pct": null,
+      "gamma": 1.0
+    },
+    {
+      "races": 138,
+      "nll": 2.17416,
+      "brier": 0.0693,
+      "top1": 0.2536,
+      "top3": 0.5652,
+      "bets": 0,
+      "roi_pct": null,
+      "gamma": 1.1
+    },
+    {
+      "races": 138,
+      "nll": 2.18959,
+      "brier": 0.0696,
+      "top1": 0.2536,
+      "top3": 0.5652,
+      "bets": 1,
+      "roi_pct": -100.0,
+      "gamma": 1.2
+    },
+    {
+      "races": 138,
+      "nll": 2.21073,
+      "brier": 0.07003,
+      "top1": 0.2536,
+      "top3": 0.5652,
+      "bets": 65,
+      "roi_pct": -23.4,
+      "gamma": 1.3
+    },
+    {
+      "races": 138,
+      "nll": 2.23712,
+      "brier": 0.07057,
+      "top1": 0.2536,
+      "top3": 0.5652,
+      "bets": 130,
+      "roi_pct": -24.6,
+      "gamma": 1.4
+    },
+    {
+      "races": 138,
+      "nll": 2.2683,
+      "brier": 0.07121,
+      "top1": 0.2536,
+      "top3": 0.5652,
+      "bets": 158,
+      "roi_pct": -25.8,
+      "gamma": 1.5
+    }
+  ],
+  "gamma_picks": [
+    1.1,
+    1.0,
+    1.0,
+    1.1,
+    1.0
+  ],
+  "gamma_wf": {
+    "races": 138,
+    "nll": 2.17901,
+    "brier": 0.06946,
+    "top1": 0.2536,
+    "top3": 0.5652,
+    "bets": 0,
+    "roi_pct": null
+  },
+  "gamma_deploy": 1.0,
+  "band_picks_wf": [
+    {
+      "熱門 ≤4": 1.0,
+      "中價 4-10": 1.0,
+      "冷門 >10": 1.0
+    },
+    {
+      "熱門 ≤4": 1.0,
+      "中價 4-10": 1.0,
+      "冷門 >10": 1.0
+    },
+    {
+      "熱門 ≤4": 1.0,
+      "中價 4-10": 1.0,
+      "冷門 >10": 1.0
+    },
+    {
+      "熱門 ≤4": 1.0,
+      "中價 4-10": 1.0,
+      "冷門 >10": 1.0
+    },
+    {
+      "熱門 ≤4": 1.1,
+      "中價 4-10": 1.0,
+      "冷門 >10": 1.0
+    }
+  ],
+  "band_deploy": {
+    "熱門 ≤4": 1.0,
+    "中價 4-10": 1.0,
+    "冷門 >10": 1.0
+  },
+  "band_wf": {
+    "races": 138,
+    "nll": 2.16432,
+    "brier": 0.0691,
+    "top1": 0.2536,
+    "top3": 0.5652,
+    "bets": 0,
+    "roi_pct": null
+  },
+  "band_deploy_result": {
+    "races": 138,
+    "nll": 2.16494,
+    "brier": 0.06913,
+    "top1": 0.2536,
+    "top3": 0.5652,
+    "bets": 0,
+    "roi_pct": null
+  },
+  "band_deploy_active": false,
+  "by_venue_market": {
+    "HV": {
+      "races": 65,
+      "nll": 2.09191,
+      "brier": 0.07164,
+      "top1": 0.2769,
+      "top3": 0.5846,
+      "bets": 0,
+      "roi_pct": null
+    },
+    "ST": {
+      "races": 73,
+      "nll": 2.22997,
+      "brier": 0.0669,
+      "top1": 0.2329,
+      "top3": 0.5479,
+      "bets": 0,
+      "roi_pct": null
+    }
+  },
+  "calibration": {
+    "raw": {
+      "races": 138,
+      "nll": 2.42774,
+      "brier": 0.07419,
+      "top1": 0.1449,
+      "top3": 0.3841,
+      "bets": 815,
+      "roi_pct": -15.1
+    },
+    "temperature": {
+      "races": 138,
+      "nll": 2.42544,
+      "brier": 0.07418,
+      "top1": 0.1449,
+      "top3": 0.3841,
+      "bets": 829,
+      "roi_pct": -13.4
+    },
+    "platt": {
+      "races": 138,
+      "nll": 2.42333,
+      "brier": 0.0741,
+      "top1": 0.1449,
+      "top3": 0.3841,
+      "bets": 840,
+      "roi_pct": -14.3
+    },
+    "isotonic": {
+      "races": 138,
+      "nll": 2.61473,
+      "brier": 0.07436,
+      "top1": 0.1449,
+      "top3": 0.413,
+      "bets": 742,
+      "roi_pct": -1.4
+    }
+  },
+  "calibration_ece": {
+    "raw": 0.0191,
+    "temperature": 0.0219,
+    "platt": 0.0209,
+    "isotonic": 0.0232
+  },
+  "calibration_params": {
+    "temperature": [
+      8,
+      8,
+      8,
+      8,
+      9
+    ],
+    "platt": [
+      [
+        1.0591,
+        0.1281
+      ],
+      [
+        0.991,
+        -0.0196
+      ],
+      [
+        0.956,
+        -0.096
+      ],
+      [
+        0.9408,
+        -0.1294
+      ],
+      [
+        0.8825,
+        -0.2588
+      ]
+    ],
+    "isotonic_knots": [
+      69,
+      76,
+      85,
+      91,
+      61
+    ]
+  },
+  "calibration_t_deploy": 8,
+  "best_calibration": "platt",
+  "fusion_alpha": [
+    {
+      "races": 138,
+      "nll": 2.16494,
+      "brier": 0.06913,
+      "top1": 0.2536,
+      "top3": 0.5652,
+      "bets": 0,
+      "roi_pct": null,
+      "alpha": 0.0
+    },
+    {
+      "races": 138,
+      "nll": 2.1667,
+      "brier": 0.06915,
+      "top1": 0.2536,
+      "top3": 0.558,
+      "bets": 45,
+      "roi_pct": -33.3,
+      "alpha": 0.05
+    },
+    {
+      "races": 138,
+      "nll": 2.16987,
+      "brier": 0.06919,
+      "top1": 0.2609,
+      "top3": 0.558,
+      "bets": 162,
+      "roi_pct": -40.1,
+      "alpha": 0.1
+    },
+    {
+      "races": 138,
+      "nll": 2.17423,
+      "brier": 0.06925,
+      "top1": 0.2609,
+      "top3": 0.5362,
+      "bets": 289,
+      "roi_pct": -26.0,
+      "alpha": 0.15
+    },
+    {
+      "races": 138,
+      "nll": 2.17968,
+      "brier": 0.06934,
+      "top1": 0.2609,
+      "top3": 0.5435,
+      "bets": 386,
+      "roi_pct": -17.1,
+      "alpha": 0.2
+    },
+    {
+      "races": 138,
+      "nll": 2.18615,
+      "brier": 0.06946,
+      "top1": 0.2536,
+      "top3": 0.5507,
+      "bets": 455,
+      "roi_pct": -25.1,
+      "alpha": 0.25
+    },
+    {
+      "races": 138,
+      "nll": 2.1936,
+      "brier": 0.0696,
+      "top1": 0.2536,
+      "top3": 0.5507,
+      "bets": 513,
+      "roi_pct": -11.1,
+      "alpha": 0.3
+    },
+    {
+      "races": 138,
+      "nll": 2.20202,
+      "brier": 0.06976,
+      "top1": 0.2464,
+      "top3": 0.5435,
+      "bets": 569,
+      "roi_pct": -17.2,
+      "alpha": 0.35
+    },
+    {
+      "races": 138,
+      "nll": 2.21142,
+      "brier": 0.06995,
+      "top1": 0.2391,
+      "top3": 0.5435,
+      "bets": 603,
+      "roi_pct": -11.4,
+      "alpha": 0.4
+    },
+    {
+      "races": 138,
+      "nll": 2.22182,
+      "brier": 0.07017,
+      "top1": 0.2319,
+      "top3": 0.5435,
+      "bets": 636,
+      "roi_pct": -5.3,
+      "alpha": 0.45
+    },
+    {
+      "races": 138,
+      "nll": 2.23326,
+      "brier": 0.07041,
+      "top1": 0.2174,
+      "top3": 0.5362,
+      "bets": 672,
+      "roi_pct": -10.4,
+      "alpha": 0.5
+    }
+  ],
+  "fusion_best_alpha": 0.0,
+  "fusion_alpha_picks": [
+    0.1,
+    0.1,
+    0.1,
+    0.05,
+    0.1
+  ],
+  "fusion_alpha_wf": {
+    "races": 138,
+    "nll": 2.17131,
+    "brier": 0.06923,
+    "top1": 0.2609,
+    "top3": 0.558,
+    "bets": 134,
+    "roi_pct": -27.6
+  },
+  "fusion_dynamic": [
+    {
+      "races": 138,
+      "nll": 2.17695,
+      "brier": 0.06945,
+      "top1": 0.2609,
+      "top3": 0.5435,
+      "bets": 450,
+      "roi_pct": -10.5,
+      "rule": "α=0.35 if odds<2.0 or >30.0"
+    },
+    {
+      "races": 138,
+      "nll": 2.17624,
+      "brier": 0.06954,
+      "top1": 0.2609,
+      "top3": 0.5435,
+      "bets": 470,
+      "roi_pct": -6.2,
+      "rule": "α=0.45 if odds<2.0 or >30.0"
+    },
+    {
+      "races": 138,
+      "nll": 2.17097,
+      "brier": 0.06944,
+      "top1": 0.2609,
+      "top3": 0.5435,
+      "bets": 468,
+      "roi_pct": -13.9,
+      "rule": "α=0.35 if odds<1.8 or >25.0"
+    }
+  ],
+  "staged": {
+    "部署前基線 (γ1.3 raw)": {
+      "races": 138,
+      "nll": 2.19554,
+      "brier": 0.06963,
+      "top1": 0.2609,
+      "top3": 0.5362,
+      "bets": 141,
+      "roi_pct": -67.5
+    },
+    "+γ": {
+      "races": 138,
+      "nll": 2.17968,
+      "brier": 0.06934,
+      "top1": 0.2609,
+      "top3": 0.5435,
+      "bets": 386,
+      "roi_pct": -17.1
+    },
+    "+features (deployed)": {
+      "races": 138,
+      "nll": 2.17549,
+      "brier": 0.06929,
+      "top1": 0.2536,
+      "top3": 0.5507,
+      "bets": 370,
+      "roi_pct": -4.6
+    },
+    "+calibration": {
+      "races": 138,
+      "nll": 2.17549,
+      "brier": 0.06929,
+      "top1": 0.2536,
+      "top3": 0.5507,
+      "bets": 370,
+      "roi_pct": -4.6
+    },
+    "+dynamic α": {
+      "races": 138,
+      "nll": 2.167,
+      "brier": 0.06939,
+      "top1": 0.2536,
+      "top3": 0.5507,
+      "bets": 456,
+      "roi_pct": 3.9
+    }
+  },
+  "weights_source": {
+    "fitted_at": "2026-11-28T10:13:12.909568+08:00",
+    "sample_races": 274,
+    "table": {
+      "HV": {
+        "form": 0.2609,
+        "draw": 0.1205,
+        "jockeyTrainer": 0.1807,
+        "weight": 0.0201,
+        "courseDistance": 0.141,
+        "restDays": 0.0201,
+        "gear": 0.0903,
+        "pace": 0.0803,
+        "classMov": 0.0861
+      },
+      "ST": {
+        "form": 0.2642,
+        "draw": 0.1094,
+        "jockeyTrainer": 0.142,
+        "weight": 0.0404,
+        "courseDistance": 0.1009,
+        "restDays": 0.0202,
+        "gear": 0.0202,
+        "pace": 0.1816,
+        "classMov": 0.1211
+      }
+    }
+  },
+  "features": {
+    "speed_25": {
+      "races": 110,
+      "baseline": {
+        "races": 110,
+        "nll": 2.48655,
+        "brier": 0.07474,
+        "top1": 0.1455,
+        "top3": 0.4182,
+        "bets": 563,
+        "roi_pct": -22.9
+      },
+      "variant": {
+        "races": 110,
+        "nll": 2.49716,
+        "brier": 0.07476,
+        "top1": 0.1364,
+        "top3": 0.4,
+        "bets": 560,
+        "roi_pct": -17.4
+      },
+      "delta_nll": 0.01061,
+      "delta_top1": -0.0091
+    },
+    "speed_40": {
+      "races": 110,
+      "baseline": {
+        "races": 110,
+        "nll": 2.48655,
+        "brier": 0.07474,
+        "top1": 0.1455,
+        "top3": 0.4182,
+        "bets": 563,
+        "roi_pct": -22.9
+      },
+      "variant": {
+        "races": 110,
+        "nll": 2.52305,
+        "brier": 0.07521,
+        "top1": 0.1455,
+        "top3": 0.4273,
+        "bets": 558,
+        "roi_pct": -32.4
+      },
+      "delta_nll": 0.0365,
+      "delta_top1": 0.0
+    },
+    "rating_35": {
+      "races": 110,
+      "baseline": {
+        "races": 110,
+        "nll": 2.48655,
+        "brier": 0.07474,
+        "top1": 0.1455,
+        "top3": 0.4182,
+        "bets": 563,
+        "roi_pct": -22.9
+      },
+      "variant": {
+        "races": 110,
+        "nll": 2.46651,
+        "brier": 0.07453,
+        "top1": 0.1545,
+        "top3": 0.4091,
+        "bets": 555,
+        "roi_pct": -13.7
+      },
+      "delta_nll": -0.02004,
+      "delta_top1": 0.009
+    },
+    "rating_50": {
+      "races": 110,
+      "baseline": {
+        "races": 110,
+        "nll": 2.48655,
+        "brier": 0.07474,
+        "top1": 0.1455,
+        "top3": 0.4182,
+        "bets": 563,
+        "roi_pct": -22.9
+      },
+      "variant": {
+        "races": 110,
+        "nll": 2.46376,
+        "brier": 0.07454,
+        "top1": 0.1909,
+        "top3": 0.4091,
+        "bets": 541,
+        "roi_pct": -10.6
+      },
+      "delta_nll": -0.02279,
+      "delta_top1": 0.0454
+    },
+    "weight_change": {
+      "races": 138,
+      "baseline": {
+        "races": 138,
+        "nll": 2.47518,
+        "brier": 0.07532,
+        "top1": 0.1449,
+        "top3": 0.4058,
+        "bets": 714,
+        "roi_pct": -17.6
+      },
+      "variant": {
+        "races": 138,
+        "nll": 2.47399,
+        "brier": 0.0753,
+        "top1": 0.1449,
+        "top3": 0.3913,
+        "bets": 713,
+        "roi_pct": -17.5
+      },
+      "delta_nll": -0.00119,
+      "delta_top1": 0.0
+    },
+    "weight_full": {
+      "races": 138,
+      "baseline": {
+        "races": 138,
+        "nll": 2.47518,
+        "brier": 0.07532,
+        "top1": 0.1449,
+        "top3": 0.4058,
+        "bets": 714,
+        "roi_pct": -17.6
+      },
+      "variant": {
+        "races": 138,
+        "nll": 2.4751,
+        "brier": 0.07532,
+        "top1": 0.1449,
+        "top3": 0.3986,
+        "bets": 711,
+        "roi_pct": -18.6
+      },
+      "delta_nll": -8e-05,
+      "delta_top1": 0.0
+    },
+    "draw_v2": {
+      "races": 138,
+      "baseline": {
+        "races": 138,
+        "nll": 2.47518,
+        "brier": 0.07532,
+        "top1": 0.1449,
+        "top3": 0.4058,
+        "bets": 714,
+        "roi_pct": -17.6
+      },
+      "variant": {
+        "races": 138,
+        "nll": 2.44455,
+        "brier": 0.07468,
+        "top1": 0.1594,
+        "top3": 0.3986,
+        "bets": 740,
+        "roi_pct": -18.9
+      },
+      "delta_nll": -0.03063,
+      "delta_top1": 0.0145
+    },
+    "form_shrink": {
+      "races": 138,
+      "baseline": {
+        "races": 138,
+        "nll": 2.47518,
+        "brier": 0.07532,
+        "top1": 0.1449,
+        "top3": 0.4058,
+        "bets": 714,
+        "roi_pct": -17.6
+      },
+      "variant": {
+        "races": 138,
+        "nll": 2.46413,
+        "brier": 0.07496,
+        "top1": 0.1449,
+        "top3": 0.3913,
+        "bets": 783,
+        "roi_pct": -19.9
+      },
+      "delta_nll": -0.01105,
+      "delta_top1": 0.0
+    },
+    "avail_aware": {
+      "races": 138,
+      "baseline": {
+        "races": 138,
+        "nll": 2.47518,
+        "brier": 0.07532,
+        "top1": 0.1449,
+        "top3": 0.4058,
+        "bets": 714,
+        "roi_pct": -17.6
+      },
+      "variant": {
+        "races": 138,
+        "nll": 2.49716,
+        "brier": 0.07582,
+        "top1": 0.1449,
+        "top3": 0.3986,
+        "bets": 682,
+        "roi_pct": -24.8
+      },
+      "delta_nll": 0.02198,
+      "delta_top1": 0.0
+    },
+    "phase2_combined": {
+      "races": 138,
+      "baseline": {
+        "races": 138,
+        "nll": 2.47518,
+        "brier": 0.07532,
+        "top1": 0.1449,
+        "top3": 0.4058,
+        "bets": 714,
+        "roi_pct": -17.6
+      },
+      "variant": {
+        "races": 138,
+        "nll": 2.41007,
+        "brier": 0.07401,
+        "top1": 0.1594,
+        "top3": 0.3841,
+        "bets": 810,
+        "roi_pct": -7.4
+      },
+      "delta_nll": -0.06511,
+      "delta_top1": 0.0145
+    }
+  }
+}
