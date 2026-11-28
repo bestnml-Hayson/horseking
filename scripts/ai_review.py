@@ -35,6 +35,7 @@ from common import get_supabase, retry_supabase, has_column
 from model_config import (SOFTMAX_TEMPERATURE,
                           FORM_SHRINK_K, FORM_SHRINK_PRIOR, RATING_BLEND,
                           DRAW_K_HV, DRAW_K_ST_SPRINT, DRAW_K_ST_ROUTE,
+                          DRAW_ST_ROUTE_MIN_DISTANCE,
                           market_probabilities, weights_for, fuse_race)
 from run_style import dominant_run_style, recent_run_styles
 
@@ -332,7 +333,8 @@ def compute_factor_scores(row: Dict, total_runners: int,
         if race_venue == 'HV':
             draw_k = DRAW_K_HV
         else:
-            draw_k = DRAW_K_ST_SPRINT if (race_distance or 0) < 1600 else DRAW_K_ST_ROUTE
+            draw_k = (DRAW_K_ST_SPRINT if (race_distance or 0) < DRAW_ST_ROUTE_MIN_DISTANCE
+                      else DRAW_K_ST_ROUTE)
         draw_score = max(0, min(100, (1 - draw_k * norm) * 100))
     else:
         draw_score = 50

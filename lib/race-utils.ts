@@ -4,48 +4,14 @@ import { getFormColor } from './color-utils'
 
 export { getFormColor }
 
-// Calibrated on 2026-02..2026-11 results (364 races, fit on Feb-Aug / validated Sep-Nov):
-// the 9-factor P_model ranks worse than the price alone (NLL 2.34 vs 2.11), so the market
-// is the anchor and the model is only a value tilt. See memory/backtest-market-echo.
-export const MODEL_WEIGHT = 0.2
-export const MARKET_WEIGHT = 0.8
-const FRACTIONAL_KELLY = 0.25
+import modelProfiles from '../config/model_profiles.json'
 
-// Walk-forward 2026-10-07 → 2026-11-25 (5 folds, 138 OOS races): γ picks were
-// [1.1,1.0,1.0,1.1,1.0] and every banded fit collapsed to 1.0, so the exponent is
-// now 1.0. scripts/backtest_models.py reproduces the grid.
-const MARKET_GAMMA = 1.0
-
-// Temperature scaling for softmax (prevents extreme probability distribution)
-// T=8 was the best on the validation slice; T=15 flattened P_model too much.
-const SOFTMAX_TEMPERATURE = 8
-
-// Post-softmax calibration before fusion: p ∝ p_model^(8/8).
-// Re-measured 2026-11-28 after the weight refit: fold temperature picks were
-// [8,8,8,8,9], i.e. the raw P_model is already calibrated (ECE 0.019) and the
-// deployed power is 1.0. The constant stays so calibration can be switched on.
-const CALIBRATION_POWER = SOFTMAX_TEMPERATURE / 8
-
-// Extreme prices are where the market is least reliable — lift the model weight.
-const EXTREME_ODDS_ALPHA = 0.35
-const EXTREME_ODDS_LOW = 1.8
-const EXTREME_ODDS_HIGH = 25
-
-// Bayesian shrinkage of recent-form average toward a mid-field 6.5 finish.
-const FORM_SHRINK_K = 2.5
-const FORM_SHRINK_PRIOR = 6.5
-
-// official_rating field percentile blended into the class-movement factor.
-const RATING_BLEND = 0.35
-
-// Draw score uses the actual field size; multiplier = inside-bias strength.
-const DRAW_K_HV = 0.9
-const DRAW_K_ST_SPRINT = 0.7
-const DRAW_K_ST_ROUTE = 0.55
-
-// Dynamic weighting by racecourse — all 9 factors are live and each venue's table
-// sums to exactly 1.0. 跑馬地 is draw-dominant (tight circuit), 沙田 is form-dominant
-// (long straights, more ground covered).
+// Single source of truth: config/model_profiles.json, shared with scripts/model_config.py.
+// The default profile is current_v586 (the deployed v5.86 constants). legacy_v576
+// reproduces the old baseline, honest_v586 marks the leakage-free evaluation, and each
+// exp_* profile switches one Phase 1/2 experiment at a time — all off by default.
+// The market is the anchor and the model a value tilt: P_model alone ranks worse than
+// the price (NLL 2.34 vs 2.11). See reports/phase0_audit_2026-11-28.md.
 export interface RacecourseWeights {
   form: number
   draw: number
@@ -58,16 +24,115 @@ export interface RacecourseWeights {
   classMov: number
 }
 
-const RAW_WEIGHTS: Record<'HV' | 'ST', RacecourseWeights> = {
-  HV: {
-    form: 0.20, draw: 0.18, pace: 0.14, courseDistance: 0.14,
-    jockeyTrainer: 0.12, weight: 0.08, restDays: 0.06, classMov: 0.05, gear: 0.03,
-  },
-  ST: {
-    form: 0.22, courseDistance: 0.16, jockeyTrainer: 0.13, draw: 0.12,
-    pace: 0.12, weight: 0.10, restDays: 0.06, classMov: 0.06, gear: 0.03,
-  },
+interface ModelProfile {
+  name?: string
+  fusion: {
+    model_weight: number
+    market_weight: number
+    market_gamma: number
+    extreme_odds_alpha: number
+    extreme_odds_band: [number, number]
+    banded_gamma: { max_odds: number | null; gamma: number }[]
+  }
+  model: {
+    softmax_temperature: number
+    calibration_method: string
+    calibration_temperature: number
+    calibration_power: number
+    platt_window_min: number
+    platt_window_max: number
+  }
+  factors: {
+    form_shrink_k: number
+    form_shrink_prior: number
+    rating_blend: number
+    draw_st_route_min_distance: number
+    draw_k: { HV: number; ST_sprint: number; ST_route: number; ST_1000: number }
+  }
+  weights: Record<'HV' | 'ST', RacecourseWeights>
+  features: Record<string, boolean>
+  experiments: Record<string, { enabled: boolean; [key: string]: unknown }>
+  evaluation: {
+    odds_source: string
+    as_of_jockey_trainer_rates: boolean
+    fold_train_only_weights: boolean
+    roi_label: string
+  }
 }
+
+interface ProfilesFile {
+  version: number
+  default_profile: string
+  profiles: Record<string, Partial<ModelProfile> & { extends?: string; description?: string }>
+}
+
+const MODEL_PROFILES = modelProfiles as unknown as ProfilesFile
+
+function deepMerge(base: unknown, override: unknown): unknown {
+  if (base && typeof base === 'object' && !Array.isArray(base)
+    && override && typeof override === 'object' && !Array.isArray(override)) {
+    const out: Record<string, unknown> = { ...(base as Record<string, unknown>) }
+    for (const [key, value] of Object.entries(override as Record<string, unknown>)) {
+      out[key] = deepMerge(out[key], value)
+    }
+    return out
+  }
+  return override
+}
+
+function resolveProfile(name: string): ModelProfile {
+  const chain: ProfilesFile['profiles'][string][] = []
+  const seen: string[] = []
+  let current: string | undefined = name
+  while (current) {
+    if (seen.includes(current)) {
+      throw new Error(`model profile inheritance cycle: ${[...seen, current].join(' -> ')}`)
+    }
+    seen.push(current)
+    const spec: ProfilesFile['profiles'][string] | undefined = MODEL_PROFILES.profiles[current]
+    if (!spec) throw new Error(`unknown model profile: ${current}`)
+    chain.push(spec)
+    current = spec.extends
+  }
+  let resolved: Record<string, unknown> = {}
+  for (const spec of chain.reverse()) {
+    const rest: Record<string, unknown> = { ...spec }
+    delete rest.extends
+    resolved = deepMerge(resolved, rest) as Record<string, unknown>
+  }
+  resolved.name = name
+  return resolved as unknown as ModelProfile
+}
+
+const PROFILE_NAME = process.env.NEXT_PUBLIC_MODEL_PROFILE
+  || process.env.MODEL_PROFILE
+  || MODEL_PROFILES.default_profile
+
+export const ACTIVE_PROFILE_NAME = PROFILE_NAME
+export const ACTIVE_PROFILE = resolveProfile(PROFILE_NAME)
+export const ACTIVE_FEATURES = ACTIVE_PROFILE.features
+export const ACTIVE_EXPERIMENTS = ACTIVE_PROFILE.experiments
+
+export const MODEL_WEIGHT = ACTIVE_PROFILE.fusion.model_weight
+export const MARKET_WEIGHT = ACTIVE_PROFILE.fusion.market_weight
+const FRACTIONAL_KELLY = 0.25
+const MARKET_GAMMA = ACTIVE_PROFILE.fusion.market_gamma
+const SOFTMAX_TEMPERATURE = ACTIVE_PROFILE.model.softmax_temperature
+const CALIBRATION_POWER = ACTIVE_PROFILE.model.calibration_power
+const EXTREME_ODDS_ALPHA = ACTIVE_PROFILE.fusion.extreme_odds_alpha
+const EXTREME_ODDS_LOW = ACTIVE_PROFILE.fusion.extreme_odds_band[0]
+const EXTREME_ODDS_HIGH = ACTIVE_PROFILE.fusion.extreme_odds_band[1]
+const FORM_SHRINK_K = ACTIVE_PROFILE.factors.form_shrink_k
+const FORM_SHRINK_PRIOR = ACTIVE_PROFILE.factors.form_shrink_prior
+const RATING_BLEND = ACTIVE_PROFILE.factors.rating_blend
+const DRAW_K_HV = ACTIVE_PROFILE.factors.draw_k.HV
+const DRAW_K_ST_SPRINT = ACTIVE_PROFILE.factors.draw_k.ST_sprint
+const DRAW_K_ST_ROUTE = ACTIVE_PROFILE.factors.draw_k.ST_route
+const DRAW_ST_ROUTE_MIN_DISTANCE = ACTIVE_PROFILE.factors.draw_st_route_min_distance
+
+// Each venue's table (from the profile) sums to exactly 1.0. 跑馬地 is draw-dominant
+// (tight circuit), 沙田 is form-dominant (long straights, more ground covered).
+const RAW_WEIGHTS: Record<'HV' | 'ST', RacecourseWeights> = ACTIVE_PROFILE.weights
 
 const WEIGHT_KEYS: (keyof RacecourseWeights)[] = [
   'form', 'draw', 'jockeyTrainer', 'weight', 'courseDistance',
@@ -438,7 +503,7 @@ export function drawBiasScore(
   const norm = (draw - 1) / (field - 1)
   const k = venue === 'HV'
     ? DRAW_K_HV
-    : ((distance ?? 0) < 1600 ? DRAW_K_ST_SPRINT : DRAW_K_ST_ROUTE)
+    : ((distance ?? 0) < DRAW_ST_ROUTE_MIN_DISTANCE ? DRAW_K_ST_SPRINT : DRAW_K_ST_ROUTE)
   return Math.max(0, Math.min(100, (1 - k * norm) * 100))
 }
 

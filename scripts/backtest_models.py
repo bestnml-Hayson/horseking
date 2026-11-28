@@ -38,7 +38,7 @@ from datetime import datetime
 from statistics import mean
 from zoneinfo import ZoneInfo
 
-if hasattr(sys.stdout, 'buffer'):
+if __name__ == '__main__' and hasattr(sys.stdout, 'buffer'):
     import io
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', line_buffering=True)
 sys.path.insert(0, os.path.dirname(__file__))

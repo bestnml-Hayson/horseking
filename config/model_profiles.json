@@ -1,0 +1,264 @@
+{
+  "version": 1,
+  "default_profile": "current_v586",
+  "profiles": {
+    "legacy_v576": {
+      "description": "v5.76 production baseline. Market anchor gamma=1.3, pre-Phase-2 factors (no form shrinkage, no rating blend, plain draw normalisation) and the dead weight/gear/pace factors zeroed then renormalised. Kept for historical comparison only.",
+      "fusion": {
+        "model_weight": 0.2,
+        "market_weight": 0.8,
+        "market_gamma": 1.3,
+        "extreme_odds_alpha": 0.2,
+        "extreme_odds_band": [1.8, 25.0],
+        "banded_gamma": [
+          { "max_odds": 4.0, "gamma": 1.3 },
+          { "max_odds": 10.0, "gamma": 1.3 },
+          { "max_odds": null, "gamma": 1.3 }
+        ]
+      },
+      "model": {
+        "softmax_temperature": 8.0,
+        "calibration_method": "none",
+        "calibration_temperature": 8.0,
+        "calibration_power": 1.0,
+        "platt_window_min": 0,
+        "platt_window_max": 0
+      },
+      "factors": {
+        "form_shrink_k": 0.0,
+        "form_shrink_prior": 6.5,
+        "rating_blend": 0.0,
+        "draw_st_route_min_distance": 1600,
+        "draw_k": {
+          "HV": 1.0,
+          "ST_sprint": 1.0,
+          "ST_route": 1.0,
+          "ST_1000": 0.0
+        }
+      },
+      "weights": {
+        "HV": {
+          "form": 0.2308,
+          "draw": 0.1795,
+          "jockeyTrainer": 0.1538,
+          "weight": 0.0,
+          "courseDistance": 0.2051,
+          "restDays": 0.1282,
+          "gear": 0.0,
+          "pace": 0.0,
+          "classMov": 0.1026
+        },
+        "ST": {
+          "form": 0.2105,
+          "draw": 0.1053,
+          "jockeyTrainer": 0.1842,
+          "weight": 0.0,
+          "courseDistance": 0.2368,
+          "restDays": 0.1316,
+          "gear": 0.0,
+          "pace": 0.0,
+          "classMov": 0.1316
+        }
+      },
+      "features": {
+        "form_shrink": false,
+        "rating_blend": false,
+        "draw_field_size": false,
+        "run_style_pace": false,
+        "extreme_odds_alpha": false,
+        "calibration": false
+      },
+      "experiments": {
+        "banded_gamma": { "enabled": false },
+        "platt_calibration": { "enabled": false, "window_min": 0, "window_max": 0 },
+        "availability_renorm": { "enabled": false, "min_coverage": 0.8 },
+        "timing_fusion": {
+          "enabled": false,
+          "no_odds_market_weight": 0.0,
+          "min_coverage": 0.8,
+          "far_hours": 2.0,
+          "far_market_weight": 0.55,
+          "near_market_weight": 0.8
+        },
+        "extreme_favourite_guard": { "enabled": false, "threshold": 1.6, "max_model_weight": 0.5 },
+        "dual_probability": { "enabled": false },
+        "st1000_draw_reversal": { "enabled": false, "draw_k": -0.2 },
+        "speed_engine": { "enabled": false, "mode": "display_only" },
+        "finish_time_margin": { "enabled": false, "mode": "display_only" }
+      },
+      "evaluation": {
+        "odds_source": "sp",
+        "as_of_jockey_trainer_rates": false,
+        "fold_train_only_weights": false,
+        "roi_label": "SP upper bound"
+      }
+    },
+    "current_v586": {
+      "description": "Deployed v5.86 production profile. gamma=1.0, alpha=0.2 (0.35 at extreme prices), T=8, calibration identity, all nine factors live with Phase-2 form shrinkage / rating blend / field-size draw.",
+      "fusion": {
+        "model_weight": 0.2,
+        "market_weight": 0.8,
+        "market_gamma": 1.0,
+        "extreme_odds_alpha": 0.35,
+        "extreme_odds_band": [1.8, 25.0],
+        "banded_gamma": [
+          { "max_odds": 4.0, "gamma": 1.0 },
+          { "max_odds": 10.0, "gamma": 1.0 },
+          { "max_odds": null, "gamma": 1.0 }
+        ]
+      },
+      "model": {
+        "softmax_temperature": 8.0,
+        "calibration_method": "temperature",
+        "calibration_temperature": 8.0,
+        "calibration_power": 1.0,
+        "platt_window_min": 0,
+        "platt_window_max": 0
+      },
+      "factors": {
+        "form_shrink_k": 2.5,
+        "form_shrink_prior": 6.5,
+        "rating_blend": 0.35,
+        "draw_st_route_min_distance": 1600,
+        "draw_k": {
+          "HV": 0.9,
+          "ST_sprint": 0.7,
+          "ST_route": 0.55,
+          "ST_1000": 0.0
+        }
+      },
+      "weights": {
+        "HV": {
+          "form": 0.2,
+          "draw": 0.18,
+          "jockeyTrainer": 0.12,
+          "weight": 0.08,
+          "courseDistance": 0.14,
+          "restDays": 0.06,
+          "gear": 0.03,
+          "pace": 0.14,
+          "classMov": 0.05
+        },
+        "ST": {
+          "form": 0.22,
+          "draw": 0.12,
+          "jockeyTrainer": 0.13,
+          "weight": 0.1,
+          "courseDistance": 0.16,
+          "restDays": 0.06,
+          "gear": 0.03,
+          "pace": 0.12,
+          "classMov": 0.06
+        }
+      },
+      "features": {
+        "form_shrink": true,
+        "rating_blend": true,
+        "draw_field_size": true,
+        "run_style_pace": true,
+        "extreme_odds_alpha": true,
+        "calibration": true
+      },
+      "experiments": {
+        "banded_gamma": { "enabled": false },
+        "platt_calibration": { "enabled": false, "window_min": 150, "window_max": 300 },
+        "availability_renorm": { "enabled": false, "min_coverage": 0.8 },
+        "timing_fusion": {
+          "enabled": false,
+          "no_odds_market_weight": 0.0,
+          "min_coverage": 0.8,
+          "far_hours": 2.0,
+          "far_market_weight": 0.55,
+          "near_market_weight": 0.8
+        },
+        "extreme_favourite_guard": { "enabled": false, "threshold": 1.6, "max_model_weight": 0.5 },
+        "dual_probability": { "enabled": false },
+        "st1000_draw_reversal": { "enabled": false, "draw_k": -0.2 },
+        "speed_engine": { "enabled": false, "mode": "display_only" },
+        "finish_time_margin": { "enabled": false, "mode": "display_only" }
+      },
+      "evaluation": {
+        "odds_source": "sp",
+        "as_of_jockey_trainer_rates": false,
+        "fold_train_only_weights": false,
+        "roi_label": "SP upper bound"
+      }
+    },
+    "honest_v586": {
+      "description": "v5.86 model constants evaluated without leakage: jockey/trainer win rates recomputed as of each race date, every factor-weight table fitted on the training folds only, and odds labelled pre-race vs SP. The only future comparison baseline.",
+      "extends": "current_v586",
+      "evaluation": {
+        "odds_source": "labeled",
+        "as_of_jockey_trainer_rates": true,
+        "fold_train_only_weights": true,
+        "roi_label": "SP upper bound; ROI on genuinely pre-race prices only"
+      }
+    },
+    "exp_banded_gamma": {
+      "description": "Phase 1 flag (off by default): fit a separate market exponent per odds band, walk-forward, train-only. Adoption requires >=4/5 folds improving and a 95% CI excluding zero.",
+      "extends": "current_v586",
+      "experiments": {
+        "banded_gamma": { "enabled": true }
+      }
+    },
+    "exp_platt_calibration": {
+      "description": "Phase 1 flag (off by default): rolling Platt scaling fitted on the previous 150-300 races only. The deployed identity calibration stays the baseline.",
+      "extends": "current_v586",
+      "model": {
+        "calibration_method": "platt"
+      },
+      "experiments": {
+        "platt_calibration": { "enabled": true }
+      }
+    },
+    "exp_availability_renorm": {
+      "description": "Phase 1 flag (off by default): drop the weights of factors whose inputs are missing and renormalise. Measured worse OOS (+0.022 NLL) as availability_renorm in the Phase-2 ablation; kept behind a flag so it can be re-tested.",
+      "extends": "current_v586",
+      "experiments": {
+        "availability_renorm": { "enabled": true }
+      }
+    },
+    "exp_timing_fusion": {
+      "description": "Phase 1 flag (off by default): market weight depends on odds availability and time to post - 0 when odds are missing or coverage < 80%, 0.55 when more than two hours out, 0.80 inside two hours. Cannot be backtested until >=50 races carry genuine pre-race odds timestamps.",
+      "extends": "current_v586",
+      "experiments": {
+        "timing_fusion": { "enabled": true }
+      }
+    },
+    "exp_extreme_favourite_guard": {
+      "description": "Phase 1 flag (off by default): soft cap on model weight for favourites priced below 1.6. Only three OOS races fall in the band, so it stays off until the sample grows.",
+      "extends": "current_v586",
+      "experiments": {
+        "extreme_favourite_guard": { "enabled": true }
+      }
+    },
+    "exp_dual_probability": {
+      "description": "Phase 1 flag (off by default): emit a main probability (bet sizing) and a value probability (mispricing detection) side by side.",
+      "extends": "current_v586",
+      "experiments": {
+        "dual_probability": { "enabled": true }
+      }
+    },
+    "exp_st1000_draw_reversal": {
+      "description": "Phase 2 flag (off by default): allow the 1000m Sha Tin draw coefficient to invert. Only 5 OOS races at the trip, so the default coefficient stays 0 extra bias.",
+      "extends": "current_v586",
+      "experiments": {
+        "st1000_draw_reversal": { "enabled": true }
+      }
+    },
+    "exp_speed_engine": {
+      "description": "Phase 2 display-only flag (off by default): best_time stratified speed rating shown in the UI, never entering P_model. The Phase-2 ablation measured +0.011 to +0.032 NLL when blended in.",
+      "extends": "current_v586",
+      "experiments": {
+        "speed_engine": { "enabled": true }
+      }
+    },
+    "exp_finish_time_margin": {
+      "description": "Phase 2b display-only flag (off by default): finish_time and margin features. Recent meetings carry 0% coverage for both, so they cannot be scored yet.",
+      "extends": "current_v586",
+      "experiments": {
+        "finish_time_margin": { "enabled": true }
+      }
+    }
+  }
+}
