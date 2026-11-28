@@ -27,6 +27,13 @@ jobs:
       - name: Validate shared model config
         run: python scripts/validate_config.py
 
+      - name: Verify governance docs exist
+        run: |
+          test -f docs/PREREGISTERED_AB.md
+          test -f docs/MONITORING.md
+          test -f FLAGS.md
+          test -f RISKS.md
+
       - name: Python tests (config parity, leakage, odds writer)
         run: python -m pytest tests -q
 
