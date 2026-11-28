@@ -43,6 +43,7 @@
 | `jockey_upgrade` blend 0.15 | honest_v586 | ΔNLL −0.00376（CI −0.00721~−0.00034、4/5 折） | 達標但 keep off；只 blend 入 jockeyTrainer |
 | `jockey_upgrade` blend 0.30 | honest_v586 | ΔNLL −0.00601（CI −0.01284~+0.00073） | 不達標 |
 | `avail_aware` 隔離 | honest_v586 | +0.00283（CI 含 0、3/5） | 不採納 |
+| `speed_engine` 排名 shadow | —（無 NLL 變體） | 137 場：rho 0.21、速度 Top1 7.3% vs P_model 16.1% | 只描述；display_only 不變 |
 
 - jockey_upgrade 明細：`reports/jockey_upgrade_2026-11-28.md`；因覆蓋率 87.8% 且屬多重測試，
   需在 ≥50 場真實 pre-race 賠率樣本上獨立 A/B 後才可談上線。

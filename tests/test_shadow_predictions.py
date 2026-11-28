@@ -96,8 +96,10 @@ def test_race_shadow_records_both_columns_and_identity_draw():
         assert rid in record['shadow']['availability_gate']['runners']
         assert rid in record['shadow']['avail_aware']['runners']
         assert rid in record['shadow']['jockey_upgrade']['runners']
+        assert rid in record['shadow']['speed_engine']['runners']
     assert record['flags'] == {'availability_gate': False, 'draw_v2': False,
-                               'avail_aware': False, 'jockey_upgrade': False}
+                               'avail_aware': False, 'jockey_upgrade': False,
+                               'speed_engine': False}
     gate = record['shadow']['availability_gate']['runners']['r0']['p_final']
     assert gate == pytest.approx(record['live']['r0']['p_model'], abs=5e-5)
 
@@ -123,6 +125,31 @@ def test_race_shadow_jockey_upgrade_records_feature():
     assert record['flags']['jockey_upgrade'] is False
     # the live column must not consume the shadow feature
     assert record['live']['r0']['p_final'] != ju['runners']['r0']['p_final']
+
+
+def test_race_shadow_speed_engine_compares_ranks_without_touching_live():
+    runners = [_runner(f'r{i}', f'h{i}', 2.0 + i) for i in range(4)]
+    for runner, raw in zip(runners, ['1.08.00', '1.09.00', '1.10.00', '1.11.00']):
+        runner['best_time'] = raw
+    experiments = {'speed_engine': {'enabled': False, 'mode': 'display_only'}}
+    record = S.race_shadow(runners, 'ST', 1200, 'Class 4', '2026-12-02', {},
+                           race_no=1, experiments=experiments)
+    speed = record['shadow']['speed_engine']
+    assert speed['meta']['comparable'] is True
+    assert speed['meta']['has_best_time'] == 4
+    ranks = {rid: row['speed_rank'] for rid, row in speed['runners'].items()}
+    assert ranks == {'r0': 1, 'r1': 2, 'r2': 3, 'r3': 4}
+    assert all(row['model_rank'] is not None for row in speed['runners'].values())
+    assert record['flags']['speed_engine'] is False
+
+    for runner in runners:
+        runner.pop('best_time')
+    without = S.race_shadow(runners, 'ST', 1200, 'Class 4', '2026-12-02', {},
+                            race_no=1, experiments=experiments)
+    assert without['shadow']['speed_engine']['meta']['comparable'] is False
+    assert without['live'] == record['live']
+    assert all(row['speed_rank'] is None
+               for row in without['shadow']['speed_engine']['runners'].values())
 
 
 def test_race_shadow_handles_empty_field():

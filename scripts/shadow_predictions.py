@@ -16,6 +16,9 @@ Shadow columns:
   jockey_upgrade    - current jockey's as-of win rate minus the mean as-of win rate
                       of the horse's last six riders, blended into jockeyTrainer;
                       feature columns are recorded even while the flag is off
+  speed_engine      - racecard best-time speed rank vs model rank per runner
+                      (display-only comparison, no weights; missing best_time
+                      stays null and the trip score is untouched)
 
 CLI:
   python scripts/shadow_predictions.py --date 2026-12-02 --venue ST
@@ -37,6 +40,7 @@ from model_config import (
 )
 import ai_review as A
 import jockey_upgrade as JU
+import speed_shadow as SPEED
 
 SHADOW_ID = 'shadow_predictions'
 SHADOW_KEEP_DAYS = 7
@@ -150,7 +154,11 @@ def race_shadow(runners, venue, distance, class_level, race_date, history,
     variant_models = A._softmax(variant_scores)
     variant_finals = fuse_race(variant_models, _masked_markets(odds), odds)
 
-    live_map, gate_map, aware_map, upgrade_map = {}, {}, {}, {}
+    speed_cfg = experiments.get('speed_engine') or {}
+    speed_meta, speed_rows = SPEED.compare_runners(
+        [r.get('best_time') for r in runners], SPEED.ranks(p_models))
+
+    live_map, gate_map, aware_map, upgrade_map, speed_map = {}, {}, {}, {}, {}
     for i, runner in enumerate(runners):
         rid = runner['runner_id']
         live_map[rid] = {'p_model': round(p_models[i], 5), 'p_final': round(live[i], 5)}
@@ -158,6 +166,7 @@ def race_shadow(runners, venue, distance, class_level, race_date, history,
         aware_map[rid] = {'p_final': round(aware_finals[i], 5), **aware_meta[i]}
         upgrade_map[rid] = {'p_model': round(variant_models[i], 5),
                             'p_final': round(variant_finals[i], 5), **upgrade_rows[i]}
+        speed_map[rid] = speed_rows[i]
 
     covered, total, coverage = odds_coverage(odds)
     return {
@@ -171,6 +180,7 @@ def race_shadow(runners, venue, distance, class_level, race_date, history,
             'draw_v2': bool((experiments.get('draw_v2') or {}).get('enabled')),
             'avail_aware': bool((experiments.get('avail_aware') or {}).get('enabled')),
             'jockey_upgrade': bool(upgrade_cfg.get('enabled')),
+            'speed_engine': bool(speed_cfg.get('enabled')),
         },
         'live': live_map,
         'shadow': {
@@ -186,6 +196,12 @@ def race_shadow(runners, venue, distance, class_level, race_date, history,
                                         if fv['score'] is not None),
                          'runners': n},
                 'runners': upgrade_map,
+            },
+            'speed_engine': {
+                'meta': {**speed_meta,
+                         'enabled': bool(speed_cfg.get('enabled')),
+                         'mode': speed_cfg.get('mode', 'display_only')},
+                'runners': speed_map,
             },
         },
     }

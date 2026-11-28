@@ -25,7 +25,7 @@
 | `extreme_favourite_guard` | off（threshold 1.6, max_model_weight 0.5） | 大熱（<1.6）限制模型權重 | OOS 只有 3 場，樣本不足 | 同上 | `ee60004` | flag off |
 | `dual_probability` | off | 同時輸出 main / value 機率 | 未評估，無 A/B | 同上 | `ee60004` | flag off |
 | `st1000_draw_reversal` | off（draw_k −0.2） | ST 1000m 檔位反轉 | OOS 只有 5 場，維持預設 0 | 同上 | `ee60004` | flag off |
-| `speed_engine` | off（display_only） | best_time 速度評分展示 | 混入 P_model 量得 +0.011~+0.032 NLL，只可展示 | 同上 | `ee60004` | flag off |
+| `speed_engine` | off（display_only） | best_time 速度評分展示；L2-D 起每 tick 另寫「速度排名 vs P_model 排名」shadow（`rank_corr`、`rank_delta`），不入權重 | 混入 P_model 量得 +0.011~+0.032 NLL；描述性 137 場（2026-10/11）：rho 0.21、速度 Top1 7.3% vs 模型 16.1% → 只可展示；真締速指數等 finish_time/margin 補齊 | `scripts/shadow_predictions.py`、`scripts/speed_shadow.py`、`config/model_profiles.json` | `ee60004`、L2-D | flag off；shadow key 可刪 |
 | `finish_time_margin` | off（display_only） | 完成時間（秒）／勝距（馬位）展示；v5.86 後三個 importer 開始寫入 | 只展示、不入權重；覆蓋率 finish_time 83.8%、margin 27.6%（2026-10/11 及 2025-09～2026-03 margin 需重抓） | `scripts/results_fields.py`、`auto_pilot.py`、`backfill_results.py`、`post_race_import.py`、`config/model_profiles.json` | `ee60004` | flag off |
 | `segmented_gamma` | off | 按賠率分段擬合 γ | 多數 fold 選 1.0，OOS 無改善；凍結診斷 | `scripts/model_config.py` 已讀取 | `ee60004` | flag off |
 | `platt` | off（window 150–300） | rolling Platt 校準 | NLL 改善 <0.01，未部署 | 同上 | `ee60004` | flag off |
@@ -54,3 +54,5 @@
 | 入權重 | 未開啟 | `finish_time_margin`、`speed_engine` 維持 off；歷史月份需重抓才有數 | L2-A |
 | going／track_course | 逐場讀 `場地狀況`＋`賽道` | 4 個寫入點共用 `scripts/track_meta.py`（canonical＋英文／別名、拒絕多值猜測）；一次性補全 `backfill_track_meta.py`（httpx、date/race_no 校驗、不覆蓋有效值）；描述報表 `track_meta_report.py` | L2-B |
 | 跑道偏差模型 | 未開啟 | 等 going 有變異且每個 going×賽道桶 ≥30 場才考慮；現時無任何 going／track_course 權重 | L2-B |
+| 速度排名 shadow | 每 tick 寫 `shadow_predictions.speed_engine` | 賽日卡 best_time 排名 vs P_model 排名（`speed_rank`、`model_rank`、`rank_delta`、`rank_corr`）；缺 best_time 留空不填常數、途程分不動；只描述、不入權重 | L2-D |
+| 真締速指數 | 未開啟 | 等 finish_time／margin 補齊（現時 83.8%／27.6%）後另開；按 `docs/PREREGISTERED_AB.md` 走 A/B | L2-A、L2-D |

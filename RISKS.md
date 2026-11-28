@@ -14,6 +14,7 @@
 | R8 | **CI 未經實跑**：新增 `.github/workflows/ci.yml` 只在 push 後才首次執行 | 低 | 開放 | 首次 push 可能因環境差異失敗 | 本地已跑同一組 pytest／tsx／validate；CI 失敗不影響 runtime | 首次 push 後 CI 綠燈 |
 | R9 | **前端 profile 切換風險**：`NEXT_PUBLIC_MODEL_PROFILE` 可改前端行為 | 低 | 監控 | 若誤設 exp profile 會出 shadow 邏輯 | 預設 `current_v586`；exp profile 只存在於 config，未部署 | 保持預設直至 honest A/B 達標 |
 | R10 | **歷史賽果欄位不齊**：`finish_time` 2026-10/11 為 0%，`margin` 2025-09～2026-03 為 0%；班次命名新舊並存 | 中 | 開放 | 任何 speed figure／馬位特徵只能覆蓋部分歷史，跨期比較會偏 | parser 已修（三個 importer 共用）；報表逐月標低覆蓋原因；未重抓前只用 2026-04 後且兩欄齊的場次做 speed 研究 | 重抓 2025-09～2026-11 缺欄場次並把覆蓋率寫入 `pipeline_status.results_quality_report` |
+| R13 | **best_time 覆蓋偏窄**：honest 樣本 1,057 場只有 137 場（13.0%）全場 ≥4 匹有 best_time，全部集中在 2026-10/11；舊場次多為空 | 低 | 監控 | 任何速度研究只能代表近兩個月，不能外推；真締速指數條件未齊 | speed shadow 只描述、不入權重；報表標明覆蓋期間；真指數等 finish_time/margin 補齊 | finish_time／margin 全期覆蓋 ≥95% 後另開 speed figure 研究 |
 | R12 | **jockey_upgrade 早達標假象**：blend 0.15 首次回測即 ΔNLL<0、CI 全負、4/5 折，但屬多重測試下的單次命中，且覆蓋率僅 87.8%（首月 2025-09 只有 17%） | 中 | 監控 | 若因一次達標就開 live，可能重犯 SP 循環性／樣本不足錯誤 | flag 維持 off；只寫 shadow；正式上線需 ≥50 場真實 pre-race 賠率後獨立 A/B；與 jockeyTrainer 相關 r=0.57（差分）／0.85（水平）→ 只准 blend 合併 | 獨立 A/B 在真實賠率樣本重現 ΔNLL<0 且 CI 全負、≥4/5 折 |
 | R11 | **going／track_course 歷史缺值與詞彙漂移**：補全前 18 場為空／英文 `Good`／舊值；舊 scraper 只認 9 種 going，官方「封地」被誤判無效 | 低 | 已緩解 | going 覆蓋不足會令未來跑道偏差研究樣本偏，且舊 whitelist 會靜靜丟值 | 4 個寫入點共用 `scripts/track_meta.py`（canonical＋英文／別名、拒絕多值猜測、加入封地）；`backfill_track_meta.py` httpx 補全（date/race_no 校驗、不覆蓋有效值）；實測 1,088 場 going 99.9%、track_course 100%；唯一缺口為官方取消的 ST-20261114-06 | 每場非取消賽事 going 非空；跑道偏差模型另需每個 going×賽道桶 ≥30 場 |
 
@@ -47,6 +48,11 @@
   blend 0.15 ΔNLL −0.00376（CI −0.00721~−0.00034、4/5 折）達標；blend 0.30 CI 含 0 不達標。
   flag `jockey_upgrade` 維持 off，只寫 shadow。
   報表：`reports/jockey_upgrade_2026-11-28.md`、`reports/jockey_upgrade_2026-11-28.json`。
+- 線 2-D 實測（2026-11-28，唯讀）：honest 樣本 1,057 場中 best_time 全場 ≥4 匹可比較
+  137 場（13.0%，全部 2026-10-01→11-25）。模型（P_model，未融合市場）vs best_time
+  排名：平均 Spearman rho 0.2145、Top3 重疊 37.2%；單靠 best_time Top1 7.3%／
+  Top3 27.0%，模型 16.1%／48.2% → 速度只 display／shadow，不入權重。
+  報表：`reports/speed_shadow_2026-11-28.md`、`reports/speed_shadow_2026-11-28.json`。
 
 ## 變更紀錄
 
@@ -58,4 +64,6 @@
   httpx 補全＋描述性變異報表；跑道偏差模型維持 off（分桶樣本不足）。
 - 2026-11-28：線 2-C 騎師升級差特徵（as-of，防洩漏單測）＋shadow＋honest 回測；
   blend 0.15 達標但 flag 維持 off，只准 blend 入 jockeyTrainer，不得另立第 10 因子。
+- 2026-11-28：線 2-D 速度排名 shadow（best_time vs P_model，只描述）；
+  best_time 只覆蓋 2026-10/11 共 137 場，真締速指數維持未開。
 - 相關文件：`reports/phase1_freeze_2026-11-28.md`、`FLAGS.md`、`reports/honest_vs_current_v586.md`。
