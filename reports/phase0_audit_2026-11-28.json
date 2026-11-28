@@ -1,0 +1,212 @@
+{
+ "since": "2026-06-01",
+ "races": {
+  "n": 347,
+  "venues": {
+   "HV": 143,
+   "ST": 204
+  },
+  "date_range": [
+   "2026-06-03",
+   "2026-11-25"
+  ],
+  "going": {
+   "好地": 288,
+   "∅": 51,
+   "Good": 4,
+   "慢地": 2,
+   "快地": 2
+  },
+  "track_course_nonnull": {
+   "n": 297,
+   "pct": 85.59
+  }
+ },
+ "runners": {
+  "n": 4316,
+  "coverage": {
+   "win_odds_gt1": {
+    "n": 4300,
+    "pct": 99.63
+   },
+   "actual_weight_gt0": {
+    "n": 4236,
+    "pct": 98.15
+   },
+   "official_rating": {
+    "n": 1739,
+    "pct": 40.29
+   },
+   "jockey_win_rate_nonnull": {
+    "n": 3841,
+    "pct": 88.99
+   },
+   "jockey_win_rate_eq_010": {
+    "n": 161,
+    "pct": 3.73
+   },
+   "trainer_win_rate_nonnull": {
+    "n": 3841,
+    "pct": 88.99
+   },
+   "trainer_win_rate_eq_010": {
+    "n": 9,
+    "pct": 0.21
+   },
+   "rest_days": {
+    "n": 3841,
+    "pct": 88.99
+   },
+   "gear_nonempty": {
+    "n": 1484,
+    "pct": 34.38
+   },
+   "form_history_nonempty": {
+    "n": 1908,
+    "pct": 44.21
+   },
+   "form_positions_nonempty": {
+    "n": 126,
+    "pct": 2.92
+   },
+   "weight_change_column": {
+    "n": 1512,
+    "pct": 35.03
+   },
+   "season_prize": {
+    "n": 1740,
+    "pct": 40.32
+   },
+   "age": {
+    "n": 427,
+    "pct": 9.89
+   },
+   "career_starts": {
+    "n": 427,
+    "pct": 9.89
+   },
+   "trial_count": {
+    "n": 109,
+    "pct": 2.53
+   },
+   "fast_work_count": {
+    "n": 218,
+    "pct": 5.05
+   },
+   "swim_count": {
+    "n": 203,
+    "pct": 4.7
+   },
+   "fitness_score": {
+    "n": 221,
+    "pct": 5.12
+   },
+   "finish_time_nonempty": {
+    "n": 2101,
+    "pct": 48.68
+   },
+   "margin_nonempty": {
+    "n": 1861,
+    "pct": 43.12
+   },
+   "best_time_parseable": {
+    "n": 1335,
+    "pct": 30.93
+   },
+   "best_time_nonempty": {
+    "n": 1335,
+    "pct": 30.93
+   },
+   "sectional_parseable": {
+    "n": 1268,
+    "pct": 29.38
+   }
+  },
+  "samples": {
+   "best_time": [
+    "1.48.84",
+    "1.49.06",
+    "1.48.74",
+    "1.48.74",
+    "1.51.78"
+   ],
+   "finish_time": [
+    100.53,
+    99.19,
+    98.85,
+    99.6,
+    99.99
+   ],
+   "margin": [
+    10.5,
+    2.3,
+    4.8,
+    7.0,
+    1.5
+   ],
+   "sectional": [
+    "12|8 7 6",
+    "12|9 9 4",
+    "12|4 3 2"
+   ],
+   "form_history": [
+    "6-4-4-7-8-13-10-13-13-9",
+    "3-14-3-11-5-3-10-6-4-7",
+    "10-11-9-6-5-4-6-1-6-2"
+   ]
+  }
+ },
+ "field": {
+  "races": 347,
+  "size_min": 6,
+  "size_median": 12,
+  "size_max": 14,
+  "draw_gt_fieldsize_races": 11
+ },
+ "odds_honesty": {
+  "races_compared": 346,
+  "races_with_pre_race_price": 9,
+  "races_sp_copy": 337
+ },
+ "odds_drift": {
+  "races": 0,
+  "runners": 0,
+  "runners_ge2_points": 0,
+  "points": 0,
+  "ts_min": null,
+  "ts_max": null,
+  "updated_at": "2026-11-26T08:31:39.65018+00:00"
+ },
+ "history": {
+  "sample_runners": 4316,
+  "runners_with_1_prior": {
+   "n": 4114,
+   "pct": 95.32
+  },
+  "runners_with_3_prior": {
+   "n": 3773,
+   "pct": 87.42
+  },
+  "runners_with_same_cd": {
+   "n": 3285,
+   "pct": 76.11
+  },
+  "runners_with_3_same_cd": {
+   "n": 2014,
+   "pct": 46.66
+  },
+  "total_history_starts": 11593,
+  "jockey_per_start_pct": 100.0
+ },
+ "jockey_rate_stability": {
+  "jockeys_ge10_starts": 32,
+  "jockeys_single_rate": 5,
+  "distinct_rates_median": 6,
+  "distinct_rates_max": 9
+ },
+ "run_style_mix": {
+  "closer": 776,
+  "stalker": 286,
+  "leader": 206
+ }
+}
